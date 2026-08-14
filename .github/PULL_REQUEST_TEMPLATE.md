@@ -45,7 +45,7 @@ Example:
 - [ ] Comments are one or two lines and explain *why*, not *what*
 - [ ] No option is exposed in the UI without a working backend
 - [ ] No game assets, credentials or personal paths are committed
-- [ ] Lua changes pass `luac5.1 -p`
+- [ ] Lua changes pass `luajit -bl` (not `luac5.1` — it rejects valid `goto`)
 - [ ] Line endings unchanged (CRLF for `.otui`/`.otmod`, LF elsewhere)
 - [ ] This is one logical change, not several bundled together
 

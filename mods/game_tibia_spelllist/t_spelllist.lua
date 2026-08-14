@@ -173,8 +173,7 @@ function onConfigureList()
     local words = widget:recursiveGetChildById('words')
     local disabled = widget:recursiveGetChildById('gray')
 
-    dragImage.onDragEnter = function(self, mousePos) onUpdateDragSpell(self, mousePos) end
-    dragImage.onDragLeave = function(self, mousePos) onLeaveDragSpell(self, mousePos, widget) end
+    bindSpellDragHandlers(dragImage, widget)
 
     widget.spellData = spell
     dragImage.words = spell.words
@@ -272,6 +271,32 @@ function onSelectedSpell(list, focused, oldFocus)
   end
 end
 
+-- Binds the three drag handlers a spell icon needs. Kept in one place because
+-- the same wiring is needed for the list entries and for the replacement icon
+-- created after a drop, and having it twice is how it drifted out of sync.
+--
+-- onDragEnter MUST return true: UIManager only sets m_draggingWidget when it
+-- does, and onDragLeave only fires for a tracked drag. Returning nil left the
+-- icon reparented to the root panel, floating at the drop position forever.
+-- onDragLeave receives (droppedWidget, mousePos) -- declaring only two
+-- parameters passes a widget where the position is expected.
+function bindSpellDragHandlers(icon, originalParent)
+  icon.onDragEnter = function(self, mousePos)
+    onUpdateDragSpell(self, mousePos)
+    return true
+  end
+
+  icon.onDragMove = function(self, mousePos, mouseMoved)
+    onUpdateDragSpell(self, mousePos)
+    return true
+  end
+
+  icon.onDragLeave = function(self, droppedWidget, mousePos)
+    onLeaveDragSpell(self, mousePos, originalParent)
+    return true
+  end
+end
+
 function onUpdateDragSpell(self, mousePos)
   local rootParent = rootPanel:getParent()
   self:setPhantom(true)
@@ -333,8 +358,7 @@ function onLeaveDragSpell(self, mousePos, originalParent)
   replacement:setMarginLeft(2)
   replacement.words = self.words
 
-  replacement.onDragEnter = function(self, mousePos) onUpdateDragSpell(self, mousePos) end
-  replacement.onDragLeave = function(self, mousePos) onLeaveDragSpell(self, mousePos, originalParent) end
+  bindSpellDragHandlers(replacement, originalParent)
   self:destroy()
 
   if lastHighlightWidget then

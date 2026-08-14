@@ -274,6 +274,9 @@ SpellInfo = {
     ["Curse"] = { id = 139, name = "Curse", words = "utori mort", type = "Instant", level = 75, mana = 30, soul = 0, icon = "curse", group = { [1] = 2000 }, needTarget = true, parameter = false, range = 3, exhaustion = 40000, premium = false, vocations = { 1, 5 } },
     ["Death Strike"] = { id = 87, name = "Death Strike", words = "exori mort", type = "Instant", level = 16, mana = 20, soul = 0, icon = "deathstrike", group = { [1] = 2000 }, needTarget = false, parameter = false, range = 3, exhaustion = 2000, premium = true, vocations = { 1, 5 } },
     ["Divine Caldera"] = { id = 124, name = "Divine Caldera", words = "exevo mas san", type = "Instant", level = 50, mana = 160, soul = 0, icon = "divinecaldera", group = { [1] = 2000 }, needTarget = false, parameter = false, range = 0, exhaustion = 4000, premium = true, vocations = { 3, 7 }, area = SpellAreas.AREA_CIRCLE3X3 },
+    -- needPosition: cast lands on a tile the player picks with the crosshair, not on
+    -- the caster. Mirrors spell:needPosition(true) on the server side.
+    ["Death Echo"] = { id = 310, name = "Death Echo", words = "exevo mort ora", type = "Instant", level = 50, mana = 160, soul = 0, icon = "deathstrike", group = { [1] = 2000 }, needTarget = false, needPosition = true, parameter = false, range = 0, exhaustion = 4000, premium = false, vocations = { 1, 5 } },
     ["Divine Healing"] = { id = 125, name = "Divine Healing", words = "exura san", type = "Instant", level = 35, mana = 160, soul = 0, icon = "divinehealing", group = { [2] = 1000 }, needTarget = false, parameter = false, range = 0, exhaustion = 1000, premium = false, vocations = { 3, 7 } },
     ["Divine Missile"] = { id = 122, name = "Divine Missile", words = "exori san", type = "Instant", level = 40, mana = 20, soul = 0, icon = "divinemissile", group = { [1] = 2000 }, needTarget = false, parameter = false, range = 4, exhaustion = 2000, premium = true, vocations = { 3, 7 } },
     ["Electrify"] = { id = 140, name = "Electrify", words = "utori vis", type = "Instant", level = 34, mana = 30, soul = 0, icon = "electrify", group = { [1] = 2000 }, needTarget = true, parameter = false, range = 3, exhaustion = 30000, premium = false, vocations = { 1, 5 } },
@@ -760,6 +763,29 @@ function Spells.getSpellByWords(words)
       end
   end
   return nil
+end
+
+-- True when the words name a spell the server casts at a picked tile, so the
+-- client has to prompt for one instead of just speaking.
+function Spells.needsPosition(words)
+  if not words or words == '' then return false end
+
+  local spell = Spells.getSpellByWords(words)
+  return (spell and spell.needPosition) == true
+end
+
+-- Single entry point for casting, so every caller (spell list, action bar, hotkeys)
+-- gets the crosshair prompt without repeating the decision. Words that are not a
+-- known spell just go out as plain speech.
+function Spells.cast(words)
+  if not words or words == '' then return end
+
+  if Spells.needsPosition(words) and modules.game_interface then
+    modules.game_interface.startAimedCast(words)
+    return
+  end
+
+  g_game.talk(words)
 end
 
 -- Reverse index id -> {spell, profile, name}, built once on first use. SpellInfo

@@ -1055,15 +1055,26 @@ void Game::talkChannel(Otc::MessageMode mode, int channelId, const std::string& 
 {
     if(!canPerformGameAction() || message.empty())
         return;
-        
-    m_protocolGame->sendTalk(mode, channelId, "", message, m_localPlayer->getPosition(), m_localPlayer->getDirection());
+
+    m_protocolGame->sendTalk(mode, channelId, "", message);
 }
 
 void Game::talkPrivate(Otc::MessageMode mode, const std::string& receiver, const std::string& message)
 {
     if(!canPerformGameAction() || receiver.empty() || message.empty())
         return;
-    m_protocolGame->sendTalk(mode, 0, receiver, message, m_localPlayer->getPosition(), m_localPlayer->getDirection());
+    m_protocolGame->sendTalk(mode, 0, receiver, message);
+}
+
+// Casts at a tile the player picked with the crosshair. The server stores the tile
+// and hands it to spells declared with needPosition; without it they fall back to
+// the caster's own position.
+void Game::talkAimed(const std::string& message, const Position& aimPos)
+{
+    if(!canPerformGameAction() || message.empty() || !aimPos.isValid())
+        return;
+
+    m_protocolGame->sendTalk(Otc::MessageSay, 0, "", message, aimPos, 1);
 }
 
 void Game::openPrivateChannel(const std::string& receiver)

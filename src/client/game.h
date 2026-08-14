@@ -224,6 +224,7 @@ public:
 
     // talk related
     void talk(const std::string& message);
+    void talkAimed(const std::string& message, const Position& aimPos);
     void talkChannel(Otc::MessageMode mode, int channelId, const std::string& message);
     void talkPrivate(Otc::MessageMode mode, const std::string& receiver, const std::string& message);
 

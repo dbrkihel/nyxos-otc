@@ -2416,7 +2416,7 @@ function onExecuteAction(widget)
   if widget.isSpell or widget.isText then
     if widget.sendAutomatic then
       if widget.isSpell then
-        g_game.talk(widget.words)
+        Spells.cast(widget.words)
       else
         modules.game_console.sendMessage(widget.words)
       end

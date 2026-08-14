@@ -62,8 +62,20 @@ parser.
 
 ## Technical conventions
 
-**Lua is 5.1.** No `goto`, no integer division operator, no bitwise operators.
-`luac5.1 -p yourfile.lua` catches syntax mistakes before you run the client.
+**Lua is LuaJIT** (`LUAJIT=ON`), so `goto` and labels are valid and module code
+uses them. Check syntax with `luajit -bl yourfile.lua`, never `luac5.1 -p` —
+5.1 rejects valid code with `'=' expected near 'continue'`.
+
+**Run the specs** before opening a PR — they take seconds and CI runs them on
+every push:
+
+```bash
+tests/run.sh
+```
+
+They parse every Lua module and cover pure logic (routing decisions, lookup
+tables, handler contracts). If your change touches logic that can be tested
+headless, add a spec — see [`tests/README.md`](tests/README.md).
 
 **Line endings.** `.otui` and `.otmod` files are CRLF; Lua and C++ are LF. A
 regex or script that assumes the wrong one will silently match nothing. If your

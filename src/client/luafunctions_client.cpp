@@ -287,6 +287,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "cancelFollow", &Game::cancelFollow, &g_game);
     g_lua.bindSingletonFunction("g_game", "cancelAttackAndFollow", &Game::cancelAttackAndFollow, &g_game);
     g_lua.bindSingletonFunction("g_game", "talk", &Game::talk, &g_game);
+    g_lua.bindSingletonFunction("g_game", "talkAimed", &Game::talkAimed, &g_game);
     g_lua.bindSingletonFunction("g_game", "talkChannel", &Game::talkChannel, &g_game);
     g_lua.bindSingletonFunction("g_game", "talkPrivate", &Game::talkPrivate, &g_game);
     g_lua.bindSingletonFunction("g_game", "openPrivateChannel", &Game::openPrivateChannel, &g_game);

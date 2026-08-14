@@ -1032,7 +1032,7 @@ void ProtocolGame::sendLookCreature(uint32 creatureId)
     send(msg);
 }
 
-void ProtocolGame::sendTalk(Otc::MessageMode mode, int channelId, const std::string& receiver, const std::string& message, const Position& pos, Otc::Direction dir)
+void ProtocolGame::sendTalk(Otc::MessageMode mode, int channelId, const std::string& receiver, const std::string& message, const Position& aimPos, uint8 aimMode)
 {
     if(message.empty())
         return;
@@ -1064,32 +1064,14 @@ void ProtocolGame::sendTalk(Otc::MessageMode mode, int channelId, const std::str
 
     msg->addString(message);
 
-    if(g_game.getFeature(Otc::GameNewWalking)) {
-        // fix for spell direction
-        addPosition(msg, pos);
-        uint8 byte;
-        switch(dir) {
-            case Otc::East:
-            case Otc::NorthEast:
-            case Otc::SouthEast:
-                byte = 1;
-                break;
-            case Otc::North:
-                byte = 3;
-                break;
-            case Otc::SouthWest:
-            case Otc::NorthWest:
-            case Otc::West:
-                byte = 5;
-                break;
-            case Otc::South:
-                byte = 7;
-                break;
-            default:
-                byte = 0;
-                break;
-        }
-        msg->addU8(byte);
+    // 15.25 appends the aimed tile so crossHairTarget spells land where the player
+    // clicked. Replaces the old OTCv8 tail (position then a direction byte), which
+    // sat behind a feature flag this client never enables and had the bytes in the
+    // opposite order -- the server would have read the position as the mode.
+    if(g_game.getClientVersion() >= 1525) {
+        msg->addU8(aimMode);
+        if(aimMode != 0)
+            addPosition(msg, aimPos);
     }
 
     send(msg);

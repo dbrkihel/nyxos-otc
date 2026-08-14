@@ -12,6 +12,20 @@ on:
 # drop your own into data/things/1525 and data/sounds before running.
 
 jobs:
+  # Seconds, not minutes: this parses every Lua module and runs the unit specs,
+  # so a broken module fails here instead of after a 40-minute vcpkg build.
+  lua:
+    name: Lua specs
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LuaJIT
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends luajit
+
+      - name: Run specs
+        run: ./tests/run.sh
+
   windows:
     name: Windows (x64)
     runs-on: windows-latest

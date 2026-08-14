@@ -112,7 +112,9 @@ public:
     void sendEditList(uint id, int doorId, const std::string& text);
     void sendLook(const Position& position, int thingId, int stackpos);
     void sendLookCreature(uint creatureId);
-    void sendTalk(Otc::MessageMode mode, int channelId, const std::string& receiver, const std::string& message, const Position& pos, Otc::Direction dir);
+    // aimMode: 0 = none, 1 = cursor position, 2 = crosshair. The tile only goes on
+    // the wire when it is non-zero, which is what the server expects.
+    void sendTalk(Otc::MessageMode mode, int channelId, const std::string& receiver, const std::string& message, const Position& aimPos = Position(), uint8 aimMode = 0);
     void sendRequestChannels();
     void sendJoinChannel(int channelId);
     void sendLeaveChannel(int channelId);

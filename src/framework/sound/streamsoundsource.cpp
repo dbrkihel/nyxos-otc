@@ -73,8 +73,15 @@ void StreamSoundSource::stop()
 {
     m_playing = false;
 
-    if(m_waitingFile)
+    // Cancel a pending play instead of just leaving the flag set: setSoundFile
+    // replays whatever is still marked as waiting, so a source stopped mid-load
+    // came back to life once the file arrived. By then the channel had already
+    // replaced it, leaving an orphan nothing could reach to stop again -- which
+    // is how the login theme kept looping after entering the world.
+    if(m_waitingFile) {
+        m_waitingFile = false;
         return;
+    }
 
     SoundSource::stop();
     unqueueBuffers();

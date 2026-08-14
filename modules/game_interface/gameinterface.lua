@@ -945,6 +945,8 @@ function onMouseGrabberRelease(self, mousePosition, mouseButton)
         onUseWith(clickedWidget, mousePosition)
       elseif selectedType == 'trade' then
         onTradeWith(clickedWidget, mousePosition)
+      elseif selectedType == 'aim' then
+        onAimedCast(clickedWidget, mousePosition)
       end
     end
   end
@@ -994,6 +996,34 @@ function onTradeWith(clickedWidget, mousePosition)
       g_game.requestTrade(selectedThing, creature)
     end
   end
+end
+
+-- Crosshair spells: selectedThing carries the spell words instead of a Thing,
+-- which selectedType == 'aim' is what tells the release handler.
+function onAimedCast(clickedWidget, mousePosition)
+  if clickedWidget:getClassName() ~= 'UIGameMap' then return end
+
+  local tile = clickedWidget:getTile(mousePosition)
+  if not tile then return end
+
+  g_game.talkAimed(selectedThing, tile:getPosition())
+end
+
+function startAimedCast(words)
+  gameMapPanel:blockNextMouseRelease()
+  if not words or words == '' then return end
+  if g_ui.isMouseGrabbed() then
+    if selectedThing then
+      selectedThing = words
+      selectedType = 'aim'
+    end
+    return
+  end
+  selectedType = 'aim'
+  selectedThing = words
+  g_mouse.updateGrabber(mouseGrabberWidget, 'target')
+  mouseGrabberWidget:grabMouse()
+  g_mouse.pushCursor('target')
 end
 
 function startUseWith(thing, subType)

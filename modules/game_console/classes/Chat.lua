@@ -819,6 +819,14 @@ function Chat:sendInDefaultChannel(tab, channel, command, messageMode, message)
         channel = DEFAULT_CHANNEL_ID
     end
 
+    -- Typing a crosshair spell has to open the aim prompt just like the action
+    -- bar does; without this it would go out as plain speech and the server
+    -- would land the spell on the caster instead of the picked tile.
+    if messageModeDesc == MessageModes.Say and Spells.needsPosition(message) then
+        modules.game_interface.startAimedCast(message)
+        return
+    end
+
     g_game.talkChannel(messageModeDesc, channel, message)
 end
 
