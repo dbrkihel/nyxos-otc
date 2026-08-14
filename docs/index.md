@@ -18,14 +18,16 @@ which server-side changes some features need.
 
 | Page | What it covers |
 |---|---|
+| [Running a prebuilt build](prebuilt.md) | **No compiler needed.** Download the executable and get it running |
 | [Building on Windows](building-windows.md) | Visual Studio, vcpkg, the build script, common failures |
 | [Building on Linux](building-linux.md) | Package list, CMake flags, known caveats |
 | [Getting started](getting-started.md) | Assets, `config.lua`, first run |
 | [Server-side changes](server-side.md) | What your server needs for ambience, sounds and the HWID handshake |
 
-Prefer not to compile at all? Every push to `main` produces Windows and Linux
-binaries under the repository's **Actions** tab, and tagged releases attach them
-as downloadable archives. You still need to supply game assets yourself.
+**Just want to try it?** You do not need a compiler. Every push to `main`
+produces a Windows and a Linux executable — take one, combine it with a clone of
+this repository and your own game assets, and you have a running client.
+[Step by step](prebuilt.md).
 
 ---
 

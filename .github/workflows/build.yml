@@ -57,14 +57,15 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
+      # Binary and its runtime DLLs only. data/, modules/ and mods/ come from a
+      # clone of this repository -- shipping them here would put ~180 MB of
+      # unchanged art in every artifact. See docs/prebuilt.md.
       - name: Stage artifact
         shell: pwsh
         run: |
           New-Item -ItemType Directory dist | Out-Null
           Copy-Item build\NyxosClient.exe dist\
           Copy-Item build\*.dll dist\ -ErrorAction SilentlyContinue
-          Copy-Item -Recurse data, modules, mods dist\
-          Copy-Item init.lua, config.example.lua, README.md, LICENSE, CREDITS.md dist\
 
       - uses: actions/upload-artifact@v4
         with:
@@ -101,12 +102,12 @@ jobs:
       - name: Build
         run: cmake --build build
 
+      # Binary only; it links against system libraries and the rest of the tree
+      # comes from a clone. See docs/prebuilt.md.
       - name: Stage artifact
         run: |
           mkdir -p dist
           cp build/NyxosClient dist/
-          cp -r data modules mods dist/
-          cp init.lua config.example.lua README.md LICENSE CREDITS.md dist/
 
       - uses: actions/upload-artifact@v4
         with:
@@ -138,6 +139,8 @@ jobs:
           body: |
             Client binaries for ${{ github.ref_name }}.
 
-            Tibia game assets are not included. Drop your own into
-            `data/things/1525` and `data/sounds` before running --
-            see the README.
+            These archives hold the **executable only**. To run it you also need
+            this repository's `data/`, `modules/` and `mods/` directories, plus
+            your own Tibia game assets.
+
+            Step by step: https://dbrkihel.github.io/nyxos-otc/prebuilt.html

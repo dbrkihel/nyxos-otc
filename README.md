@@ -14,9 +14,11 @@ Maintained by **BRKiHeL**.
 build guides for Windows and Linux, setup, and the server-side changes some
 features need. Also readable directly in [`docs/`](docs/).
 
-**Prebuilt binaries:** every push to `main` produces Windows and Linux builds
-under [Actions](https://github.com/dbrkihel/nyxos-otc/actions); tagged releases
-attach them as archives. You still supply your own assets.
+**Want to try it without compiling?** Every push to `main` produces a Windows and
+a Linux executable under [Actions](https://github.com/dbrkihel/nyxos-otc/actions),
+and tagged releases attach them as archives. Combine one with a clone of this
+repository and your own game assets —
+[step by step](https://dbrkihel.github.io/nyxos-otc/prebuilt.html).
 
 ---
 
