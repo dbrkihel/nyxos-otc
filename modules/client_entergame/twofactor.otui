@@ -1,0 +1,48 @@
+MainWindow
+  id: twofactor
+  !text: tr('Two-Factor Authentication')
+  size: 360 135
+  anchors.horizontalCenter: parent.horizontalCenter
+  anchors.verticalCenter: parent.verticalCenter
+
+  Label
+    id: messageLabel
+    !text: tr('Please enter a new, valid token')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-auto-resize: true
+    text-wrap: true
+
+  TextEdit
+    id: tokenEnter
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    padding-left: 4
+    margin-top: 10
+    only-number: true
+
+  HorizontalSeparator
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+
+  Button
+    id: cancelButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    !text: tr('Cancel')
+    size: 40 18
+    font: cipsoftFont
+  Button
+    id: okButton
+    anchors.bottom: parent.bottom
+    anchors.right: prev.left
+    margin-right: 5
+    !text: tr('Ok')
+    size: 40 18
+    font: cipsoftFont

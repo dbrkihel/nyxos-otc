@@ -1,0 +1,313 @@
+ConsoleWindow < Panel
+  id: console
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  FlatPanel
+    size: 505 22
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showInfoMessagesInConsole
+      size: 12 12
+      !text: tr('Show Info Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever you examine character\'s or items you receive a green \nmessage that will be displayed both in the game window and in the \nconsole. By deselecting this option it is possible to deactivate info \nmessages in the console.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showEventMessagesInConsole
+      size: 12 12
+      !text: tr('Show Event Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Game events such as skill or level advances are displayed in white \nwriting. If this option is disabled, event messages will not be \ndisplayed in the console. However, they will be displayed in the \ngame window normally unless you have turned messages off.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showStatusMessagesInConsole
+      size: 12 12
+      !text: tr('Show Status Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Status messages include changes in your character\'s condition \nsuch as hit point loss or poisoning as well as a number of messages \nthat relate to different topics. Although they are displayed at the \nbottom of the game window they are similar to event messages in \nthat they are displayed in white writing. You can deactivate status \nmessages in the console by removing the tick from this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showSpellChat
+      size: 12 12
+      !text: tr('Display Spells in Other Channels')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-store-sale
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If this option is checked, spells will be displayed in a separate \nchannel instead of being mixed with other messages. This helps \nkeep your console organized and easier to read.')
+
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showStatusOthersMessagesInConsole
+      size: 12 12
+      !text: tr('Show Status Messages of Others')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If this option is checked, you will see, among others, how many hit \npoints monsters and character\'s around you lose in a fight or gain \nthrough healing.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: openPrivateMessageInNewTab
+      size: 12 12
+      !text: tr('Open New Tabs When Receiving Private Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If this option is checked, a new tab will open automatically \nwhenever you receive a private message from someone you are \nnot already chatting with.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showTimestampsInConsole
+      size: 12 12
+      !text: tr('Show Timestamps')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If this option is checked, a timestamp showing hours and minutes \nwill be added to any message that is displayed in the game window. \nNote that the time that is set on your computer is displayed.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showSecondTimestampsInConsole
+      size: 12 12
+      !text: tr('Show Seconds in Timestamps')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If this option is checked in addition to "Show Timestamps", the \ntimestamps added to messages in the game window will include \nhours, minutes and seconds.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showLevelsInConsole
+      size: 12 12
+      !text: tr('Show Levels')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you check this option, the level of a character will be displayed \nin brackets behind the character\'s name whenever this character \nsays something in the console.')
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings.resetConsole()

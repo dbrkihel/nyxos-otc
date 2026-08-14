@@ -1,0 +1,320 @@
+UiSoundsWindow < Panel
+  id: uiSounds
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  Label
+    id: warningVolumeLabel
+    height: 25
+    !text: tr('The sound is currently deactivated.\nIncrease the master volume in the Options menu "Sound".')
+    font: $var-cip-font
+    color: #ff9854
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 3
+    margin-left: 4
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    Label
+      id: uiVolumeLabel
+      !text: tr('UI Volume: 100 %%')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 3
+      margin-left: 4
+
+    SettingsHorizontalScrollBar
+      id: uiVolumeScrollBar
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 1
+      margin-right: 4
+      margin-top: 2
+      pixels-scroll: true
+      minimum: 0
+      maximum: 100
+      value: 100
+
+      $!on:
+        width: 0
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: uiSounds
+      size: 12 12
+      !text: tr('UI interactions')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+  FlatPanel
+    size: 505 39
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: partySounds
+      size: 12 12
+      !text: tr('Join/leave Party')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: vipSounds
+      size: 12 12
+      !text: tr('VIP login/logout')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+  FlatPanel
+    size: 505 175
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: consoleMessageSounds
+      size: 12 12
+      !text: tr('Console Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: partyMessageSounds
+      size: 12 12
+      !text: tr('Party')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: guildMessageSounds
+      size: 12 12
+      !text: tr('Guild')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: privateLocalMessageSounds
+      size: 12 12
+      !text: tr('Privates Messages in Local Chat')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: privateMessageSounds
+      size: 12 12
+      !text: tr('Privates Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.top
+      anchors.right: parent.right
+      margin-right: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Tick this box if you like to hear a sound when a new message \nappears in a private chat channel or in a private conversation with \nanother player.')
+
+    SettingsCheckBox
+      id: npcMessageSounds
+      size: 12 12
+      !text: tr('NPCs')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: globalMessageSounds
+      size: 12 12
+      !text: tr('Global')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.top
+      anchors.right: parent.right
+      margin-right: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Tick this box if you like to hear a sound when a new message \nappears on a public channel, e.g., Advertising, English Chat or World \nChat Channel.')
+
+    SettingsCheckBox
+      id: finderMessageSounds
+      size: 12 12
+      !text: tr('Team Finder')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: raidMessageSounds
+      size: 12 12
+      !text: tr('Raid Announcements')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    SettingsCheckBox
+      id: systemMessageSounds
+      size: 12 12
+      !text: tr('System Announcements')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: false
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.top
+      anchors.right: parent.right
+      margin-right: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Tick this box if you like to hear a sound when a new message for \nthe whole game world appears, e.g., the game world is going down \nor a Nyxos member makes an important announcement.')
+
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings.resetUiSounds()

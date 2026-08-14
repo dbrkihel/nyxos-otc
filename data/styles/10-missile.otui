@@ -1,0 +1,2 @@
+Missile < UIMissile
+  size: 32 32

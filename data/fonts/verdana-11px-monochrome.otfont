@@ -1,0 +1,7 @@
+Font
+  name: verdana-11px-monochrome
+  ttf-file: verdana.ttf
+  size: 11
+  ttf-outline: false
+  height: 14
+  baseline: 11

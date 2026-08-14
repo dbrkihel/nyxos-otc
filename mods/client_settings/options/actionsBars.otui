@@ -1,0 +1,608 @@
+ActionsWindow < Panel
+  id: actionsBars
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  FlatPanel
+    size: 505 65
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    Label
+      id: bottomActLabel
+      !text: tr('Show Bottom Action Bars:')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+
+    SettingsCheckBox
+      id: allActionBar13
+      size: 12 12
+      !text: tr('All')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowBottom1
+      size: 12 12
+      !text: tr('Bar 1')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowBottom2
+      size: 12 12
+      !text: tr('Bar 2')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowBottom3
+      size: 12 12
+      !text: tr('Bar 3')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Tick the action bar(s) you like to have displayed in your interface. \nThere will be no action bars displayed if you decide not to tick any.')
+
+    Label
+      id: leftActionLabel
+      !text: tr('Show Left Action Bars:')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: bottomActLabel.bottom
+      margin-top: 5
+      margin-left: 4
+
+    SettingsCheckBox
+      id: allActionBar46
+      size: 12 12
+      !text: tr('All')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 30
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowLeft1
+      size: 12 12
+      !text: tr('Bar 1')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowLeft2
+      size: 12 12
+      !text: tr('Bar 2')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowLeft3
+      size: 12 12
+      !text: tr('Bar 3')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    Label
+      id: rightActionLabel
+      !text: tr('Show Right Action Bars:')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: leftActionLabel.bottom
+      margin-top: 5
+      margin-left: 4
+
+    SettingsCheckBox
+      id: allActionBar79
+      size: 12 12
+      !text: tr('All')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 23
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowRight1
+      size: 12 12
+      !text: tr('Bar 1')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowRight2
+      size: 12 12
+      !text: tr('Bar 2')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: actionBarShowRight3
+      size: 12 12
+      !text: tr('Bar 3')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: prev.right
+      anchors.top: prev.top
+      margin-left: 10
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showAssignedHKButton
+      size: 12 12
+      !text: tr('Show Assigned Hotkey for Action Button')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you have assigned a hotkey to an action button, tick this box to \ndisplay the selected key or key combination in the action bar.')
+
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showHKObjectsBars
+      size: 12 12
+      !text: tr('Show Amount of Assigned Objects')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Check this box if you like to see the amount of an object assigned \nto an action button. It is always wise to know if you have a \nsufficient amount of attack runes and healing potions left before \nyou challenge your next enemy.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showSpellParameters
+      size: 12 12
+      !text: tr('Show Spell Parameters')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Some spells require a certain parameter such as "up" or "down" or \na character, creature or item name. If you tick this box, you can \nsee the added parameter right on the action button to which the \nspell is assigned.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: graphicalCooldown
+      size: 12 12
+      !text: tr('Show Graphical Cooldown')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('All spells have a certain cooldown before they can be used again. \nIf you have assigned a spell to an action button and tick this box, \nthe cooldown will be displayed in a graphical manner, resembling a \nclock running a full round.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: cooldownSecond
+      size: 12 12
+      !text: tr('Show Cooldown in Seconds')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('All spells have a certain cooldown before they can be used again. \nIf you have assigned a spell to an action button and tick this box, \nthe cooldown will be displayed in numbers counting down.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: actionTooltip
+      size: 12 12
+      !text: tr('Show Action Button Tooltip')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you hover your mouse pointer over an action button, a tooltip \nwill appear telling you which action and which hotkey is assigned to \nthis action button as well as other useful information concerning \nthe action. Uncheck this box if you prefer not to see these tooltips.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: autoInsertNewSpells
+      size: 12 12
+      !text: tr('Auto-Insert New Spells')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you have checked this box, a spell you have just learned will be \nassigned to the first free slot of your action bars automatically.')
+
+  FlatPanel
+    size: 505 85
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    Label
+      id: clearBottomLabel
+      !text: tr('Clear Bottom Action Bars:')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+
+    Button
+      id: bar1Button
+      size: 43 20
+      !text: tr('Bar 1')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-left: 10
+      @onClick: modules.client_settings.resetAction(1)
+
+    Button
+      id: bar2Button
+      size: 43 20
+      !text: tr('Bar 2')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-bottom: 4
+      margin-left: 11
+      @onClick: modules.client_settings.resetAction(2)
+
+    Button
+      id: bar3Button
+      size: 43 20
+      !text: tr('Bar 3')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-bottom: 4
+      margin-left: 11
+      @onClick: modules.client_settings.resetAction(3)
+
+    Label
+      id: clearleftLabel
+      !text: tr('Clear Left Action Bars:')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: clearBottomLabel.bottom
+      margin-top: 11
+      margin-left: 4
+
+    Button
+      id: leftBar1Button
+      size: 43 20
+      !text: tr('Bar 1')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-left: 30
+      @onClick: modules.client_settings.resetAction(4)
+
+    Button
+      id: leftBar2Button
+      size: 43 20
+      !text: tr('Bar 2')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-bottom: 4
+      margin-left: 11
+      @onClick: modules.client_settings.resetAction(5)
+
+    Button
+      id: leftBar3Button
+      size: 43 20
+      !text: tr('Bar 3')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-bottom: 4
+      margin-left: 11
+      @onClick: modules.client_settings.resetAction(6)
+
+    Label
+      id: clearRightLabel
+      !text: tr('Clear Right Action Bars:')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: clearleftLabel.bottom
+      margin-top: 11
+      margin-left: 4
+
+    Button
+      id: rightBar1Button
+      size: 43 20
+      !text: tr('Bar 1')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-left: 23
+      @onClick: modules.client_settings.resetAction(7)
+
+    Button
+      id: rightBar2Button
+      size: 43 20
+      !text: tr('Bar 2')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-bottom: 4
+      margin-left: 11
+      @onClick: modules.client_settings.resetAction(8)
+
+    Button
+      id: rightBar3Button
+      size: 43 20
+      !text: tr('Bar 3')
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-bottom: 4
+      margin-left: 11
+      @onClick: modules.client_settings.resetAction(9)
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you click on one of the buttons to clear an action bar, all \nactions assigned to an action button in the selected action bar will \nbe removed immediately. Hotkeys, however, will stay bonded to the \naction buttons to which they have been assigned. They can only be \nremoved via the context menu.')
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings.resetActionBars()

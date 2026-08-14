@@ -1,0 +1,8 @@
+Module
+  name: game_search_locker
+  description: Depot Locker Search
+  author: Christianlb && ...
+  sandboxed: true
+  scripts: [ searchlocker ]
+  @onLoad: init()
+  @onUnload: terminate()

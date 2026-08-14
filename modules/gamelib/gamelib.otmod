@@ -1,0 +1,32 @@
+Module
+  name: gamelib
+  description: Contains game related classes
+  author: Mateuzkl / Equipe Skyyzyy
+  website: https://github.com/Mateuzkl/NyxosClient
+
+  @onLoad: |
+    dofile 'const'
+    dofile 'util'
+    dofile 'protocol'
+    dofile 'protocolgame'
+    dofile 'position'
+    dofile 'game'
+
+    dofile 'creature'
+    dofile 'player'
+    dofile 'textmessages'
+    dofile 'thing'
+    dofile 'spells'
+    dofile 'item'
+    dofile 'dynamic_items'
+    dofile 'rangedMonsterNames'
+    dofile 'core/player'
+    dofile 'core/monster'
+    dofile 'core/tile'
+    dofile 'core/party'
+    dofile 'core/realmap'
+    dofile 'core/markers'
+    dofile 'core/regions'
+    dofile 'market'
+
+    dofiles 'ui'

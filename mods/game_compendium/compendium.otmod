@@ -1,0 +1,9 @@
+Module
+  name: game_compendium
+  description: compendium
+  author: Ryukiimaru
+  website: https://www.instagram.com/systemyart.dev/
+  sandboxed: true
+  scripts: [ compendium ]
+  @onLoad: init()
+  @onUnload: terminate()

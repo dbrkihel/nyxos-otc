@@ -1,0 +1,66 @@
+VipListLabel < GameLabel
+  margin-top: 2
+  text-offset: 16 0
+  image-rect: 0 0 12 12
+  image-clip: 0 0 12 12
+  image-source: /images/game/viplist/icons
+  font: Verdana Bold-11px
+  phantom: false
+
+  $first:
+    margin-top: 5
+
+VipGroupList < UIWidget
+  size: 156 20
+  margin-top: 6
+
+  Label
+    id: group
+    anchors.top: parent.top
+    anchors.left: parent.left
+    font: Verdana Bold-11px
+    color: #f7f7f7
+    text-align: topLeft
+    !text: tr('No Group')
+    text-auto-resize: true
+
+  HorizontalSeparator
+    width: 158
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 15
+
+  Panel
+    id: panel
+    size: 156 45
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 16
+    layout:
+      type: verticalBox
+      fit-children: true
+
+MiniWindow
+  id: vipWindow
+  &type: 'vip'
+  !text: tr('VIP')
+  height: 100
+  icon: /images/icons/icon-vip-widget
+  @onClose: modules.game_viplist.onMiniWindowClose()
+
+  MiniWindowContents
+    layout: verticalBox
+    padding-left: 5
+    padding-right: 5
+    padding-bottom: 1
+    margin-top: 15
+    &onMousePress: modules.game_viplist.onVipListMousePress
+
+  UIWidget
+    id: miniborder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    image-source: /images/ui/miniborder
+    size: 14 14
+    margin-left: 2
+    margin-bottom: 2

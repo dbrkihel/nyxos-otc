@@ -1,0 +1,250 @@
+// NPC dialogue window. Metrics from NpcDialog.qml / TibiaDialog.qml.
+
+// A UITextEdit, not a Label: processCodeTags -- which turns the [text-event]
+// markers into clickable keywords -- lives there. Needs an explicit height
+// because a UITextEdit starts at zero and text-auto-resize grows from that.
+NpcDialogMessage < UITextEdit
+  font: $var-cip-font
+  color: #5FF7F7
+  height: 14
+  text-wrap: true
+  text-auto-resize: true
+  margin-left: 2
+  margin-right: 2
+  margin-top: 1
+  selection-color: #ffffff
+  selection-background-color: #808080
+  change-cursor-image: false
+  cursor-visible: false
+  editable: false
+  draggable: false
+  selectable: false
+  focusable: false
+
+// 36 rather than the official 35: a 32px icon in 35 leaves 3px of slack, which
+// does not split evenly. icon-offset was measured on screen -- the geometry says
+// it should already be centred, so do not reset it to zero.
+NpcDialogButton < Button
+  size: 36 36
+  padding: 0
+  icon-source: /images/game/npcdialog/icons-npcdialog
+  icon-size: 32 32
+  icon-align: center
+  icon-offset: 2 2
+  tooltip-delayed: true
+
+// Fallback for optionIds 20+, which have no icon on the sheet.
+NpcDialogTextButton < Button
+  height: 36
+  font: $var-cip-font
+
+NpcDialogWindow < MainWindow
+  id: npcDialogWindow
+  !text: tr('Conversation')
+  size: 600 415
+  &minContentHeight: 350
+
+  // Title-only dragging, so grabbing a resize edge cannot also move the window.
+  &htmlTitleDragOnly: true
+  &htmlTitleDragHeight: 27
+
+  @onEscape: modules.game_npcdialog.close()
+
+  // Sits outside the padding rect, so it never receives clicks: npcdialog.lua
+  // handles the press on the window. Atlas is up at y 0, down at y 12.
+  UIButton
+    id: exitButton
+    size: 12 12
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: -32
+    margin-right: -12
+    image-source: /images/game/npcdialog/exit-button
+    image-clip: 0 0 12 12
+    !tooltip: tr('Close')
+    tooltip-delayed: true
+
+  // TibiaFrame3Pixel: a 3px frame, not a flat panel.
+  Panel
+    id: chatFrame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: buttonsPanel.top
+    margin-top: 0
+    margin-left: 0
+    margin-right: 0
+    margin-bottom: 5
+    image-source: /images/ui/3pixel-frame-borderimage
+    image-border: 3
+    padding: 3
+
+    // align-bottom stacks speech from the bottom up. No fit-children: it makes
+    // the panel resize itself, which retriggers the parent layout forever.
+    ScrollablePanel
+      id: chatBuffer
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: chatScroll.left
+      anchors.bottom: parent.bottom
+      vertical-scrollbar: chatScroll
+      margin-right: 2
+      padding: 2
+      inverted-scroll: true
+      layout:
+        type: verticalBox
+        align-bottom: true
+
+    VerticalScrollBar
+      id: chatScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 16
+      pixels-scroll: true
+
+  // Banner and podestal are children of the WINDOW, only anchored to chatFrame:
+  // drawChildren drops any child whose rect misses its parent's, and both hang
+  // above the frame. Declared after it so the stack reads frame, banner,
+  // podestal -- the podestal's z: 10 in QML.
+  //
+  // margin-left -16 cancels the padding and puts the ribbon on x 0 of the
+  // window, which lands its crease (asset columns 77-78) exactly on the
+  // podestal's right edge.
+  UIWidget
+    id: captionFlag
+    image-source: /images/game/npcdialog/caption-flag
+    image-border-left: 89
+    image-border-right: 34
+    image-repeated: true
+    height: 27
+    width: 169
+    anchors.top: chatFrame.top
+    anchors.left: chatFrame.left
+    margin-top: -42
+    margin-left: -16
+    phantom: true
+
+    Label
+      id: captionFlagText
+      font: $var-cip-font
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-left: 87
+      margin-right: 12
+      margin-top: 8
+      phantom: true
+
+  UIWidget
+    id: podestal
+    image-source: /images/game/npcdialog/backdrop-npcdialog-podestal
+    size: 65 67
+    anchors.top: chatFrame.top
+    anchors.left: chatFrame.left
+    margin-top: -40
+    margin-left: -4
+    phantom: true
+
+    Creature
+      id: npcOutfit
+      size: 64 64
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-right: 14
+      margin-bottom: 15
+      image-source:
+      border-width: 0
+      phantom: true
+
+    UIWidget
+      id: npcOutfitFallback
+      image-source: /images/game/npcdialog/icon-npcdialog-multiplenpcs
+      size: 57 58
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-right: 14
+      margin-bottom: 15
+      visible: false
+      phantom: true
+
+  // Born with no height so a conversation without shortcuts leaves no empty band.
+  Panel
+    id: buttonsPanel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: chatInput.top
+    margin-left: 0
+    margin-bottom: 5
+    height: 0
+    layout:
+      type: horizontalBox
+      spacing: 5
+
+  TextEdit
+    id: chatInput
+    anchors.left: parent.left
+    anchors.right: chatOffButton.left
+    anchors.bottom: parent.bottom
+    margin-left: 0
+    margin-right: 6
+    !placeholder: tr('Type here to chat')
+
+  Button
+    id: chatOffButton
+    !text: tr('Chat Off')
+    width: 80
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    @onClick: modules.game_npcdialog.close()
+
+  // contentLayout in the QML is one row: [chat][separator][NpcTrade 180], all
+  // inside this window. Hidden until an NPC opens trade.
+  // Both columns are Layout.fillHeight inside contentLayout, so the trade side
+  // runs to the same bottom as the chat input, not to the top of it.
+  VerticalSeparator
+    id: tradeSeparator
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: tradePanel.left
+    margin-right: 10
+    visible: false
+
+  Panel
+    id: tradePanel
+    width: 180
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    visible: false
+
+  // customButtonComponent in NpcDialog.qml: sits left of the X, spacing 4, and
+  // only while trade is open.
+  UIButton
+    id: tradeMenuButton
+    size: 12 12
+    anchors.top: exitButton.top
+    anchors.right: exitButton.left
+    margin-right: 4
+    image-source: /images/ui/miniwindow_buttons
+    image-clip: 113 1 12 12
+    !tooltip: tr('Configure trade')
+    tooltip-delayed: true
+    visible: false
+
+    $hover:
+      image-clip: 113 15 12 12
+
+  // Visual only -- resizing is handled on the window, in setupWindowResize().
+  // The asset points bottom-left, hence the rotation; there is no mirror.
+  UIWidget
+    id: resizeGrip
+    image-source: /images/ui/windowresizer
+    size: 13 13
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    rotation: 270
+    margin-right: -11
+    margin-bottom: -6
+    phantom: true

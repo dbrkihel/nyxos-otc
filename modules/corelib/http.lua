@@ -1,0 +1,353 @@
+HTTP = {
+  timeout=5,
+  websocketTimeout=15,
+  agent="Mozilla/5.0",
+  imageId=1000,
+  images={},
+  imageFailures={},
+  maxImageFailures=3,
+  operations={},
+}
+
+-- NOTE: the C++ g_http functions take a trailing headers map (Boost 1.85+ port);
+-- the luabinder nil-fills missing args and nil does not cast to a map, so every
+-- call below must pass the headers table explicitly (see postJSON/download).
+function HTTP.get(url, callback)
+  if not g_http or not g_http.get then
+    return error("HTTP.get is not supported")
+  end
+  local operation = g_http.get(url, HTTP.timeout, {})
+  HTTP.operations[operation] = {type="get", url=url, callback=callback}
+  return operation
+end
+
+function HTTP.getJSON(url, callback)
+  if not g_http or not g_http.get then
+    return error("HTTP.getJSON is not supported")
+  end
+  local operation = g_http.get(url, HTTP.timeout, {})
+  HTTP.operations[operation] = {type="get", json=true, url=url, callback=callback}
+  return operation
+end
+
+function HTTP.post(url, data, callback)
+  if not g_http or not g_http.post then
+    return error("HTTP.post is not supported")
+  end
+  if type(data) == "table" then
+    data = json.encode(data)
+  end
+  local operation = g_http.post(url, data, HTTP.timeout, {})
+  HTTP.operations[operation] = {type="post", url=url, callback=callback}
+  return operation
+end
+
+function HTTP.postJSON(url, data, callback)
+  if not g_http or not g_http.post then
+    return error("HTTP.postJSON is not supported")
+  end
+  if type(data) == "table" then
+    data = json.encode(data)
+  end
+  -- g_http.post signature is (url, data, timeout, headers:map<string,string>).
+  -- The legacy 4th arg here was a boolean `isJson` flag, which the Boost 1.85+
+  -- framework port replaced with a headers map — passing `true` crashed with a
+  -- "boolean -> map" cast. Send the JSON content-type header instead.
+  local operation = g_http.post(url, data, HTTP.timeout, { ["Content-Type"] = "application/json" })
+  HTTP.operations[operation] = {type="post", json=true, url=url, callback=callback}
+  return operation
+end
+
+function HTTP.download(url, file, callback, progressCallback)
+  if not g_http or not g_http.download then
+    return error("HTTP.download is not supported")
+  end
+  -- g_http.download signature is (url, path, timeout, headers:map<string,string>);
+  -- the legacy extra "" arg shifted HTTP.timeout into the headers slot, crashing
+  -- with a "number -> map" cast (same Boost 1.85+ port issue as postJSON above)
+  local operation = g_http.download(url, file, HTTP.timeout, {})
+  HTTP.operations[operation] = {type="download", url=url, file=file, callback=callback, progressCallback=progressCallback}
+  return operation
+end
+
+function HTTP.downloadImage(url, callback)
+  if not g_http or not g_http.download then
+    return error("HTTP.downloadImage is not supported")
+  end
+  if HTTP.images[url] ~= nil then
+    if callback then
+      callback('/downloads/' .. HTTP.images[url], nil)
+    end
+    return
+  end
+  -- the store re-requests its icons on every render; stop hammering (and log
+  -- flooding) a URL that already failed repeatedly this session
+  if (HTTP.imageFailures[url] or 0) >= HTTP.maxImageFailures then
+    if callback then
+      callback(nil, "image download given up after repeated failures")
+    end
+    return
+  end
+  local file = "autoimage_" .. HTTP.imageId .. ".png"
+  HTTP.imageId = HTTP.imageId + 1
+  local operation = g_http.download(url, file, HTTP.timeout, {})
+  HTTP.operations[operation] = {type="image", url=url, file=file, callback=callback}
+  return operation
+end
+
+function HTTP.downloadConditionalImage(url, data, callback)
+  if not g_http or not g_http.download then
+    return error("HTTP.downloadImage is not supported")
+  end
+
+  if HTTP.images[url] ~= nil then
+    if callback then
+      callback('/downloads/' .. HTTP.images[url], nil)
+    end
+    return
+  end
+  if (HTTP.imageFailures[url] or 0) >= HTTP.maxImageFailures then
+    if callback then
+      callback(nil, "image download given up after repeated failures")
+    end
+    return
+  end
+
+  local file = "autoimage_" .. HTTP.imageId .. ".png"
+  local imageId = data["id"]
+  if imageId then
+    file = "autoimage_" .. imageId .. ".png"
+  end
+
+  -- the C++ download has no request-body support; fetch as a plain GET
+  HTTP.imageId = HTTP.imageId + 1
+  local operation = g_http.download(url, file, HTTP.timeout, {})
+  HTTP.operations[operation] = {type="image", imageid=imageId, url=url, file=file, callback=callback}
+  return operation
+end
+
+function HTTP.webSocket(url, callbacks, timeout, jsonWebsocket)
+  if not g_http or not g_http.ws then
+    return error("WebSocket is not supported")
+  end
+  if not timeout or timeout < 1 then
+    timeout = HTTP.websocketTimeout
+  end
+  local operation = g_http.ws(url, timeout)
+  HTTP.operations[operation] = {type="ws", json=jsonWebsocket, url=url, callbacks=callbacks}
+  return {
+    id = operation,
+    url = url,
+    close = function()
+      g_http.wsClose(operation)
+    end,
+    send = function(message)
+      if type(message) == "table" then
+        message = json.encode(message)
+      end
+      g_http.wsSend(operation, message)
+    end
+  }
+end
+HTTP.WebSocket = HTTP.webSocket
+
+function HTTP.webSocketJSON(url, callbacks, timeout)
+  return HTTP.webSocket(url, callbacks, timeout, true)
+end
+HTTP.WebSocketJSON = HTTP.webSocketJSON
+
+function HTTP.cancel(operationId)
+  if not g_http or not g_http.cancel then
+    return
+  end
+  HTTP.operations[operationId] = nil
+  return g_http.cancel(operationId)
+end
+
+function HTTP.onGet(operationId, url, err, data)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if err and err:len() == 0 then
+    err = nil
+  end
+  if not err and operation.json then
+    if data:len() == 0 then
+      data = "null"
+    end
+    local status, result = pcall(function() return json.decode(data) end)
+    if not status then
+      err = "JSON ERROR: " .. result
+      if data and data:len() > 0 then
+        err = err .. " (" .. data:sub(1, 100) .. ")"
+      end
+    end
+    data = result
+  end
+  if operation.callback then
+    operation.callback(data, err)
+  end
+end
+
+function HTTP.onGetProgress(operationId, url, progress)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+
+end
+
+function HTTP.onPost(operationId, url, err, data)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if err and err:len() == 0 then
+    err = nil
+  end
+  if not err and operation.json then
+    if data:len() == 0 then
+      data = "null"
+    end
+    local status, result = pcall(function() return json.decode(data) end)
+    if not status then
+      err = "JSON ERROR: " .. result
+      if data and data:len() > 0 then
+        err = err .. " (" .. data:sub(1, 100) .. ")"
+      end
+    end
+    data = result
+  end
+  if operation.callback then
+    operation.callback(data, err)
+  end
+end
+
+function HTTP.onPostProgress(operationId, url, progress)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+end
+
+function HTTP.onDownload(operationId, url, err, path, checksum)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if err and err:len() == 0 then
+    err = nil
+  end
+  if operation["type"] == "image" then
+    if not err then
+      if not string.find(url, "8081") then
+        HTTP.images[url] = path
+      elseif operation["imageid"] then
+        HTTP.images[operation["imageid"]] = path
+      end
+      HTTP.imageFailures[url] = nil
+    else
+      HTTP.imageFailures[url] = (HTTP.imageFailures[url] or 0) + 1
+    end
+  end
+  if operation.callback then
+    if operation["type"] == "image" then
+      operation.callback('/downloads/' .. path, err)
+    else
+      operation.callback(path, checksum, err)
+    end
+  end
+end
+
+function HTTP.onDownloadProgress(operationId, url, progress, speed)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if operation.progressCallback then
+    operation.progressCallback(progress, speed)
+  end
+end
+
+function HTTP.onWsOpen(operationId, message)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if operation.callbacks.onOpen then
+    operation.callbacks.onOpen(message, operationId)
+  end
+end
+
+function HTTP.onWsMessage(operationId, message)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if operation.callbacks.onMessage then
+    if operation.json then
+      if message:len() == 0 then
+        message = "null"
+      end
+      local status, result = pcall(function() return json.decode(message) end)
+      local err = nil
+      if not status then
+        err = "JSON ERROR: " .. result
+        if message and message:len() > 0 then
+          err = err .. " (" .. message:sub(1, 100) .. ")"
+        end
+      end
+      if err then
+        if operation.callbacks.onError then
+          operation.callbacks.onError(err, operationId)
+        end
+      else
+        operation.callbacks.onMessage(result, operationId)
+      end
+    else
+      operation.callbacks.onMessage(message, operationId)
+    end
+  end
+end
+
+function HTTP.onWsClose(operationId, message)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if operation.callbacks.onClose then
+    operation.callbacks.onClose(message, operationId)
+  end
+  -- the C++ WebsocketSession fires exactly one WEBSOCKET_CLOSE on every
+  -- termination path (explicit close, error, timeout) and no events after it;
+  -- operation ids are never reused, so the entry can be dropped here.
+  -- Do NOT delete in onWsError: errors are always followed by a CLOSE event,
+  -- and deleting early would skip the user's onClose callback.
+  HTTP.operations[operationId] = nil
+end
+
+function HTTP.onWsError(operationId, message)
+  local operation = HTTP.operations[operationId]
+  if operation == nil then
+    return
+  end
+  if operation.callbacks.onError then
+    operation.callbacks.onError(message, operationId)
+  end
+end
+
+connect(g_http,
+  {
+    onGet = HTTP.onGet,
+    onGetProgress = HTTP.onGetProgress,
+    onPost = HTTP.onPost,
+    onPostProgress = HTTP.onPostProgress,
+    onDownload = HTTP.onDownload,
+    onDownloadProgress = HTTP.onDownloadProgress,
+    onWsOpen = HTTP.onWsOpen,
+    onWsMessage = HTTP.onWsMessage,
+    onWsClose = HTTP.onWsClose,
+    onWsError = HTTP.onWsError,
+  })
+g_http.setUserAgent(HTTP.agent)

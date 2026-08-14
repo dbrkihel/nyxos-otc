@@ -1,0 +1,330 @@
+HotkeyDescriptionPanel < UIWidget
+  @onFocusChange: modules.client_settings.onCFocusChange(self)
+  background-color: #353535
+  height: 20
+  Label
+    id: action
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 290 20
+    margin-left: 5
+    margin-top: 2
+
+    UIItem
+      id: item
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 15 15
+    Label
+      id: action
+      anchors.left: prev.right
+      anchors.top: parent.top
+    Label
+      id: description
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-left: 5
+      color: gray
+    UIButton
+      id: actionEdit
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 13 13
+      margin-right: 8
+      margin-top: 1
+      margin-bottom: 1
+      image-source: /images/game/actionbar/edit
+      visible: false
+  Label
+    id: firstKey
+    !text: tr('')
+    size: 97 20
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 5
+    color: gray
+    UIButton
+      id: actionEdit
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 13 13
+      margin-right: 10
+      margin-top: 1
+      margin-bottom: 1
+      image-source: /images/game/actionbar/edit
+      visible: false
+  Label
+    id: secondKey
+    !text: tr('')
+    size: 90 20
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 5
+    margin-top: 3
+    color: gray
+    Button
+      id: actionEdit
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 15 15
+      image-source: /images/ui/button-edit
+      visible: false
+
+
+HotkeyPanel < FlatPanel
+  anchors.fill: parent
+  margin: 5 5 5 5
+  ComboBox
+    id: hotkeyOptions
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 3
+    margin-right: 2
+    margin-left: 2
+    size: 285 20
+    text-align: center
+    opacity: 0.7
+    enabled: false
+    @onSetup: |
+      self:addOption("Default")
+      self:addOption("Druid")
+      self:addOption("Knight")
+      self:addOption("Paladin")
+      self:addOption("Sorcerer")
+
+  Button
+    id: add
+    !text: tr('Add')
+    size: 40 20
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 3
+    margin-left: 5
+    font: cipsoftFont
+    enabled: false
+  Button
+    id: copy
+    !text: tr('Copy')
+    size: 40 20
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 3
+    margin-left: 5
+    font: cipsoftFont
+    enabled: false
+  Button
+    id: rename
+    !text: tr('Rename')
+    size: 60 20
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 3
+    margin-left: 5
+    font: cipsoftFont
+    enabled: false
+  Button
+    id: remove
+    !text: tr('Remove')
+    size: 60 20
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 3
+    margin-left: 5
+    font: cipsoftFont
+    enabled: false
+  FlatPanel
+    id: autoSwitchPanel
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    height: 25
+    margin-top: 5
+    margin-left: 3
+    margin-right: 5
+    padding: 5
+    CheckBox
+      id: autoSwitch
+      anchors.top: parent.top
+      anchors.left: parent.left
+      enabled: false
+    Label
+      !text: tr('Auto-Switch Hotkey Preset')
+      anchors.top: parent.top
+      anchors.left: prev.right
+      margin-left: 5
+    ButtonInformation
+      size: 12 12
+      image-source: /images/ui/info
+      image-clip: 0 0 12 12
+      anchors.right: parent.right
+      anchors.top: parent.top
+      !tooltip: tr('If you have named your hotkey presets the same like your\ncharacter\'s and have checked this option, the preset with the same\nname as the corresponding character will be activated upon login\nautomatically')
+      $hover:
+        image-clip: 0 0 12 12
+
+      $pressed:
+        image-clip: 0 0 12 12
+
+  FlatPanel
+    id: chatModePanel
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    height: 25
+    margin-top: 5
+    margin-left: 3
+    margin-right: 5
+    padding: 5
+    CheckBox
+      id: chatOn
+      anchors.top: parent.top
+      anchors.left: parent.left
+      image-source: /images/ui/checkbox_round
+    Label
+      !text: tr('Chat Mode On')
+      anchors.top: parent.top
+      anchors.left: prev.right
+      margin-left: 5
+    CheckBox
+      id: chatOff
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      image-source: /images/ui/checkbox_round
+    Label
+      !text: tr('Chat Mode Off')
+      anchors.top: parent.top
+      anchors.left: prev.right
+      margin-left: 5
+    ButtonInformation
+      size: 12 12
+      image-source: /images/ui/info
+      image-clip: 0 0 12 12
+      anchors.right: parent.right
+      anchors.top: parent.top
+      $hover:
+        image-clip: 0 0 12 12
+
+      $pressed:
+        image-clip: 0 0 12 12
+
+  Label
+    !text: tr('Type to search for a hotkey:')
+    anchors.top: prev.bottom
+    margin-top: 8
+    margin-left: 5
+    anchors.left: parent.left
+    width: 175
+
+  TextEdit
+    id: searchText
+    size: 290 23
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 5
+    max-length: 35
+
+  Button
+    id: clearText
+    anchors.top: prev.top
+    anchors.left: prev.right
+    !text: tr('X')
+    size: 20 20
+    margin-left: 5
+
+  FlatPanel
+    id: panel
+    size: 500 240
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 5
+    Panel
+      id: descLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 485 20
+      background-color: #353535
+      border-width: 1
+      Label
+        !text: tr('Action')
+        anchors.top: parent.top
+        anchors.left: parent.left
+        size: 290 20
+        margin-left: 5
+        margin-top: 2
+      VerticalSeparator
+        id: sep
+        anchors.top: parent.top
+        anchors.left: prev.right
+        height: 20
+      Label
+        !text: tr('First Key')
+        size: 90 20
+        anchors.top: parent.top
+        anchors.left: prev.right
+        margin-left: 5
+        margin-top: 2
+      VerticalSeparator
+        id: sep
+        anchors.top: parent.top
+        anchors.left: prev.right
+        margin-left: 2
+        height: 20
+      Label
+        !text: tr('Second Key')
+        size: 100 20
+        anchors.top: parent.top
+        anchors.left: prev.right
+        margin-left: 5
+        margin-top: 2
+      VerticalSeparator
+        id: sep
+        anchors.top: parent.top
+        anchors.left: prev.right
+        height: 20
+
+    VerticalScrollBar
+      id: actionScrollBar
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 10
+      pixels-scroll: true
+      visible: true
+
+    ScrollablePanel
+      id: historyListPanel
+      height: 225
+      anchors.left: parent.left
+      anchors.right: prev.left
+      anchors.top: descLabel.bottom
+      anchors.bottom: parent.bottom
+      vertical-scrollbar: actionScrollBar
+      background-color: #414141
+      margin-left: 1
+      margin-right: 1
+      margin-bottom: 1
+      margin-top: 1
+      layout:
+        type: grid
+        cell-size: 490 20
+        flow: true
+
+  Button
+    id: newAction
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    size: 60 20
+    margin: 5 5 5 5
+    !text: tr('New Action')
+    font: cipsoftFont
+    visible: false
+
+  Button
+    id: resetAction
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    size: 60 20
+    margin: 5 5 5 5
+    !text: tr('Reset')
+    font: cipsoftFont

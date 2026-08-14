@@ -1,0 +1,61 @@
+AssingTextWindow < MainWindow
+  size: 275 145
+  !text: tr('Assing Text')
+
+  Label
+    !text: tr('Text:')
+    anchors.top: parent.top
+    anchors.left: parent.left
+
+  TextEdit
+    id: text
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    @onTextChange: modules.client_settings.onTextChange(self)
+
+  FlatPanel
+    id: automaticallyPanel
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    size: 240 25
+    CheckBox
+      id: automatically
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-left: 5
+      margin-top: 5
+    Label
+      !text: tr('Send automatically')
+      anchors.top: parent.top
+      anchors.left: prev.right
+      margin-left: 5
+      margin-top: 5
+
+  HorizontalSeparator
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+
+  Button
+    id: cancel
+    !text: tr('Cancel')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    size: 60 20
+    font: cipsoftFont
+    opacity: 0.7
+  Button
+    id: okButton
+    !text: tr('Ok')
+    anchors.bottom: parent.bottom
+    anchors.right: prev.left
+    size: 60 20
+    font: cipsoftFont
+    margin-right: 5
+    opacity: 0.7
+    enabled: false

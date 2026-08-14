@@ -1,0 +1,281 @@
+HelpWindow < Panel
+  id: help
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  enabled: false
+
+  Panel
+    anchors.fill: parent
+    margin: 5 5 5 3
+
+    FlatPanel
+      size: 505 180
+      anchors.top: parent.top
+      anchors.left: parent.left
+
+      Button
+        id: clientHelpButton
+        size: 128 20
+        !text: tr('Client Help')
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 5
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: tutorHelpButton
+        size: 128 20
+        !text: tr('Tutor Help')
+        anchors.top: clientHelpButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: compendiumButton
+        size: 128 20
+        !text: tr('Compendium')
+        anchors.top: tutorHelpButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: ruleButton
+        size: 128 20
+        !text: tr('Rule Violations')
+        anchors.top: compendiumButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: manualButton
+        size: 128 20
+        !text: tr('Manual')
+        anchors.top: ruleButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: faqButton
+        size: 128 20
+        !text: tr('FAQ')
+        anchors.top: manualButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: infoButton
+        size: 128 20
+        !text: tr('Info')
+        anchors.top: faqButton.bottom
+        anchors.left: parent.left
+        margin-top: 5
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+    FlatPanel
+      size: 505 80
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 10
+
+      Button
+        id: importButton
+        size: 128 20
+        !text: tr('Import Nyxos 10 Config')
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 5
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: importMapButton
+        size: 128 20
+        !text: tr('Import Nyxos 10 Map')
+        anchors.top: importButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: importFlashMapButton
+        size: 128 20
+        !text: tr('Import Flash Map')
+        anchors.top: importMapButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+    FlatPanel
+      size: 505 105
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 10
+
+      Button
+        id: exportButton
+        size: 128 20
+        !text: tr('Export All Options')
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 5
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: exportMinimapButton
+        size: 128 20
+        !text: tr('Export Minimap')
+        anchors.top: exportButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: importOptMapButton
+        size: 128 20
+        !text: tr('Import Options/Minimap')
+        anchors.top: exportMinimapButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')
+
+      Button
+        id: resetAllButton
+        size: 128 20
+        !text: tr('Reset All Options')
+        anchors.top: importOptMapButton.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        margin-left: 5
+
+      UIWidget
+        size: 12 12
+        anchors.top: prev.top
+        anchors.right: parent.right
+        margin-right: 5
+        margin-top: 5
+        image-source: /images/skin/show-gui-help-grey
+        !tooltip: tr('toDo')

@@ -1,0 +1,3014 @@
+local actionBars = {}
+local activeActionBars = {}
+
+-- Auto-Insert New Spells. The server resends the WHOLE list, so the first one
+-- after login only records a baseline; without it, logging in would dump every
+-- spell the character already knows onto the bars.
+local knownSpellIds = nil
+
+local window = nil
+
+-- The assign dialogs (spell/text/object/hotkey/passive) all share this single
+-- `window` upvalue. Destroying it without clearing the reference left it dangling,
+-- so the next dialog's `if window then window:destroy() end` guard destroyed an
+-- already-dead widget -> "attempt to destroy widget 'assignItemWindow' two times"
+-- in the console (seen when dragging a second item onto a bar). Always nil it here.
+local function destroyAssignWindow()
+	if window then
+		window:destroy()
+		window = nil
+	end
+end
+
+-- Every assign flow must first tear down whatever assign dialog is already open.
+-- The spell/text/object/hotkey/passive dialogs live here and share the single `window`
+-- upvalue; the equipment dialog lives in equipmentpreset.lua with its own `presetWindow`.
+-- Reopening without closing the previous one either stacked an orphaned, uncloseable
+-- `window` (same family) or left two dialogs of different families floating at once. This
+-- closes both families from one call. closePresetWindow is a global from equipmentpreset
+-- (same sandboxed module); guard it in case load order ever changes.
+function closeAssignDialogs()
+	destroyAssignWindow()
+	if closePresetWindow then
+		closePresetWindow()
+	end
+end
+
+local mouseGrabberWidget = nil
+local gameRootPanel = nil
+local player = nil
+local lastHighlightWidget = nil
+local isLoaded = false
+local loadActionBarEvent = nil
+
+-- new
+local hotkeyItemList = {}
+local passiveData = { cooldown = 0, max = 0}
+local spellModification = {}
+local spellListData = {}
+
+local spellCooldownCache = {}
+local spellGroupPressed = {}
+
+local cachedItemWidget = {}
+local dragButton = nil
+local dragItem = nil
+
+-- Hoisted out of setupButtonTooltip so they aren't reallocated on every tooltip
+-- rebuild. They depend only on the module-level spellModification upvalue.
+local function getModifiedSpellCooldown(data)
+	local modified = spellModification[tostring(data.id)]
+	if not modified or modified.type ~= 1 then
+		return data.exhaustion
+	end
+
+	return data.exhaustion + modified.value
+end
+
+local function getModifiedSpellMana(data)
+	local modified = spellModification[tostring(data.id)]
+	if not modified or modified.type ~= 0 then
+		return data.mana
+	end
+
+	return data.mana + modified.value
+end
+
+function getGrabberWidget()
+	return mouseGrabberWidget
+end
+
+function getRootPanel()
+	return gameRootPanel
+end
+
+function getButtonCache(button)
+	if not button then
+		return {
+			cooldownEvent = nil,
+			cooldownTime = 0,
+			isSpell = false,
+			isRuneSpell = false,
+			isPassive = false,
+			spellID = 0,
+			spellData = nil,
+			param = "",
+			sendAutomatic = false,
+			actionType = 0,
+			upgradeTier = 0,
+			smartMode = nil,
+			hotkey = nil,
+			lastClick = 0,
+			nextDownKey = 0,
+			isDragging = false,
+			buttonIndex = 0,
+			buttonParent = nil,
+			itemId = 0,
+			equipmentPreset = {},
+			equipmentPresetIcon = ""
+		}
+	end
+
+	if not button.cache then
+		button.cache = {
+			cooldownEvent = nil,
+			cooldownTime = 0,
+			isSpell = false,
+			isRuneSpell = false,
+			isPassive = false,
+			spellID = 0,
+			spellData = nil,
+			param = "",
+			sendAutomatic = false,
+			actionType = 0,
+			upgradeTier = 0,
+			smartMode = nil,
+			hotkey = nil,
+			lastClick = 0,
+			nextDownKey = 0,
+			isDragging = false,
+			buttonIndex = 0,
+			buttonParent = nil,
+			itemId = 0,
+			equipmentPreset = {},
+			equipmentPresetIcon = ""
+		}
+	end
+
+	return button.cache
+end
+
+function getSmartCast(itemId)
+	if smartList[itemId] then return smartList[itemId] end
+
+	for inactiveId, activeId in pairs(smartList) do
+		if itemId == activeId then
+			return inactiveId
+		end
+	end
+end
+
+function getInactiveSmartCast(activeItemId)
+	for inactiveId, activeId in pairs(smartList) do
+		if activeItemId == activeId then
+			return inactiveId
+		end
+	end
+end
+
+function getActiveSmartCast(inactiveItemId)
+	return smartList[inactiveItemId]
+end
+
+local UseTypes = {
+	["UseOnYourself"] = 1,
+	["UseOnTarget"] = 2,
+	["SmartCast"] = 3,
+	["SelectUseTarget"] = 4,
+	["Equip"] = 5,
+	["Use"] = 6,
+
+	-- Custom
+	["chatText"] = 7,
+	["passiveAbility"] = 8,
+	["equipmentPreset"] = 9
+}
+
+local UseTypesTip = {
+	[1] = "Use %s on Yourself",
+	[2] = "Use %s on Attack Target",
+	[3] = "Smart press %s",
+	[4] = "Use %s with Crosshair",
+	[5] = "%s %s",
+	[6] = "Use %s",
+}
+
+function init()
+	connect(LocalPlayer, {
+		onManaChange 		= onUpdateActionBarStatus,
+		onSoulChange 		= onUpdateActionBarStatus,
+		onLevelChange 		= onUpdateLevel,
+		onSpellsChange 		= onSpellsChange,
+		onMonkPassiveChange = onUpdateActionBarStatus,
+		onStanceChange       = onUpdateActionBarStatus,
+	})
+
+	connect(g_game, {
+		onGameEnd 				  = offline,
+		onItemInfo                = onHotkeyItems,
+		onGameStart 		      = online,
+		onPassiveData             = onPassiveData,
+		onSpellCooldown 		  = onSpellCooldown,
+		onMultiUseCooldown        = onMultiUseCooldown,
+		onSpellModification       = onSpellModification,
+		onReleaseActionKeys       = onReleaseActionKeys,
+		onSpellGroupCooldown 	  = onSpellGroupCooldown,
+		updateInventoryItems      = updateInventoryItems,
+		onEquipmentPresetCooldown = onEquipmentPresetCooldown
+	})
+
+	if g_game.isOnline() then
+		online()
+	end
+
+	onCreateActionBars()
+
+	gameRootPanel = m_interface.getRootPanel()
+	mouseGrabberWidget = g_ui.createWidget('UIWidget')
+	mouseGrabberWidget:setVisible(false)
+	mouseGrabberWidget:setFocusable(false)
+	mouseGrabberWidget.onMouseRelease = onDropActionButton
+end
+
+function terminate()
+	disconnect(LocalPlayer, {
+		onManaChange 		= onUpdateActionBarStatus,
+		onSoulChange 		= onUpdateActionBarStatus,
+		onLevelChange 		= onUpdateLevel,
+		onSpellsChange 		= onSpellsChange,
+		onMonkPassiveChange = onUpdateActionBarStatus,
+		onStanceChange       = onUpdateActionBarStatus,
+	})
+
+	disconnect(g_game, {
+		onGameEnd 				  = offline,
+		onItemInfo                = onHotkeyItems,
+		onGameStart 		      = online,
+		onPassiveData             = onPassiveData,
+		onSpellCooldown 		  = onSpellCooldown,
+		onMultiUseCooldown        = onMultiUseCooldown,
+		onSpellModification       = onSpellModification,
+		onReleaseActionKeys       = onReleaseActionKeys,
+		onSpellGroupCooldown 	  = onSpellGroupCooldown,
+		updateInventoryItems      = updateInventoryItems,
+		onEquipmentPresetCooldown = onEquipmentPresetCooldown
+	})
+
+	removeEvent(loadActionBarEvent)
+	loadActionBarEvent = nil
+	actionBars = {}
+end
+
+function online()
+	local benchmark = g_clock.millis()
+	dragItem = nil
+	dragButton = nil
+	cachedItemWidget = {}
+	player = g_game.getLocalPlayer()
+	hotkeyItemList = {}
+	spellGroupPressed = {}
+
+	modules.game_console.setChatState(Options.isChatOnEnabled)
+
+	for i = 1, #actionBars do
+		-- The actionBar panels are created once and reused across logins, so their
+		-- scroll window (firstVisibleIndex/lastVisibleIndex) survives logout. Reset it
+		-- so every login starts aligned to slot 1 instead of a previous session's paging,
+		-- which would otherwise leave the leading slots hidden (looking empty/bugged).
+		actionBars[i].firstVisibleIndex = 1
+		actionBars[i].lastVisibleIndex = nil
+		if actionBars[i].actionScroll then
+			actionBars[i].actionScroll:setValue(actionBars[i].actionScroll:getMinimum())
+		end
+		setupActionBar(i)
+	end
+
+	-- Single, cancellable post-login render pass. The 300ms is now only an initial nudge:
+	-- the authoritative visibility recompute is driven by @onGeometryChange on BOTH layouts
+	-- (see updateVisibleWidgets), so this timer no longer needs to outlast the async layout
+	-- settle, and a stacked/late timer from a fast reconnect can't flip isLoaded mid-paint.
+	removeEvent(loadActionBarEvent)
+	loadActionBarEvent = scheduleEvent(function()
+		loadActionBarEvent = nil
+		updateActionBar()
+		onUpdateActionBarStatus()
+		updateActionPassive()
+		updateVisibleWidgets()
+		isLoaded = true
+	end, 300)
+	consoleln("ActionBars loaded in " .. (g_clock.millis() - benchmark) / 1000 .. " seconds.")
+end
+
+function offline()
+	-- Cleared so the next character rebuilds its own baseline instead of
+	-- inheriting this one's spells as "already known".
+	knownSpellIds = nil
+
+	removeEvent(loadActionBarEvent)
+	loadActionBarEvent = nil
+
+	for _, actionbar in pairs(activeActionBars) do
+		unbindActionBarEvent(actionbar)
+	end
+
+	hotkeyItemList = {}
+
+	if window then
+		destroyAssignWindow()
+		window = nil
+	end
+
+	offLineEvents()
+end
+
+function onCreateActionBars()
+	local gameMapPanel = m_interface.gameMapPanel
+	if not gameMapPanel then
+		return true
+	end
+
+	if #actionBars == 0 then
+		createActionBars()
+	end
+	local margins = {41, 80, 119}
+	local totalMargin = 2
+
+	for i = 1, #actionBars do
+		local actionbar = actionBars[i]
+		local enabled = Options.actionBar[i].isVisible
+
+		actionbar:setOn(enabled)
+		setupActionBar(i)
+		if not enabled then
+			goto continue
+		end
+
+		table.insert(activeActionBars, actionbar)
+		local previousEnabled = true
+		for j = 1, i - 1 do
+			if not g_settings.getBoolean("actionbar" .. j, false) then
+				previousEnabled = false
+				break
+			end
+		end
+		if previousEnabled then
+			totalMargin = margins[i]
+		end
+
+		:: continue ::
+	end
+
+	resizeLockButtons()
+	gameMapPanel:setMarginBottom(totalMargin)
+end
+
+function createActionBars()
+	local bottomPanel = m_interface.getBottomActionPanel()
+	local leftPanel = m_interface.getLeftActionPanel()
+	local rightPanel = m_interface.getRightActionPanel()
+
+	-- 1-3: bottom
+	-- 4-6: left
+	-- 7-9: right
+	for i = 1, 9 do
+		local parent, index, layout, isVertical
+		if i <= 3 then
+			parent = bottomPanel
+			index = i
+			layout = 'actionbar'
+			isVertical = false
+		elseif i <= 6 then
+			parent = leftPanel
+			index = i - 3
+			layout = 'sideactionbar'
+			isVertical = true
+		else
+			parent = rightPanel
+			index = i - 6
+			layout = 'sideactionbar'
+			isVertical = true
+		end
+
+		actionBars[i] = g_ui.loadUI(layout, parent)
+		actionBars[i]:setId("actionbar."..i)
+		actionBars[i].n = i
+		actionBars[i].isVertical = isVertical
+		parent:moveChildToIndex(actionBars[i], index)
+	end
+end
+
+function resizeLockButtons()
+	local rightLockPanel = m_interface.getRightLockPanel()
+	local rightCount = getActiveRightBars()
+	rightLockPanel:setVisible(true)
+	rightLockPanel:setIcon(Options.clientOptions["actionBarRightLocked"] and "/images/game/actionbar/locked" or "/images/game/actionbar/unlocked")
+	if rightCount >= 1 and rightCount <= 3 then
+		rightLockPanel:setWidth(35 + (rightCount - 1) * 36 - 1)
+		rightLockPanel:getParent():setWidth(((36 + (rightCount - 1) * 36)) + 1)
+	else
+		rightLockPanel:setWidth(0)
+		rightLockPanel:getParent():setWidth(0)
+		rightLockPanel:setVisible(false)
+	end
+
+	local bottomLockPanel = m_interface.getBottomLockPanel()
+	local bottomCount = getActiveBottomBars()
+	bottomLockPanel:setVisible(true)
+	bottomLockPanel:setIcon(Options.clientOptions["actionBarBottomLocked"] and "/images/game/actionbar/locked" or "/images/game/actionbar/unlocked")
+	if bottomCount >= 1 and bottomCount <= 3 then
+		bottomLockPanel:setHeight(34 + (bottomCount - 1) * 36)
+	else
+		bottomLockPanel:setHeight(0)
+		bottomLockPanel:setVisible(false)
+	end
+
+	local leftLockPanel = m_interface.getLeftLockPanel()
+	local leftCount = getActiveLeftBars()
+	leftLockPanel:setVisible(true)
+	leftLockPanel:setIcon(Options.clientOptions["actionBarLeftLocked"] and "/images/game/actionbar/locked" or "/images/game/actionbar/unlocked")
+	if leftCount >= 1 and leftCount <= 3 then
+		leftLockPanel:setWidth(35 + (leftCount - 1) * 36 - 1)
+		leftLockPanel:getParent():setWidth(((36 + (leftCount - 1) * 36)) + 1)
+	else
+		leftLockPanel:setWidth(0)
+		leftLockPanel:getParent():setWidth(0)
+		leftLockPanel:setVisible(false)
+	end
+end
+
+function setupActionBar(n)
+	local actionbar = actionBars[n]
+	local visible = actionbar:isVisible()
+	local locked = Options.actionBar[n].isLocked
+	actionbar.tabBar.onMouseWheel = nil
+
+	actionbar.locked = locked
+
+	-- Slot pool per bar. At 36px each (34 + 2 margin) 75 slots span 2700px, enough to fill
+	-- wide monitors (the old fixed 50 only reached 1800px and left a blank strip). Slots that
+	-- don't fit the real bar width are hidden by updateVisibleWidgets(), so the extra slots
+	-- cost nothing visible on smaller windows.
+	local slotCount = 75
+
+	local items = {}
+	for i = 1, slotCount do
+		local layout = n < 4 and 'ActionButton' or 'SideActionButton'
+		local widget = actionbar.tabBar:getChildById(n.."."..i)
+
+		if not widget then
+			widget = g_ui.createWidget(layout, actionbar.tabBar)
+			widget:setId(n.."."..i)
+		end
+
+		resetButtonCache(widget)
+		if g_game.isOnline() then
+			updateButton(widget)
+		end
+
+		if widget.cooldown then
+			widget.cooldown:stop()
+		end
+
+		if widget.item and widget.item:getItemId() > 100 then
+			table.insert(items, widget.item:getItem())
+		end
+	end
+
+	scheduleEvent(function() g_game.doThing(false) g_game.requestHotkeyItems(items) g_game.doThing(true) end, 100)
+end
+
+function resetButtonCache(button)
+	if button.cache and button.cache.itemId > 0 then
+		local cachedItem = cachedItemWidget[button.cache.itemId]
+		if cachedItem then
+			for index, widget in pairs(cachedItem) do
+				if button == widget then
+					table.remove(cachedItem, index)
+				end
+			end
+		end
+	end
+
+	if button.item then
+		button.item:setItemId(0)
+		button.item:setOn(false)
+		button.item:setChecked(false)
+		button.item:setDraggable(false)
+		if button.item.gray then
+			button.item.gray:setVisible(false)
+		end
+		if button.item.text then
+			button.item.text.gray:setVisible(false)
+			button.item.text:setImageSource('')
+			button.item.text:setText('')
+		end
+	end
+
+	if button.hotkeyLabel then
+		button.hotkeyLabel:setText('')
+	end
+	if button.parameterText then
+		button.parameterText:setText('')
+	end
+	if button.cooldown then
+		button.cooldown:setPercent(100)
+		button.cooldown:setText("")
+	end
+
+	if button.cache then
+		if button.cache.removeCooldownEvent then
+			removeEvent(button.cache.removeCooldownEvent)
+		end
+	end
+
+	button.cache = {
+		cooldownEvent = nil,
+		cooldownTime = 0,
+		isSpell = false,
+		isRuneSpell = false,
+    	isPassive = false,
+		spellID = 0,
+		spellData = nil,
+		primaryGroup = nil,
+		param = "",
+		sendAutomatic = false,
+		actionType = 0,
+		upgradeTier = 0,
+		smartMode = nil,
+		hotkey = nil,
+		lastClick = 0,
+		nextDownKey = 0,
+		isDragging = false,
+		buttonIndex = 0,
+		buttonParent = nil,
+		itemId = 0,
+		equipmentPreset = {},
+		equipmentPresetIcon = ""
+	}
+end
+
+function onDropActionButton(self, mousePosition, mouseButton)
+	if not g_ui.isMouseGrabbed() then return end
+	g_mouse.updateGrabber(self, 'target')
+	g_mouse.popCursor('target')
+	self:ungrabMouse()
+end
+
+function onMultiUseCooldown(time)
+	updateActionBar(time)
+end
+
+function onSpellCooldown(spellId, delay)
+	if not m_settings.getOption("graphicalCooldown") and not m_settings.getOption("cooldownSecond") then
+		return true
+	end
+
+	local isRune = Spells.isRuneSpell(spellId)
+  spellCooldownCache[spellId] = {exhaustion = delay, startTime = g_clock.millis()}
+
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			local cache = getButtonCache(button)
+			if not (cache.isSpell or cache.isRuneSpell) then
+				goto continue
+			end
+
+			if cache.isRuneSpell and not isRune then
+				goto continue
+			end
+
+			if not cache.isRuneSpell and cache.spellID ~= spellId then
+				goto continue
+			end
+
+			if cache.cooldownEvent ~= nil and button.cooldown:getTimeElapsed() > delay then
+				goto continue
+			end
+
+			updateCooldown(button, delay)
+			if cache.removeCooldownEvent then
+				removeEvent(button.cache.removeCooldownEvent)
+			end
+			button.cache.removeCooldownEvent = scheduleEvent(function() modules.game_actionbar.removeCooldown(button) end, delay)
+			:: continue ::
+		end
+	end
+end
+
+function onSpellGroupCooldown(groupId, delay)
+	if not m_settings.getOption("graphicalCooldown") and not m_settings.getOption("cooldownSecond") then
+		return true
+	end
+
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			local cache = getButtonCache(button)
+			if cache.isRuneSpell or not cache.spellData then
+				goto continue
+			end
+
+			if Spells.getCooldownByGroup(cache.spellData, groupId) then
+				local resttime = button.cooldown:getDuration() - button.cooldown:getTimeElapsed()
+				if resttime < delay then
+					updateCooldown(button, delay)
+					removeEvent(button.cache.removeCooldownEvent)
+					button.cache.removeCooldownEvent = scheduleEvent(function() modules.game_actionbar.removeCooldown(button) end, delay)
+					spellCooldownCache[button.cache.spellData.id] = {exhaustion = delay, startTime = g_clock.millis()}
+				end
+			end
+
+			if Spells.getCooldownBySecondaryGroup(cache.spellData, groupId) then
+				local spellCache = spellCooldownCache[button.cache.spellData.id]
+				if not spellCache then
+					spellCache = {}
+					spellCache.startTime = 0
+				end
+
+				local resttime = button.cooldown:getDuration() - button.cooldown:getTimeElapsed()
+				if resttime < delay then
+					updateCooldown(button, delay)
+					removeEvent(button.cache.removeCooldownEvent)
+					button.cache.removeCooldownEvent = scheduleEvent(function() modules.game_actionbar.removeCooldown(button) end, delay)
+					spellCooldownCache[button.cache.spellData.id] = {exhaustion = delay, startTime = g_clock.millis()}
+				end
+			end
+			:: continue ::
+		end
+	end
+end
+
+function onEquipmentPresetCooldown(delay)
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			local cache = getButtonCache(button)
+			if string.empty(cache.equipmentPresetIcon) then
+				goto continue
+			end
+
+			updateCooldown(button, delay)
+			removeEvent(button.cache.removeCooldownEvent)
+			button.cache.removeCooldownEvent = scheduleEvent(function() modules.game_actionbar.removeCooldown(button) end, delay)
+
+			:: continue ::
+		end
+	end
+end
+
+function onPassiveData(currentCooldown, maxCooldown, canDecay)
+	passiveData = {cooldown = currentCooldown, max = maxCooldown}
+	updateActionPassive()
+end
+
+local function firstFreeActionSlot()
+	for barIndex = 1, #actionBars do
+		local bar = actionBars[barIndex]
+		local settings = Options.actionBar[barIndex]
+		if bar and settings and settings.isVisible then
+			for slot = (bar.firstVisibleIndex or 1), (bar.lastVisibleIndex or 0) do
+				local taken = false
+				for _, data in pairs(Options.actionBarMappings) do
+					if data["actionBar"] == barIndex and data["actionButton"] == slot then
+						taken = true
+						break
+					end
+				end
+				if not taken then
+					return barIndex, slot
+				end
+			end
+		end
+	end
+end
+
+local function autoInsertSpell(spell)
+	if not spell or not spell.words then
+		return
+	end
+	local barIndex, slot = firstFreeActionSlot()
+	if not barIndex then
+		return
+	end
+
+	Options.createOrUpdateText(barIndex, slot, spell.words, true)
+	local button = actionBars[barIndex].tabBar:getChildById(barIndex .. "." .. slot)
+	if button then
+		updateButton(button)
+	end
+end
+
+function onSpellsChange(player, list)
+	spellListData = {}
+	for _, spellId in pairs(list) do
+		local spell = Spells.getSpellByClientId(spellId)
+		if spell then
+			spellListData[tostring(spellId)] = spell
+		end
+	end
+
+	local baseline = knownSpellIds == nil
+	local autoInsert = not baseline and m_settings.getOption("autoInsertNewSpells")
+	knownSpellIds = knownSpellIds or {}
+	for id, spell in pairs(spellListData) do
+		if not knownSpellIds[id] then
+			knownSpellIds[id] = true
+			if autoInsert then
+				autoInsertSpell(spell)
+			end
+		end
+	end
+
+	-- The server resends basic data (0x9F) after wheel changes, so repaint here to flip a
+	-- freshly unlocked/locked spell's grey state immediately instead of waiting for the
+	-- next mana/level tick.
+	onUpdateActionBarStatus()
+end
+
+function onSpellModification(spells)
+	spellModification = {}
+	for _, data in pairs(spells) do
+		spellModification[tostring(data[1])] = {type = data[2], value = data[3]}
+	end
+
+	onUpdateActionBarStatus()
+end
+
+function getActiveBottomBars()
+	if #actionBars == 0 then
+		return 0
+	end
+
+	local count = 0
+	for i = 1, 3 do
+		local enabled = Options.actionBar[i].isVisible
+		if enabled then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function getActiveRightBars()
+	if #actionBars == 0 then
+		return 0
+	end
+
+	local count = 0
+	for i = 7, 9 do
+		local enabled = Options.actionBar[i].isVisible
+		if enabled then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function getActiveLeftBars()
+	if #actionBars == 0 then
+		return 0
+	end
+
+	local count = 0
+	for i = 4, 6 do
+		local enabled = Options.actionBar[i].isVisible
+		if enabled then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function onHotkeyItems(itemList)
+	for _, data in pairs(itemList) do
+		table.insert(hotkeyItemList, data)
+	end
+
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			if button.item:getItemId() < 100 then
+				goto continue
+			end
+			setupButtonTooltip(button, false)
+			:: continue ::
+		end
+	end
+end
+
+function updateInventoryItems(_)
+    for _, widgetList in pairs(cachedItemWidget) do
+        for _, widget in pairs(widgetList) do
+            updateButtonState(widget)
+        end
+    end
+end
+
+function setupButtonTooltip(button, isEmpty)
+	if not g_game.isOnline() then
+		return true
+	end
+
+	local cache = getButtonCache(button)
+	if isEmpty then
+	  local tooltip = "Action Button " .. button:getId()
+		local hotkeyDesc = cache.hotkey and cache.hotkey or "None"
+		tooltip = tooltip.."\n\nAction:  " .. "None"
+		tooltip = tooltip.."\nHotkeys:  " .. hotkeyDesc
+		if button.item and button._lastTooltip ~= tooltip then
+			button._lastTooltip = tooltip
+			button.item:setTooltip(tooltip)
+		end
+		return true
+	end
+
+	local actionDesc = ""
+	local spellData = cache.spellData
+
+	if cache.actionType == 7 then
+		if not cache.isSpell then
+			actionDesc = 'Say: "' .. string.lineBreaks(cache.param, 44, 36) .. '"\n'
+			actionDesc = actionDesc .. "Auto sent:  " .. (cache.sendAutomatic and "Yes" or "No")
+		else
+			actionDesc = "Cast " .. Spells.getSpellNameByWords(spellData.words) .."\n"
+			actionDesc = actionDesc.. "   Formula:  ".. cache.param .. "\n"
+			actionDesc = actionDesc.. " Cooldown:  " .. getModifiedSpellCooldown(spellData) / 1000 .. "s\n"
+			actionDesc = actionDesc.. "         Mana:  ".. getModifiedSpellMana(spellData)
+		end
+	elseif cache.actionType == 8 then
+		actionDesc = "Gift of Life"
+	elseif cache.actionType == 9 then
+		actionDesc = "Equip Preset"
+	else
+		actionDesc = UseTypesTip[cache.actionType]
+		if actionDesc == nil then
+			actionDesc = "Use %s"
+		end
+
+		if cache.actionType == UseTypes["Equip"] then
+			local itemName = getItemNameById(button.item:getItem():getId()) .. ((cache.upgradeTier and cache.upgradeTier > 0) and " (Tier " .. cache.upgradeTier .. ")" or "")
+			actionDesc = tr(actionDesc, (button.item:isChecked() and "Unequip" or "Equip"), itemName)
+		elseif button.item:getItem() then
+			actionDesc = tr(actionDesc, getItemNameById(button.item:getItem():getId()))
+		end
+
+		local smartId = getSmartCast(button.cache.itemId)
+		local upgradeTier = button.cache.upgradeTier or 0
+		local itemCount = player:getInventoryCount(button.cache.itemId, upgradeTier)
+		if smartId then
+			itemCount = itemCount + player:getInventoryCount(smartId, upgradeTier)
+		end
+		actionDesc = actionDesc .. "\n    Amount:  " .. itemCount
+	end
+
+	local hotkeyDesc = cache.hotkey and cache.hotkey or "None"
+	local tooltip = "Action Button ".. button:getId()
+
+	if cache.actionType == 8 then
+		tooltip = tooltip .. "\n\n Passive Ability:  " .. actionDesc
+		tooltip = tooltip .. "\n            Hotkeys:  " .. hotkeyDesc
+	else
+		tooltip = tooltip .. "\n\n       Action:  " .. actionDesc
+		tooltip = tooltip .. "\n   Hotkeys:  " .. hotkeyDesc
+	end
+
+	if button._lastTooltip ~= tooltip then
+		button._lastTooltip = tooltip
+		button.item:setTooltip(tooltip)
+	end
+end
+
+function updateButton(button)
+	if not player then
+		player = g_game.getLocalPlayer()
+	end
+
+	local buttonData = nil
+	local barID, buttonID = string.match(button:getId(), "(%d+)%.(%d+)")
+
+	if not button.item then
+		local actionId, buttonId = button:getId():match("([^.]+)%.([^.]+)")
+		button:destroy()
+		local actionbar = actionBars[tonumber(actionId)]
+		local layout = tonumber(actionId) < 4 and 'ActionButton' or 'SideActionButton'
+		local widget = g_ui.createWidget(layout, actionbar.tabBar)
+		actionbar.tabBar:moveChildToIndex(widget, tonumber(buttonId))
+		widget:setId(actionId.."."..buttonId)
+		updateButton(widget)
+		return
+	end
+
+	for _, data in pairs(Options.actionBarMappings) do
+		if data["actionBar"] == tonumber(barID) and data["actionButton"] == tonumber(buttonID) then
+			buttonData = data
+			break
+		end
+	end
+
+	resetButtonCache(button)
+	button.item.text:setTextOffset("0 0")
+
+	button.cache = getButtonCache(button)
+	if button.item.getItemId and not button.cache.actionType then
+		button.item:setItemId(0, true)
+		button.item:setOn(false)
+	end
+
+	setupHotkeyButton(button)
+	if button.cache.hotkey then
+		button.item.text:setTextOffset("0 8")
+		button.hotkeyLabel:setText(translateDisplayHotkey(button.cache.hotkey))
+	end
+
+	if not buttonData or not buttonData["actionsetting"] then
+		setupButtonTooltip(button, true)
+		button.item:setDraggable(false)
+		configureButtonMouseRelease(button)
+		return true
+	end
+
+	local useAction = buttonData["actionsetting"]["useObject"]
+	local sendText = buttonData["actionsetting"]["chatText"]
+	local passiveAbility = buttonData["actionsetting"]["passiveAbility"]
+	local equipPreset = buttonData["actionsetting"]["equipmentPreset"]
+	local equipPresetIcon = buttonData["actionsetting"]["equipmentPresetIcon"] or ""
+
+	if useAction then
+		button.item:setItemId(useAction, true)
+		button.item:setOn(true)
+		-- setItemId only sets the id, so the tier badge and the "+N" upgrade tag never
+		-- rendered on the slot. Apply the configured tier and upgrade level to the widget's
+		-- item so they show (purely visual; equip still matches by id + tier server-side).
+		button.item:setTier(buttonData["actionsetting"]["upgradeTier"] or 0)
+		button.item:setUpgradeLevel(buttonData["actionsetting"]["upgradeLevel"] or 0)
+
+		local cached = cachedItemWidget[useAction]
+		if cached then
+			table.insert(cached, button)
+		else
+			cachedItemWidget[useAction] = {}
+			table.insert(cachedItemWidget[useAction], button)
+		end
+
+		-- check runes
+		local spellData = Spells.getRuneSpellByItem(useAction)
+		if spellData then
+			button.cache.isRuneSpell = true
+			button.cache.spellData = spellData
+			if spellData.vocations and not table.contains(spellData.vocations, translateVocation(player:getVocation())) then
+				button.item.gray:setVisible(true)
+			end
+		end
+
+		button.cache.itemId = button.item:getItemId()
+		button.cache.smartMode = buttonData["actionsetting"]["useEquipSmartMode"]
+		button.cache.upgradeTier = buttonData["actionsetting"]["upgradeTier"]
+		button.cache.upgradeLevel = buttonData["actionsetting"]["upgradeLevel"]
+		button.cache.actionType = UseTypes[buttonData["actionsetting"]["useType"]]
+		updateButtonState(button)
+	end
+
+	if sendText then
+		local spellData, param = Spells.getSpellDataByParamWords(sendText:lower())
+		if spellData then
+			local spellId = SpellIcons[spellData.icon][1]
+			local source = SpelllistSettings['Default'].iconsFolder
+			local clip = Spells.getImageClipNormal(spellId, 'Default')
+
+			button.item.text:setImageSource(source)
+			button.item.text:setImageClip(clip)
+			button.cache.isSpell = true
+			button.cache.spellID = spellData.id
+			button.cache.spellData = spellData
+			button.cache.primaryGroup = spellData.group and Spells.getGroupIds(spellData)[1] or nil
+
+			if param then
+				local formatedParam = param:gsub('"', '')
+        		button.parameterText:setText(short_text('"' .. formatedParam, 4))
+        		button.cache.castParam = formatedParam
+			end
+
+			if not playerCanUseSpell(spellData) then
+				button.item.text.gray:setVisible(true)
+			end
+
+      		checkRemainSpellCooldown(button, spellData.id)
+		else
+			button.item.text:setText(short_text(sendText, 15))
+		end
+
+		button.item:setOn(true)
+		button.cache.param = sendText
+		button.cache.sendAutomatic = buttonData["actionsetting"]["sendAutomatically"]
+		button.cache.actionType = UseTypes["chatText"]
+	end
+
+	if passiveAbility then
+		local passive = PassiveAbilities[passiveAbility]
+		button.item.text:setImageSource(passive.icon)
+		button.item.text:setImageClip("0 0 32 32")
+		button.cache.actionType = UseTypes["passiveAbility"]
+		button.cache.isPassive = true
+		updateActionPassive(button)
+	end
+
+	if equipPreset and not table.empty(equipPreset) then
+		button.item:setOn(true)
+		button.cache.equipmentPreset = equipPreset
+		button.cache.equipmentPresetIcon = equipPresetIcon
+		button.cache.actionType = UseTypes["equipmentPreset"]
+
+		if not string.empty(equipPresetIcon) then
+			button.item.text:setImageSource("/images/game/actionbar/equip-preset/" .. equipPresetIcon)
+			button.item.text:setImageClip("0 0 30 30")
+		end
+	end
+
+  button.item:setDraggable(true)
+  setupButtonTooltip(button, false)
+
+  local parentButton = button:getParent()
+  if parentButton then
+	button.cache.buttonIndex = parentButton:getChildIndex(button)
+	button.cache.buttonParent = parentButton
+  end
+
+  button.item.onDragEnter = function(self, mousePos)
+    if Options.actionBar[tonumber(barID)].isLocked then
+      return false
+    end
+
+	button.cooldown:setBorderWidth(1)
+    button.cache.isDragging = true
+	dragButton = button
+	dragItem = self
+    onDragItem(self, mousePos)
+    -- MUST return true: UIManager only tracks the drag (sets m_draggingWidget) when
+    -- onDragEnter returns truthy. Without it, onDragLeave never fires on release, so
+    -- the item ripped out via onDragItem (reparented to gameRootPanel) is never reset
+    -- and stays stuck floating at the drop position.
+    return true
+  end
+
+  -- Make the ripped-out item follow the cursor and keep the drop-target highlight
+  -- live. The base UIItem:onDragMove only repositions a dragClone, but the action bar
+  -- drags the real item itself, so we reposition it here via onDragItem each move.
+  button.item.onDragMove = function(self, mousePos)
+    if not button.cache.isDragging then
+      return false
+    end
+    onDragItem(self, mousePos)
+    return true
+  end
+
+  button.item.onDragLeave = function(self, widget, mousePos)
+    if not button.cache.isDragging then
+      return false
+    end
+    isLoaded = false
+    button.cache.isDragging = false
+    onDragItemLeave(self, mousePos, button)
+    isLoaded = true
+	dragButton = nil
+	dragItem = nil
+  end
+
+  button.item.onClick = function() onExecuteAction(button) end
+  button.item.text.onClick = function() onExecuteAction(button) end
+  configureButtonMouseRelease(button)
+  scheduleEvent(function() updateActionBar() end, 100)
+end
+
+function checkRemainSpellCooldown(button, spellId)
+  if not m_settings.getOption("graphicalCooldown") and not m_settings.getOption("cooldownSecond") then
+    return true
+  end
+
+  local cooldownData = spellCooldownCache[spellId]
+  if not cooldownData then
+    return
+  end
+
+  if (cooldownData.startTime + cooldownData.exhaustion) < g_clock.millis() then
+    return
+  end
+
+  button.cache = getButtonCache(button)
+  local remainTime = (cooldownData.startTime + cooldownData.exhaustion) - g_clock.millis()
+
+  updateCooldown(button, remainTime)
+  removeEvent(button.cache.removeCooldownEvent)
+  button.cache.removeCooldownEvent = scheduleEvent(function() modules.game_actionbar.removeCooldown(button) end, remainTime)
+end
+
+function configureButtonMouseRelease(button)
+  button.onMouseRelease = function(button, mousePos, mouseButton)
+	button.cache = getButtonCache(button)
+	if mouseButton == MouseRightButton then
+		local menu = g_ui.createWidget('PopupMenu')
+		menu:setGameMenu(true)
+		menu:addOption(button.cache.isSpell and tr('Edit Spell') or tr('Assign Spell'), function() assignSpell(button) end)
+		if button.item and button.item:getItemId() > 100 then
+			menu:addOption(tr('Edit Object'), function() assignItem(button, button.item:getItemId()) end)
+		else
+			menu:addOption(tr('Assign Object'), function() assignItemEvent(button) end)
+		end
+
+		local buttonText = ""
+		if button.item then
+			buttonText = button.item.text:getText()
+		end
+
+		local hasEquipmentPreset = button.cache.equipmentPreset and not table.empty(button.cache.equipmentPreset)
+		menu:addOption(buttonText:len() > 0 and tr('Edit Text') or tr('Assign Text'), function() assignText(button) end)
+		menu:addOption(button.cache.isPassive and tr('Edit Passive Ability') or tr('Assign Passive Ability'), function() assignPassive(button) end)
+		menu:addOption(button.cache.hotkey and tr('Edit Hotkey') or tr('Assign Hotkey'), function() assignHotkey(button) end)
+		menu:addOption(hasEquipmentPreset and tr('Edit Equipments') or tr('Assign Equipments'), function() assignEquipment(button) end)
+		if button.cache.actionType > 0 then
+			menu:addSeparator()
+			menu:addOption(tr('Clear Action'), function() clearButton(button, true) end)
+		end
+		menu:display(mousePos)
+		end
+	end
+end
+
+function onDragItem(self, mousePos)
+  self:setPhantom(true)
+  self:setParent(gameRootPanel)
+  self:setX(mousePos.x)
+  self:setY(mousePos.y)
+
+  self:setBorderColor('white')
+
+  if lastHighlightWidget then
+    lastHighlightWidget:setBorderWidth(0)
+    lastHighlightWidget:setBorderColor('alpha')
+  end
+
+  local clickedWidget = gameRootPanel:recursiveGetChildByPos(mousePos, false)
+  if not clickedWidget or not clickedWidget:backwardsGetWidgetById("tabBar") then
+	return true
+  end
+
+  lastHighlightWidget = clickedWidget
+  lastHighlightWidget:setBorderWidth(1)
+  lastHighlightWidget:setBorderColor('white')
+end
+
+function onDragItemLeave(self, mousePos, button)
+  if lastHighlightWidget then
+    lastHighlightWidget:setBorderWidth(0)
+    lastHighlightWidget:setBorderColor('alpha')
+  end
+
+  local clickedWidget = gameRootPanel:recursiveGetChildByPos(mousePos, false)
+  if not clickedWidget or not clickedWidget:backwardsGetWidgetById("tabBar") then
+    	resetDragWidget(self, button)
+		return true
+	end
+
+  local destButton = getButtonById(clickedWidget:getParent():getId())
+  if not destButton then
+    resetDragWidget(self, button)
+    return true
+  end
+
+  local destButtonCache = destButton.cache
+
+  button.cache = getButtonCache(button)
+  local itemId = button.cache.itemId
+  local destBarID, destButtonID = string.match(destButton:getId(), "(.*)%.(.*)")
+  local draggedBarID, draggedButtonID = string.match(button:getId(), "(.*)%.(.*)")
+
+  local cachedItem = cachedItemWidget[itemId]
+  if cachedItem then
+    for index, widget in pairs(cachedItem) do
+      if button == widget then
+        table.remove(cachedItem, index)
+      end
+	end
+  end
+
+  local cachedItem = cachedItemWidget[destButtonCache.itemId ]
+  if cachedItem then
+    for index, widget in pairs(cachedItem) do
+      if button == widget then
+        table.remove(cachedItem, index)
+      end
+	end
+  end
+
+  local isButtonEmpty = buttonIsEmpty(destButton)
+
+  if button.cache.actionType == UseTypes["chatText"] then
+    Options.createOrUpdateText(tonumber(destBarID), tonumber(destButtonID), button.cache.param, button.cache.sendAutomatic)
+  elseif itemId ~= 0 then
+    Options.createOrUpdateAction(tonumber(destBarID), tonumber(destButtonID), getActionName(button.cache.actionType), itemId, button.cache.upgradeTier, button.cache.smartMode, button.cache.upgradeLevel)
+  elseif button.cache.isPassive then
+    Options.createOrUpdatePassive(tonumber(destBarID), tonumber(destButtonID), 1)
+  elseif not table.empty(button.cache.equipmentPreset) then
+    Options.createOrUpdatePreset(tonumber(destBarID), tonumber(destButtonID), button.cache.equipmentPreset, button.cache.equipmentPresetIcon)
+  end
+
+  updateButton(destButton)
+
+  if isButtonEmpty then
+    Options.removeAction(tonumber(draggedBarID), tonumber(draggedButtonID))
+	removeCooldown(destButton)
+    resetDragWidget(self, button)
+  else
+    if destButtonCache.actionType == UseTypes["chatText"] then
+      Options.createOrUpdateText(tonumber(draggedBarID), tonumber(draggedButtonID), destButtonCache.param, destButtonCache.sendAutomatic)
+    elseif destButtonCache.itemId ~= 0 then
+      Options.createOrUpdateAction(tonumber(draggedBarID), tonumber(draggedButtonID), getActionName(destButtonCache.actionType), destButtonCache.itemId, destButtonCache.upgradeTier, destButtonCache.smartMode, destButtonCache.upgradeLevel)
+    elseif destButtonCache.isPassive then
+      Options.createOrUpdatePassive(tonumber(draggedBarID), tonumber(draggedButtonID), 1)
+	elseif not table.empty(destButtonCache.equipmentPreset) then
+		Options.createOrUpdatePreset(tonumber(draggedBarID), tonumber(draggedButtonID), destButtonCache.equipmentPreset, destButtonCache.equipmentPresetIcon)
+    end
+
+	removeCooldown(destButton)
+    resetDragWidget(self, button)
+  end
+
+  self:setBorderColor('alpha')
+end
+
+function resetDragWidget(self, button)
+  button.cache = getButtonCache(button)
+  local cachedItem = cachedItemWidget[button.cache.itemId]
+  if cachedItem then
+    for index, widget in pairs(cachedItem) do
+      if button == widget then
+        table.remove(cachedItem, index)
+      end
+    end
+  end
+
+  self:destroy()
+  local barID, buttonID = string.match(button:getId(), "(.*)%.(.*)")
+  local style = tonumber(barID) > 3 and "SideActionButton" or "ActionButton"
+
+  button:destroy()
+
+  local destBar = actionBars[tonumber(barID)].tabBar
+  local widget = g_ui.createWidget(style, destBar)
+
+  if destBar then
+	destBar:moveChildToIndex(widget, buttonID)
+  end
+  widget:setId(barID.."."..buttonID)
+  updateButton(widget)
+end
+
+function buttonIsEmpty(button)
+  return button.item:getItemId() == 0 and string.empty(button.item.text:getText()) and string.empty(button.item.text:getImageSource())
+end
+
+function getActionName(actionType)
+  for k, v in pairs(UseTypes) do
+    if v == actionType then
+      return k
+    end
+  end
+end
+
+function removeCooldown(button)
+	if not button or not button.cache then
+		return true
+	end
+
+	button.cache.removeCooldownEvent = nil
+	if button.cooldown then
+		button.cooldown:stop()
+		button.cooldown:setPercent(100)
+		button.cooldown:setText("")
+	end
+end
+
+function updateCooldown(button, timeMs)
+	button.cooldown:showTime(m_settings.getOption("cooldownSecond"))
+	button.cooldown:showProgress(m_settings.getOption("graphicalCooldown"))
+	button.cooldown:setDuration(timeMs)
+	button.cooldown:start()
+end
+
+function updateActionPassive(button)
+	if not m_settings.getOption("graphicalCooldown") and not m_settings.getOption("cooldownSecond") then
+		return true
+	end
+
+	if not button then
+		for _, actionbar in pairs(activeActionBars) do
+			for _, button in pairs(actionbar.tabBar:getChildren()) do
+				if button.cache.isPassive then
+					button.item.text.gray:setVisible(passiveData.max == 0)
+				end
+
+				if not button.cache.isPassive or button.cache.cooldownEvent ~= nil then
+					goto continue
+				end
+
+				updateCooldown(button, passiveData.cooldown * 1000)
+				button.cache.removeCooldownEvent = scheduleEvent(function() modules.game_actionbar.removeCooldown(button) end, passiveData.cooldown * 1000)
+				:: continue ::
+			end
+		end
+		return true
+	else
+		if button.cache.isPassive then
+			button.item.text.gray:setVisible(passiveData.max == 0)
+		end
+	end
+
+	if passiveData.max > 0 then
+		removeEvent(button.cache.removeCooldownEvent)
+		updateCooldown(button, passiveData.cooldown * 1000)
+		button.cache.removeCooldownEvent = scheduleEvent(function() modules.game_actionbar.removeCooldown(button) end, passiveData.cooldown * 1000)
+	end
+end
+
+function onUpdateLevel(localPlayer, level, levelPercent, oldLevel, oldLevelPercent)
+	if level ~= oldLevel then
+		onUpdateActionBarStatus()
+	end
+end
+
+function onUpdateActionBarStatus()
+	if #activeActionBars == 0 then
+		return true
+	end
+
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+            updateButtonState(button)
+		end
+	end
+end
+
+function updateActionBar(multiUseCooldown)
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			updateButtonState(button)
+			if multiUseCooldown and button.item and button.cache.itemId then
+				local item = button.item:getItem()
+				if item and item:isMultiUse() then
+					local marketArray = {10, 12, 14}
+					if table.contains(marketArray, item:getMarketData().category) then
+						updateCooldown(button, multiUseCooldown)
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Equip "smart mode" is a wear/remove toggle for wearables with a duration (SSA,
+-- might/energy ring, ...): click puts the piece on, click again takes it off. The
+-- server's equip-object packet only auto-removes a worn piece into a managed/loot
+-- container (findManagedContainer); players rarely have one set for amulets/rings,
+-- so that path silently fails. We take the piece off client-side instead: find it in
+-- its equipment slot and move it into an open container (preferring the main backpack).
+local function findEquippedItemById(itemId)
+	local localPlayer = g_game.getLocalPlayer()
+	if not localPlayer or not itemId or itemId <= 0 then
+		return nil
+	end
+	for slot = InventorySlotFirst, InventorySlotLast do
+		local item = localPlayer:getInventoryItem(slot)
+		if item and item:getId() == itemId then
+			return item
+		end
+	end
+	return nil
+end
+
+local function firstFreeContainerSlot()
+	local containers = g_game.getContainers()
+	if type(containers) ~= 'table' then
+		return nil
+	end
+	local fallback = nil
+	for _, container in pairs(containers) do
+		local capacity = container.getCapacity and tonumber(container:getCapacity()) or 0
+		for slot = 0, capacity - 1 do
+			if not container:getItem(slot) then
+				local pos = container.getSlotPosition and container:getSlotPosition(slot)
+				if pos then
+					-- prefer the main backpack: its container item sits in the Back slot
+					local containerItem = container.getContainerItem and container:getContainerItem()
+					local cpos = containerItem and containerItem:getPosition()
+					if cpos and cpos.x == 65535 and cpos.y == InventorySlotBack then
+						return pos
+					end
+					fallback = fallback or pos
+				end
+				break
+			end
+		end
+	end
+	return fallback
+end
+
+local function unequipActionItem(itemId, activeId)
+	local item = findEquippedItemById(itemId)
+	if not item and activeId and activeId ~= itemId then
+		item = findEquippedItemById(activeId)
+	end
+	if not item then
+		return false
+	end
+	local dest = firstFreeContainerSlot()
+	if not dest then
+		if modules.game_textmessage then
+			modules.game_textmessage.displayFailureMessage(tr('There is no open container with a free slot to unequip this item.'))
+		end
+		return false
+	end
+	g_game.move(item, dest, item:getCount())
+	return true
+end
+
+function onExecuteAction(button, isPress)
+	local cache = getButtonCache(button)
+	if cache.lastClick > g_clock.millis() then
+		return true
+	end
+
+	if m_interface.gameRightPanels:isFocusable() or m_interface.gameLeftPanels:isFocusable() then
+		return true
+	end
+
+	if not isPress then
+		button.cache.nextDownKey = g_clock.millis() + 500
+	end
+
+	if isPress and button.cache.nextDownKey > g_clock.millis() then
+		return true
+	end
+
+	local cooldown = isPress and 600 or 150
+	button.cache.lastClick = g_clock.millis() + cooldown
+	local action = button.cache.actionType
+	if action == 0 then
+		return true
+	end
+
+	if action == UseTypes["Equip"] and button.item then
+		local smartId = getSmartCast(button.cache.itemId)
+		local upgradeTier = button.cache.upgradeTier or 0
+
+		-- Smart mode: clicking a piece that is already worn takes it off instead of
+		-- re-equipping (SSA / might & energy ring tank toggles, etc). Without smart
+		-- mode the behaviour is unchanged.
+		if button.cache.smartMode and player then
+			local activeId = getActiveSmartCast(button.cache.itemId) or button.cache.itemId
+			if player:hasEquippedItemId(button.cache.itemId, upgradeTier)
+				or player:hasEquippedItemId(activeId, upgradeTier) then
+				unequipActionItem(button.cache.itemId, activeId)
+				return true
+			end
+		end
+
+		if not smartId or not button.cache.smartMode then
+			if smartId then
+				if player:getInventoryCount(button.cache.itemId, upgradeTier) == 0 then
+					return
+				end
+			end
+
+			g_game.equipItemId(button.cache.itemId, upgradeTier)
+		else
+			-- Smart equip toggles between the inactive (bag) and active (equipped) forms.
+			-- equipItemId() toggles a SPECIFIC id, so target the id that actually exists
+			-- right now: the equipped active form when worn (to unequip), otherwise the
+			-- inactive bag form (to equip). The old code always toggled the active id, which
+			-- unequipped fine but did nothing when nothing was equipped (the active id isn't
+			-- in the bag), so smart mode never equipped.
+			local activeId = getActiveSmartCast(button.cache.itemId) or button.cache.itemId
+			local inactiveId = getInactiveSmartCast(activeId) or button.cache.itemId
+
+			if player:hasEquippedItemId(activeId, upgradeTier) then
+				g_game.equipItemId(activeId, upgradeTier)
+			else
+				g_game.equipItemId(inactiveId, upgradeTier)
+			end
+		end
+	end
+
+	if action == UseTypes["equipmentPreset"] and button.item then
+		applyEquipmentPreset(button.cache.equipmentPreset)
+	end
+
+	if action == UseTypes["Use"] and button.item then
+		if (button.item:getItem():isContainer()) then
+			g_game.closeContainerByItemId(button.item:getItemId())
+		else
+			g_game.useInventoryItem(button.item:getItemId())
+		end
+	end
+
+	if action == UseTypes["UseOnYourself"] and button.item then
+		g_game.useInventoryItemWith(button.item:getItemId(), player, button.item:getItemSubType() or -1)
+	end
+
+	if action == UseTypes["SmartCast"] and button.item then
+		local pos = g_window.getMousePosition()
+		local clickedWidget = gameRootPanel:recursiveGetChildByPos(pos, false)
+		if not clickedWidget or clickedWidget:getClassName() ~= 'UIGameMap' then
+			modules.game_textmessage.displayFailureMessage(tr('You can only perfom this action in game window.'))
+			return
+		end
+		local tile = clickedWidget:getTile(pos)
+		if not tile then
+			modules.game_textmessage.displayFailureMessage(tr('You can only perfom this action in game window.'))
+			return
+		end
+
+		local gameMapPanel = m_interface.gameMapPanel
+		gameMapPanel:scheduleBlockMouseRelease(300)
+		g_game.useWith(button.item:getItem(), tile:getTopUseThing(), button.item:getItemSubType() or -1)
+	end
+
+	if button.item and not g_ui.getCustomInputWidget() then
+		if action == UseTypes["SelectUseTarget"] then
+			m_interface.startUseWith(button.item:getItem(), button.item:getItemSubType() or - 1)
+		end
+
+		if action == UseTypes["UseOnTarget"] then
+			local attackingCreature = g_game.getAttackingCreature()
+			if not attackingCreature then
+				m_interface.startUseWith(button.item:getItem(), button.item:getItemSubType() or - 1)
+			else
+				g_game.useWith(button.item:getItem(), attackingCreature, button.item:getItemSubType() or -1)
+			end
+		end
+	end
+
+	if action == UseTypes["chatText"] and button.cache.sendAutomatic then
+    if button.cache.isSpell then
+      spellGroupPressed[tostring(button.cache.primaryGroup)] = true
+      g_game.talk(button.cache.param)
+    else
+      modules.game_console.sendMessage(button.cache.param)
+    end
+
+    modules.game_console.getConsole():setText('')
+  elseif action == UseTypes["chatText"] then
+  	modules.game_console.getConsole():setText(button.cache.param)
+  	modules.game_console.getConsole():setCursorPos(#button.cache.param)
+  end
+end
+
+function onCheckKeyUp(button)
+	local cache = getButtonCache(button)
+	if cache.isSpell then
+		spellGroupPressed[tostring(button.cache.primaryGroup)] = nil
+	end
+end
+
+function assignItemEvent(button)
+	g_mouse.updateGrabber(mouseGrabberWidget, 'target')
+	mouseGrabberWidget:grabMouse()
+	g_mouse.pushCursor('target')
+	mouseGrabberWidget.onMouseRelease = function(self, mousePosition, mouseButton) onAssignItem(self, mousePosition, mouseButton, button) end
+end
+
+function onAssignItem(self, mousePosition, mouseButton, button)
+	g_mouse.updateGrabber(mouseGrabberWidget, 'target')
+	mouseGrabberWidget:ungrabMouse()
+	g_mouse.popCursor('target')
+	mouseGrabberWidget.onMouseRelease = onDropActionButton
+
+	local clickedWidget = gameRootPanel:recursiveGetChildByPos(mousePosition, false)
+    if not clickedWidget then
+		return true
+	end
+
+	local itemId = 0
+	local itemTier = 0
+	local itemUpgrade = 0
+	if clickedWidget:getClassName() == 'UIItem' and not clickedWidget:isVirtual() and clickedWidget:getItem() then
+		itemId = clickedWidget:getItem():getId()
+		itemTier = clickedWidget:getItem():getTier()
+		itemUpgrade = clickedWidget:getItem():getUpgradeLevel()
+	elseif clickedWidget:getClassName() == 'UIGameMap' then
+		local tile = clickedWidget:getTile(mousePosition)
+		if tile then
+			itemId = tile:getTopUseThing():getId()
+		end
+	end
+
+	local itemType = g_things.getThingType(itemId)
+	if not itemType or not itemType:isPickupable() then
+		modules.game_textmessage.displayFailureMessage(tr('Invalid object!'))
+		return true
+	end
+	assignItem(button, itemId, itemTier, nil, itemUpgrade)
+end
+
+function assignSpell(button)
+	-- Tear down any assign dialog already open so a second open can't stack a floating,
+	-- uncloseable window (see closeAssignDialogs).
+	closeAssignDialogs()
+	local radio = UIRadioGroup.create()
+	window = g_ui.loadUI('spell', g_ui.getRootWidget())
+	window:show()
+	g_client.setInputLockWidget(window)
+	window:raise()
+	scheduleEvent(function()
+		window:focus()
+	end, 50)
+	
+	window:setText("Assign Spell to Action Button ".. button:getId())
+
+	local spells = modules.gamelib.SpellInfo['Default']
+	for spellName, spellData in pairs(spells) do
+		if not table.contains(spellData.vocations, translateVocation(player:getVocation())) then
+			goto continue
+		end
+
+		local widget = g_ui.createWidget('SpellPreview', window.contentPanel.spellList)
+		local spellId = SpellIcons[spellData.icon][1]
+		local source = SpelllistSettings['Default'].iconsFolder
+		local clip = Spells.getImageClipNormal(spellId, 'Default')
+
+		-- radio
+		radio:addWidget(widget)
+		widget:setId(spellData.id)
+		widget:setText(spellName.."\n"..spellData.words)
+		widget.voc = spellData.vocations
+		widget.param = spellData.parameter
+		widget.source = source
+		widget.clip = clip
+		widget.image:setImageSource(widget.source)
+		widget.image:setImageClip(widget.clip)
+		if spellData.level then
+			widget.levelLabel:setVisible(true)
+			widget.levelLabel:setText(string.format("Level: %d", spellData.level))
+			if player:getLevel() < spellData.level then
+				widget.image.gray:setVisible(true)
+			end
+		end
+
+		local primaryGroup = Spells.getPrimaryGroup(spellData)
+		if primaryGroup ~= -1 then
+			local offSet = 1
+			if primaryGroup == 2 then
+				offSet = (23 * (primaryGroup - 1))
+			elseif primaryGroup == 3 then
+				offSet = (23 * (primaryGroup - 1)) - 1
+			end
+
+			widget.imageGroup:setImageClip(offSet .. " 25 20 20")
+			widget.imageGroup:setVisible(true)
+		end
+
+		:: continue ::
+	end
+
+	-- sort alphabetically
+	local widgets = window.contentPanel.spellList:getChildren()
+	table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
+	for i, widget in ipairs(widgets) do
+		window.contentPanel.spellList:moveChildToIndex(widget, i)
+	end
+
+  -- edit spell
+  if button.cache.spellData and not button.cache.isRuneSpell then
+    local name = Spells.getSpellNameByWords(button.cache.spellData.words)
+	local spellId = SpellIcons[button.cache.spellData.icon][1]
+	local source = SpelllistSettings['Default'].iconsFolder
+	local clip = Spells.getImageClipNormal(spellId, 'Default')
+
+    window.contentPanel.preview:setText(name.."\n"..button.cache.spellData.words)
+    window.contentPanel.preview.image:setImageSource(source)
+    window.contentPanel.preview.image:setImageClip(clip)
+
+    window.contentPanel.paramLabel:setOn(button.cache.spellData.parameter)
+    window.contentPanel.paramText:setEnabled(button.cache.spellData.parameter)
+    if button.cache.spellData.parameter then
+      window.contentPanel.paramText:setText(button.cache.castParam)
+	  if button.cache.castParam then
+	  	window.contentPanel.paramText:setCursorPos(#button.cache.castParam)
+	  end
+    end
+
+    for i, k in pairs(window.contentPanel.spellList:getChildren()) do
+      if k:getId() == tostring(button.cache.spellData.id) then
+        radio:selectWidget(window.contentPanel.spellList:getChildren()[i])
+        window.contentPanel.spellList:ensureChildVisible(window.contentPanel.spellList:getChildren()[i])
+        break
+      end
+    end
+  end
+
+	-- callback
+	radio.onSelectionChange = function(widget, selected)
+		if selected and window.contentPanel then
+			window.contentPanel.preview:setText(selected:getText())
+			window.contentPanel.preview.image:setImageSource(selected.source)
+			window.contentPanel.preview.image:setImageClip(selected.clip)
+			window.contentPanel.paramLabel:setOn(selected.param)
+			window.contentPanel.paramText:setEnabled(selected.param)
+			window.contentPanel.paramText:clearText()
+			if selected:getText():lower():find("levitate") then
+				window.contentPanel.paramText:setText("up|down")
+			end
+			window.contentPanel.spellList:ensureChildVisible(widget)
+		end
+	end
+
+	if window.contentPanel.spellList:getChildren() and not button.cache.spellData then
+		radio:selectWidget(window.contentPanel.spellList:getChildren()[1])
+	end
+
+  local cancelFunc = function()
+		g_client.setInputLockWidget(nil)
+		destroyAssignWindow()
+	end
+
+	local okFunc = function(destroy)
+		local selected = radio:getSelectedWidget()
+		if not selected then cancelFunc() return end
+
+	  	local barID, buttonID = string.match(button:getId(), "(.*)%.(.*)")
+		local param = string.match(selected:getText(), "\n(.*)")
+		local paramText = window.contentPanel.paramText:getText()
+
+		local check = (param .. " " .. paramText)
+		if string.find(check, "utevo res ina") then
+			param = "utevo res ina"
+			paramText = string.gsub(paramText, "ina ", "")
+		end
+
+		if paramText:lower():find("up|down") then
+			window.contentPanel.paramText:setText("")
+		end
+		if not string.empty(paramText) then
+			param = param .. ' "' .. paramText:gsub('"', '') .. '"'
+		end
+
+		Options.createOrUpdateText(tonumber(barID), tonumber(buttonID), param, true)
+		updateButton(button)
+
+		if destroy then
+			g_client.setInputLockWidget(nil)
+			destroyAssignWindow()
+		end
+	end
+
+	window.contentPanel.buttonOk.onClick = function() okFunc(true) end
+	window.contentPanel.buttonApply.onClick = function() okFunc(false) end
+	window.contentPanel.buttonClose.onClick = cancelFunc
+	window.onEnter = function() okFunc(true) end
+	window.onEscape = cancelFunc
+
+	local actionbar = button:getParent():getParent()
+	if actionbar.locked then
+		cancelFunc()
+	end
+end
+
+function assignText(button)
+	-- Tear down any assign dialog already open so a second open can't stack a floating,
+	-- uncloseable window (see closeAssignDialogs).
+	closeAssignDialogs()
+	window = g_ui.loadUI('text', g_ui.getRootWidget())
+	window:show()
+	g_client.setInputLockWidget(window)
+	window:raise()
+	scheduleEvent(function()
+		window:focus()
+	end, 50)
+
+	window:setText("Assign Text to Action Button ".. button:getId())
+	window.contentPanel.text.onTextChange = function(self, text)
+		window.contentPanel.buttonOk:setEnabled(text:len() > 0)
+		window.contentPanel.buttonApply:setEnabled(text:len() > 0)
+	end
+
+	window.contentPanel.checkPanel.tick:setChecked(true)
+	window.contentPanel.text:setText(button.cache.param)
+	window.contentPanel.text:setCursorPos(#button.cache.param)
+	if #window.contentPanel.text:getText() > 0 then
+		window.contentPanel.checkPanel.tick:setChecked(button.cache.sendAutomatic)
+	end
+
+	local okFunc = function(destroy)
+		local autoSay = window.contentPanel.checkPanel.tick:isChecked()
+		local text = window.contentPanel.text:getText()
+		local fomartedText = Spells.getSpellFormatedName(text)
+		local barID, buttonID = string.match(button:getId(), "(.*)%.(.*)")
+		Options.createOrUpdateText(tonumber(barID), tonumber(buttonID), fomartedText, autoSay)
+		updateButton(button)
+
+		if destroy then
+			g_client.setInputLockWidget(nil)
+			destroyAssignWindow()
+		end
+	end
+
+	local cancelFunc = function()
+		g_client.setInputLockWidget(nil)
+		destroyAssignWindow()
+	end
+
+	window.contentPanel.buttonOk.onClick = function() okFunc(true) end
+	window.contentPanel.buttonApply.onClick = function() okFunc(false) end
+	window.contentPanel.buttonClose.onClick = cancelFunc
+	window.onEscape = cancelFunc
+	window.onEnter = function() okFunc(true) end
+	window:insertLuaCall('onEnter')
+	window:insertLuaCall('onEscape')
+
+	local actionbar = button:getParent():getParent()
+	if actionbar.locked then
+		cancelFunc()
+	end
+end
+
+function assignItem(button, itemId, itemTier, dragEvent, itemUpgrade)
+	if not isLoaded then
+		return true
+	end
+
+	if not button.item then
+		updateButton(button)
+		return
+	end
+
+	local actionbar = button:getParent():getParent()
+	if dragEvent and actionbar.locked or actionbar.locked then
+		updateButton(button)
+		return
+	end
+
+	local radio = UIRadioGroup.create()
+	local item = button.item:getItem()
+	local id = button.item:getItemId()
+	-- Upgrade level to persist with the slot: from onAssign it is the dragged instance's
+	-- level; for "Edit Object" (called without it) fall back to whatever the slot's item
+	-- already carries, so re-editing a button doesn't wipe its upgrade tag.
+	itemUpgrade = itemUpgrade or (item and item:getUpgradeLevel()) or 0
+
+	-- Tear down any assign dialog already open so a second open can't stack a floating,
+	-- uncloseable window (see closeAssignDialogs).
+	closeAssignDialogs()
+
+	window = g_ui.loadUI('object', g_ui.getRootWidget())
+	window:show()
+	g_client.setInputLockWidget(window)
+	window:raise()
+	scheduleEvent(function()
+		window:focus()
+	end, 50)
+
+	window:setText("Assign Object to Action Button " .. button:getId())
+	window:setId("assignItemWindow")
+
+	window.contentPanel.select.onClick = function()
+		destroyAssignWindow()
+		assignItemEvent(button)
+	end
+
+	local fromSelect = false
+	if button.item:getItemId() > 0 and button.item:getItemId() ~= itemId then
+		fromSelect = true
+	end
+
+	window.contentPanel.item:setItemId(itemId)
+	if not item then
+		item = window.contentPanel.item:getItem()
+	end
+
+	if window.contentPanel.item:getItem() then
+		window.contentPanel.item:getItem():setTier(itemTier)
+	end
+
+	-- ativar smart object (se tem cloth e se tem wearout)
+	window.contentPanel.checks.smart:setVisible(false)
+	if (item:getClothSlot() > 0 and (item:hasExpireStop() or getSmartCast(item:getId()))) then
+		window.contentPanel.checks.smart:setVisible(true)
+		if button.cache.smartMode and button.cache.smartMode == true then
+			window.contentPanel.checks.smart:setChecked(true)
+		end
+	end
+
+	for i, child in ipairs(window.contentPanel.checks:getChildren()) do
+		if i == 6 then
+			goto continue
+		end
+
+		radio:addWidget(child)
+		child:setEnabled(false)
+
+		if i <= 4 and item:isMultiUse() then
+			child:setEnabled(true)
+			if not radio:getSelectedWidget() and not (item:getClothSlot() > 0 or (item:getClothSlot() == 0 and item:getClassification() > 0)) then
+				if fromSelect or button.cache.actionType == 0 or button.cache.actionType == i or (button.cache.actionType and button.cache.actionType == 6) then
+					radio:selectWidget(child)
+				end
+			end
+		end
+
+		if (i == 5 and canEquipItem(item)) then
+			child:setEnabled(true)
+			if not radio:getSelectedWidget() then
+				if fromSelect or button.cache.actionType == 0 or button.cache.actionType == i or (button.cache.actionType and button.cache.actionType == 6) then
+					radio:selectWidget(child)
+				end
+			end
+		end
+
+		if i == 7 and item:isUsable() and not item:isMultiUse() then
+			child:setEnabled(true)
+			if not radio:getSelectedWidget() then
+				if fromSelect or button.cache.actionType == 0 or button.cache.actionType == i - 1 or (button.cache.actionType and button.cache.actionType == 6) then
+					radio:selectWidget(child)
+				end
+			end
+		end
+
+		child.onCheckChange = function(self)
+			if self:getId() == "Equip" and not window.contentPanel.checks.smart:isEnabled() then
+				window.contentPanel.checks.smart:setEnabled(true)
+			elseif self:getId() ~= "Equip" and window.contentPanel.checks.smart:isEnabled() then
+				window.contentPanel.checks.smart:setChecked(false)
+				window.contentPanel.checks.smart:setEnabled(false)
+			end
+		end
+
+		:: continue ::
+	end
+
+	window.contentPanel.buttonOk:setEnabled(item and item:getId() > 100)
+	window.contentPanel.buttonApply:setEnabled(item and item:getId() > 100)
+
+	itemTier = not itemTier and button.cache.upgradeTier or itemTier
+	window.contentPanel.tier:setVisible(itemTier and itemTier > 0 or false)
+	if itemTier and itemTier > 1 then
+		window.contentPanel.tier:setImageClip(18 * (itemTier - 1) .. " 0 18 16")
+	end
+
+	-- Item didn't match any specific use type (not multi-use, not equippable, not
+	-- directly usable). Default it to a plain "Use" so clicking the slot fires
+	-- useInventoryItem, instead of silently selecting the disabled first child
+	-- (UseOnYourself), which would send a useWith on self and do nothing useful.
+	if not radio:getSelectedWidget() then
+		local useCheck = window.contentPanel.checks.Use
+		useCheck:setEnabled(true)
+		radio:selectWidget(useCheck)
+	end
+
+	local okFunc = function(destroy)
+		local selected = radio:getSelectedWidget():getId()
+		local barID, buttonID = string.match(button:getId(), "(.*)%.(.*)")
+
+		local cache = getButtonCache(button)
+		local cachedItem = cachedItemWidget[cache.itemId]
+		if cachedItem then
+			for index, widget in pairs(cachedItem) do
+				if button == widget then
+					table.remove(cachedItem, index)
+				end
+			end
+		end
+
+		-- Only items with a real upgrade classification can carry a forge tier. Use the
+		-- ThingType classification, NOT Item:getClassification() (which returns the WEAPON
+		-- type and is 0 for helmet/armor/legs/boots, wrongly dropping their tier so it
+		-- never showed on the slot for set pieces).
+		local classificationType = g_things.getThingType(itemId)
+		if not classificationType or classificationType:getClassification() == 0 then
+			itemTier = nil
+		end
+
+		local smartMode = nil
+		if window.contentPanel.checks.smart:isVisible() then
+			smartMode = window.contentPanel.checks.smart:isChecked()
+		end
+
+		Options.createOrUpdateAction(tonumber(barID), tonumber(buttonID), selected, itemId, itemTier, smartMode, itemUpgrade)
+		updateButton(button)
+
+		if destroy then
+			g_client.setInputLockWidget(nil)
+			destroyAssignWindow()
+			radio:destroy()
+		end
+	end
+
+	local cancelFunc = function()
+		g_client.setInputLockWidget(nil)
+		updateButton(button)
+		destroyAssignWindow()
+		radio:destroy()
+	end
+
+	window.contentPanel.buttonOk.onClick = function() okFunc(true) end
+	window.onEnter = function() okFunc(true) end
+	window.contentPanel.buttonApply.onClick = function() okFunc(false) end
+	window.contentPanel.buttonClose.onClick = cancelFunc
+	window.onEscape = cancelFunc
+	window:insertLuaCall('onEnter')
+
+	local actionbar = button:getParent():getParent()
+	if actionbar.locked then
+		g_client.setInputLockWidget(nil)
+		cancelFunc()
+	end
+end
+
+function assignHotkey(button)
+	-- Tear down any assign dialog already open so a second open can't stack a floating,
+	-- uncloseable window (see closeAssignDialogs).
+	closeAssignDialogs()
+	window = g_ui.loadUI('hotkey', g_ui.getRootWidget())
+	window:show()
+	g_client.setInputLockWidget(window)
+	window:raise()
+	window:focus()
+
+	local barN = button:getParent():getParent().n
+	local barDesc
+	if barN < 4 then
+		barDesc = "Bottom"
+	elseif barN < 7 then
+		barDesc = "Left"
+	else
+		barDesc = "Right"
+	end
+
+	barDesc = barDesc .. " Action Bar: Action Button " .. button:getId()
+	window:setText('Edit Hotkey for "' .. barDesc)
+	window.desc:setText(window.desc:getText() .. barDesc .. '"')
+	window.display:setText(button.cache.hotkey or "")
+
+	local chatOn = Options.isChatOnEnabled
+	if chatOn then
+		window.chatMode:setText("Mode: \"Chat On\"")
+	else
+		window.chatMode:setText("Mode: \"Chat Off\"")
+	end
+
+	window:grabKeyboard()
+	window.onKeyDown = function(window, keyCode, keyboardModifiers, keyText) manageKeyPress(window, keyCode, keyboardModifiers, keyText) end
+
+	local okFunc = function()
+		local lastHotkey = button.cache.hotkey or ""
+		if lastHotkey ~= "" then
+			local usedButton = getUsedHotkeyButton(lastHotkey)
+			if usedButton then
+				Options.removeHotkey(usedButton:getId())
+				g_keyboard.unbindKeyPress(lastHotkey, nil, gameRootPanel)
+				g_keyboard.unbindKeyDown(lastHotkey, nil, gameRootPanel)
+				updateButton(usedButton)
+			end
+		end
+
+		local hotkey = window.display.combo
+		if hotkey == nil or #hotkey == 0 then
+			if button.cache.hotkey ~= "" then
+				local hk = button.cache.hotkey
+				Options.removeHotkey(button:getId())
+				g_keyboard.unbindKeyPress(hk, nil, gameRootPanel)
+				g_keyboard.unbindKeyDown(hk, nil, gameRootPanel)
+				updateButton(button)
+			end
+			g_client.setInputLockWidget(nil)
+			destroyAssignWindow()
+			return true
+		end
+
+    Options.clearHotkey(hotkey)
+
+		local usedButton = getUsedHotkeyButton(hotkey)
+		if usedButton then
+			Options.removeHotkey(usedButton:getId())
+			g_keyboard.unbindKeyPress(hotkey, nil, gameRootPanel)
+			g_keyboard.unbindKeyDown(hotkey, nil, gameRootPanel)
+		    updateButton(usedButton)
+		end
+
+		if KeyBinds:hotkeyIsUsed(hotkey) and hotkey ~= '' then
+			local key = KeyBind:getKeyBindByHotkey(hotkey)
+			Options.removeActionHotkey(chatOn and "chatOn" or "chatOff", key.jsonName)
+			if key then
+				key:setFirstKey('')
+				g_keyboard.unbindKeyDown(hotkey, nil, gameRootPanel)
+				g_keyboard.unbindKeyPress(hotkey, nil, gameRootPanel)
+			end
+		end
+
+		if m_settings.hotkeyIsUsed(hotkey) then
+			m_settings.removeCustomHotkey(hotkey)
+		end
+
+		g_keyboard.bindKeyPress(hotkey, function() onExecuteAction(button, true) end, gameRootPanel)
+		g_keyboard.bindKeyDown(hotkey, function() onExecuteAction(button, false) end, gameRootPanel)
+		button.cache.hotkey = hotkey
+		Options.updateActionBarHotkey("TriggerActionButton_".. button:getId(), hotkey)
+		updateButton(button)
+		g_client.setInputLockWidget(nil)
+		destroyAssignWindow()
+	end
+
+	local clearFunc = function()
+		local hotkey = window.display:getText()
+		Options.removeHotkey(button:getId())
+		if hotkey ~= '' then
+			g_keyboard.unbindKeyPress(hotkey, nil, gameRootPanel)
+			g_keyboard.unbindKeyDown(hotkey, nil, gameRootPanel)
+		end
+		g_client.setInputLockWidget(nil)
+		updateButton(button)
+		window.display:setText('')
+		destroyAssignWindow()
+	end
+
+	local closeFunc = function()
+		g_client.setInputLockWidget(nil)
+		destroyAssignWindow()
+	end
+
+	window.buttonOk.onClick = okFunc
+	window.buttonClear.onClick = clearFunc
+	window.buttonClose.onClick = closeFunc
+
+	local actionbar = button:getParent():getParent()
+	if actionbar.locked then
+		g_client.setInputLockWidget(nil)
+		closeFunc()
+	end
+end
+
+function assignPassive(button)
+	-- Tear down any assign dialog already open so a second open can't stack a floating,
+	-- uncloseable window (see closeAssignDialogs).
+	closeAssignDialogs()
+	local radio = UIRadioGroup.create()
+	window = g_ui.loadUI('passive', g_ui.getRootWidget())
+	window:show()
+	g_client.setInputLockWidget(window)
+	window:raise()
+	scheduleEvent(function()
+		window:focus()
+	end, 50)
+
+	window:setText("Assign Passive to Action Button ".. button:getId())
+
+	for id, passiveData in pairs(PassiveAbilities) do
+		local widget = g_ui.createWidget('PassivePreview', window.contentPanel.passiveList)
+		radio:addWidget(widget)
+		widget:setId(id)
+		widget:setText(passiveData.name)
+		widget.image:setImageSource(passiveData.icon)
+		widget.source = passiveData.icon
+		:: continue ::
+	end
+
+	radio.onSelectionChange = function(widget, selected)
+		if selected then
+			window.contentPanel.preview:setText(selected:getText())
+			window.contentPanel.preview.image:setImageSource(selected.source)
+			window.contentPanel.passiveList:ensureChildVisible(widget)
+		end
+	end
+
+	if window.contentPanel.passiveList:getChildren() then
+		radio:selectWidget(window.contentPanel.passiveList:getChildren()[1])
+		window.contentPanel.preview:setColor("$var-text-cip-color")
+	end
+
+	local okFunc = function(destroy)
+		local selected = radio:getSelectedWidget()
+		if not selected then return end
+
+	  local barID, buttonID = string.match(button:getId(), "(.*)%.(.*)")
+		Options.createOrUpdatePassive(tonumber(barID), tonumber(buttonID), tonumber(selected:getId()))
+		updateButton(button)
+
+		if destroy then
+			g_client.setInputLockWidget(nil)
+			destroyAssignWindow()
+		end
+	end
+
+	local cancelFunc = function()
+		g_client.setInputLockWidget(nil)
+		destroyAssignWindow()
+	end
+
+	window.contentPanel.buttonOk.onClick = function() okFunc(true) end
+	window.contentPanel.buttonApply.onClick = function() okFunc(false) end
+	window.contentPanel.buttonClose.onClick = cancelFunc
+	window.onEnter = function() okFunc(true) end
+	window.onEscape = cancelFunc
+	window:insertLuaCall('onEnter')
+
+	local actionbar = button:getParent():getParent()
+	if actionbar.locked then
+		g_client.setInputLockWidget(nil)
+		cancelFunc()
+	end
+end
+
+function manageKeyPress(window, keyCode, keyboardModifiers, keyText)
+	local keyCombo = determineKeyComboDesc(keyCode, keyboardModifiers, keyText)
+	local resetCombo = {"Shift", "Ctrl", "Alt"}
+    if table.contains(resetCombo, keyCombo) then
+		window.display:setText('')
+		window.warning:setVisible(false)
+		window.buttonOk:setEnabled(true)
+      	return true
+    end
+
+	local shortCut = (keyCombo == "HalfQuote" and "'" or keyCombo)
+	window.display:setText(shortCut)
+	window.display.combo = keyCombo
+	window.warning:setVisible(false)
+	window.buttonOk:setEnabled(true)
+	if isHotkeyUsed(keyCombo) then
+		window.warning:setVisible(true)
+		window.warning:setText("This hotkey is already in use and will be overwritten.")
+	end
+
+	if table.contains(blockedKeys, keyCombo) then
+		window.warning:setVisible(true)
+		window.warning:setText("This hotkey is already in use and cannot be overwritten.")
+		window.buttonOk:setEnabled(false)
+	end
+	return true
+end
+
+function clearButton(button, removeAction)
+	local hotkey = button.cache.hotkey
+
+	if button.cache.cooldownEvent then
+	  removeEvent(button.cache.cooldownEvent)
+	end
+
+  	removeCooldown(button)
+	resetButtonCache(button)
+
+	if hotkey then
+		button.cache.hotkey = hotkey
+		button.hotkeyLabel:setText(translateDisplayHotkey(button.cache.hotkey))
+	end
+
+	setupButtonTooltip(button, true)
+	if removeAction then
+		local barID, buttonID = string.match(button:getId(), "(.*)%.(.*)")
+		Options.removeAction(tonumber(barID), tonumber(buttonID))
+	end
+end
+
+function playerCanUseSpell(spellData)
+	if not g_game.isOnline() then
+		return
+	end
+
+	if not spellData then
+		return false
+	end
+
+	-- Whether the server has granted a spell is told to us by its PRESENCE in the
+	-- basic-data spell list (0x9F -> onSpellsChange -> spellListData): a learnable spell
+	-- the player hasn't learned arrives as id 0 and is dropped, and spells outside the
+	-- player's vocation are never listed. So gate both monk-learned (needLearn) and wheel
+	-- revelation-perk (special) spells off that list.
+	--
+	-- The `special` gate used to key off spellModification, but that packet was never
+	-- ported to this fork, so the table stayed permanently empty and EVERY special spell
+	-- (e.g. "exori amp kor" once unlocked on the Wheel of Destiny) rendered greyed-out on
+	-- the action bar even though casting worked. Non-learnable wheel spells are always
+	-- sent for the matching vocation, so this makes them follow the vocation gate like a
+	-- normal spell instead of being stuck grey.
+	if (spellData.needLearn or spellData.special) and not spellListData[tostring(spellData.id)] then
+		return false
+	end
+
+	if spellData.mana and (player:getMana() < spellData.mana) then
+		return false
+	end
+
+	if spellData.level and (player:getLevel() < spellData.level) then
+		return false
+	end
+
+	if spellData.soul and (player:getSoul() < spellData.soul) then
+		return false
+	end
+
+	if spellData.vocations and (not table.contains(spellData.vocations, translateVocation(player:getVocation()))) then
+		return false
+	end
+
+	return true
+end
+
+function getItemNameById(itemId)
+	for _, k in pairs(hotkeyItemList) do
+		local item = k[1]
+		if item:getId() == itemId then
+			return k[2]
+		end
+	end
+	return "this object"
+end
+
+function setupHotkeyButton(button)
+	if not Options.currentHotkeySet then
+		return
+	end
+
+	local currentSet = Options.isChatOnEnabled and Options.currentHotkeySet["chatOn"] or Options.currentHotkeySet["chatOff"]
+	for _, data in pairs(currentSet) do
+		if data["actionsetting"] then
+			if data["actionsetting"]["action"] == "TriggerActionButton_" .. button:getId() then
+				local keySequence = data["keysequence"]
+				if keySequence and not string.empty(keySequence) then
+					if not data["secondary"] then
+						button.cache.hotkey = keySequence
+					end
+
+					g_keyboard.unbindKeyPress(keySequence, nil, gameRootPanel)
+					g_keyboard.unbindKeyDown(keySequence, nil, gameRootPanel)
+					g_keyboard.unbindKeyUp(keySequence, nil, gameRootPanel)
+
+					g_keyboard.bindKeyPress(keySequence, function() onExecuteAction(button, true) end, gameRootPanel)
+					g_keyboard.bindKeyDown(keySequence, function() onExecuteAction(button, false) end, gameRootPanel)
+					g_keyboard.bindKeyUp(keySequence, function() onCheckKeyUp(button) end, gameRootPanel)
+				end
+			end
+		end
+	end
+end
+
+-- Reaplica ao vivo os binds de hotkey da action bar a partir do hotkey set ativo.
+-- O editor de Options > Action Bar Hotkeys apenas gravava os dados (updateActionMenuHotkey)
+-- sem refazer os binds de teclado nem atualizar o rotulo do botao, entao a hotkey so
+-- passava a valer depois de relogar ou trocar de chat mode. `keysToUnbind` (string ou
+-- lista) remove teclas antigas que sairam do set (hotkey trocada/limpa) para nao deixar
+-- bind fantasma. Espelha a logica de switchChatMode (remove primarias + reconstroi tudo).
+function reapplyActionBarHotkeys(keysToUnbind)
+	if type(keysToUnbind) == "string" then
+		keysToUnbind = { keysToUnbind }
+	end
+	if keysToUnbind then
+		for _, key in ipairs(keysToUnbind) do
+			if key and not string.empty(key) then
+				g_keyboard.unbindKeyPress(key, nil, gameRootPanel)
+				g_keyboard.unbindKeyDown(key, nil, gameRootPanel)
+				g_keyboard.unbindKeyUp(key, nil, gameRootPanel)
+			end
+		end
+	end
+
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			if button.cache and button.cache.hotkey and not string.empty(button.cache.hotkey) then
+				g_keyboard.unbindKeyPress(button.cache.hotkey, nil, gameRootPanel)
+				g_keyboard.unbindKeyDown(button.cache.hotkey, nil, gameRootPanel)
+				g_keyboard.unbindKeyUp(button.cache.hotkey, nil, gameRootPanel)
+				button.cache.hotkey = nil
+				if button.hotkeyLabel then
+					button.hotkeyLabel:setText("")
+				end
+			end
+		end
+	end
+
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			setupHotkeyButton(button)
+			if button.cache and button.cache.hotkey then
+				if button.item and button.item.text then
+					button.item.text:setTextOffset("0 8")
+				end
+				if button.hotkeyLabel then
+					button.hotkeyLabel:setText(translateDisplayHotkey(button.cache.hotkey))
+				end
+			end
+		end
+	end
+end
+
+function isHotkeyUsed(key, secondary)
+	if not secondary then
+		secondary = false
+	end
+
+	if not key or not Options.currentHotkeySet then
+		return false
+	end
+
+	local currentSet = Options.isChatOnEnabled and Options.currentHotkeySet["chatOn"] or Options.currentHotkeySet["chatOff"]
+	for _, data in pairs(currentSet) do
+		if data["actionsetting"] and data["keysequence"] then
+			if secondary and data["secondary"] and data["keysequence"]:lower() == key:lower() then
+				return true
+			end
+
+			if not secondary and not data["secondary"] and data["keysequence"]:lower() == key:lower() then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function isHotkeyUsedByChat(key, chatType)
+	if not key or not Options.currentHotkeySet then
+		return false
+	end
+	local currentSet = Options.currentHotkeySet[chatType]
+	for _, data in pairs(currentSet) do
+		if data["actionsetting"] and data["keysequence"] then
+			if data["keysequence"]:lower() == key:lower() then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function getUsedHotkeyButton(key)
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			local hotkey = button.cache.hotkey
+			if hotkey and hotkey:lower() == key:lower() then
+				return button
+			end
+		end
+	end
+	return nil
+end
+
+function switchChatMode(enabled, temporary)
+	Options.setChatMode(enabled, temporary)
+	KeyBinds:setupAndReset(Options.currentHotkeySetName, enabled and "chatOn" or "chatOff")
+
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			if button.cache.hotkey ~= "" then
+				g_keyboard.unbindKeyPress(button.cache.hotkey, nil, gameRootPanel)
+				g_keyboard.unbindKeyDown(button.cache.hotkey, nil, gameRootPanel)
+				button.cache.hotkey = nil
+				button.hotkeyLabel:setText("")
+			end
+		end
+	end
+
+	-- insert new ones
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			setupHotkeyButton(button)
+			if button.cache.hotkey then
+				button.hotkeyLabel:setText(translateDisplayHotkey(button.cache.hotkey))
+			end
+		end
+	end
+	m_settings.CustomHotkeys.createList(true)
+end
+
+function updateVisibleWidgets()
+	for _, actionBar in pairs(actionBars) do
+		if actionBar:isVisible() then
+			local tabBar = actionBar.tabBar
+			local children = tabBar:getChildren()
+			local dimension = actionBar.isVertical and tabBar:getHeight() or tabBar:getWidth()
+
+			-- Guard against an unsettled layout. The tabBar width/height is anchor-derived
+			-- and resolves across several deferred dispatcher cycles after login, so this
+			-- can be called (by the boot timer or an intermediate @onGeometryChange) while
+			-- dimension is still 0 or below a single slot. Running the pass then would make
+			-- math.floor(dimension/36) == 0, clamp to visibleCount == 1, and hide every slot
+			-- but the first. We instead leave the current visibility untouched; the
+			-- @onGeometryChange hook re-runs us once the real size arrives, so the bar
+			-- self-heals instead of latching an empty state.
+			if dimension >= 36 then
+				local visibleCount = math.max(1, math.floor(dimension / 36))
+
+				-- Clamp the window start so a stale firstVisibleIndex (persisted on the
+				-- reused panel from a prior session's paging) can never push the whole bar
+				-- off-screen. Never below 1.
+				local maxFirst = math.max(1, #children - visibleCount + 1)
+				local firstIndex = math.min(actionBar.firstVisibleIndex or 1, maxFirst)
+				actionBar.firstVisibleIndex = firstIndex
+
+				for i, button in ipairs(children) do
+					if i >= firstIndex and i < firstIndex + visibleCount then
+						button:setVisible(true)
+						actionBar.lastVisibleIndex = i
+					else
+						button:setVisible(false)
+					end
+				end
+			end
+		end
+	end
+end
+
+local function getFirstVisibleButton(actionBar)
+	for _, button in ipairs(actionBar.tabBar:getChildren()) do
+		if button:isVisible() then
+			return button
+		end
+	end
+	return nil
+end
+
+local function getNextInvisibleChild(actionBar, firstIndex)
+	for i, button in ipairs(actionBar.tabBar:getChildren()) do
+		if i >= firstIndex and not button:isVisible() then
+			return button
+		end
+	end
+	return nil
+end
+
+local function getPrevInvisibleButton(actionBar)
+	local lastButton = nil
+	for _, button in ipairs(actionBar.tabBar:getChildren()) do
+		if button:isVisible() then
+			return lastButton
+		end
+		lastButton = button
+	end
+	return nil
+end
+
+local function getLastVisibleButton(actionBar)
+	-- NOTE: UIWidget has no getReverseChildren() (it doesn't exist in this engine,
+	-- C++ or Lua); calling it threw "attempt to call method 'getReverseChildren'".
+	-- Walk children forward and keep the last visible one instead.
+	local lastVisible = nil
+	for _, button in ipairs(actionBar.tabBar:getChildren()) do
+		if button:isVisible() then
+			lastVisible = button
+		end
+	end
+	return lastVisible
+end
+
+function moveActionButtons(widget)
+	local dir = widget:getId()
+	local actionBar = widget:getParent():getParent()
+	local scroll = actionBar.actionScroll
+	local tabBar = actionBar.tabBar
+	local buttons = { actionBar.prevPanel.prev, actionBar.prevPanel.first, actionBar.nextPanel.next, actionBar.nextPanel.last }
+	local children = tabBar:getChildren()
+
+	local dimension = actionBar.isVertical and tabBar:getHeight() or tabBar:getWidth()
+	local visibleCount = math.max(1, math.floor(dimension / 36))
+
+	if dir == "next" then
+		local firstVisible = getFirstVisibleButton(actionBar)
+		if not firstVisible then return end
+
+		local firstIndex = tabBar:getChildIndex(firstVisible)
+		local nextInvisible = getNextInvisibleChild(actionBar, firstIndex)
+
+		if not nextInvisible then return end
+
+		firstVisible:setVisible(false)
+		nextInvisible:setVisible(true)
+		scroll:increment(36)
+
+		actionBar.firstVisibleIndex = tabBar:getChildIndex(firstVisible) + 1
+		actionBar.lastVisibleIndex = tabBar:getChildIndex(nextInvisible)
+
+	elseif dir == "prev" then
+		local prevInvisible = getPrevInvisibleButton(actionBar)
+		local lastVisible = getLastVisibleButton(actionBar)
+
+		if not prevInvisible then return end
+
+		prevInvisible:setVisible(true)
+		lastVisible:setVisible(false)
+		scroll:decrement(36)
+
+		actionBar.firstVisibleIndex = tabBar:getChildIndex(prevInvisible)
+		actionBar.lastVisibleIndex = tabBar:getChildIndex(lastVisible) - 1
+
+	elseif dir == "first" then
+		for i, button in ipairs(children) do
+			button:setVisible(i <= visibleCount)
+		end
+
+		actionBar.firstVisibleIndex = 1
+		actionBar.lastVisibleIndex = tabBar:getChildIndex(getLastVisibleButton(actionBar))
+		scroll:setValue(scroll:getMinimum())
+
+	elseif dir == "last" then
+		-- show the last `visibleCount` buttons (no getReverseChildren in this engine)
+		local total = #children
+		for i, button in ipairs(children) do
+			button:setVisible(i > total - visibleCount)
+		end
+
+		actionBar.firstVisibleIndex = tabBar:getChildIndex(getFirstVisibleButton(actionBar))
+		actionBar.lastVisibleIndex = total
+		scroll:setValue(scroll:getMaximum())
+	end
+
+	local prevEnabled = actionBar.firstVisibleIndex ~= 1
+	local nextEnabled = actionBar.lastVisibleIndex ~= #children
+
+	buttons[1]:setOn(prevEnabled)
+	buttons[2]:setOn(prevEnabled)
+	buttons[3]:setOn(nextEnabled)
+	buttons[4]:setOn(nextEnabled)
+end
+
+function changeLockStatus(button, barType)
+	local barData = {
+		["Bottom"] = {option = "actionBarBottomLocked", startPos = 1, endPos = 3},
+		["Left"] = {option = "actionBarLeftLocked", startPos = 4, endPos = 6},
+		["Right"] = {option = "actionBarRightLocked", startPos = 7, endPos = 9}
+	}
+
+	local data = barData[barType]
+	if not data then
+		return true
+	end
+
+	Options.clientOptions[data.option] = not Options.clientOptions[data.option]
+
+	for i = data.startPos, data.endPos do
+		actionBars[i].locked = not Options.actionBar[i].isLocked
+		Options.actionBar[i].isLocked = not Options.actionBar[i].isLocked
+	end
+
+	if Options.clientOptions[data.option] then
+		button:setIcon("/images/game/actionbar/locked")
+	else
+		button:setIcon("/images/game/actionbar/unlocked")
+	end
+end
+
+function unbindActionBarEvent(actionbar)
+	for _, button in pairs(actionbar.tabBar:getChildren()) do
+		if button.cache and button.cache.hotkey then
+			g_keyboard.unbindKeyPress(button.cache.hotkey, nil, gameRootPanel)
+			g_keyboard.unbindKeyDown(button.cache.hotkey, nil, gameRootPanel)
+		end
+
+		if button.cache.cooldownEvent then
+			removeEvent(button.cache.cooldownEvent)
+		end
+
+		resetButtonCache(button)
+	end
+end
+
+function configureActionBar(barStr, visible)
+	if not g_game.isOnline() then
+		return
+	end
+
+	local bottom = string.find(barStr, "Bottom") ~= nil
+	local left = string.find(barStr, "Left") ~= nil
+	local right = string.find(barStr, "Right") ~= nil
+	local actionNumber = tonumber(string.sub(barStr, -1))
+
+	if bottom then
+		local actionBar = actionBars[actionNumber]
+		if not actionBar then
+			return true
+		end
+
+		actionBar:setVisible(visible)
+		actionBar:setOn(visible)
+		Options.actionBar[actionNumber].isVisible = visible
+		Options.clientOptions["actionBarShowBottom" .. actionNumber] = visible
+		Options.actionBar[actionNumber].created = true
+		resizeLockButtons()
+		unbindActionBarEvent(actionBar)
+		isLoaded = false
+		setupActionBar(actionNumber)
+		isLoaded = true
+
+		if visible then
+			table.insert(activeActionBars, actionBar)
+		else
+			for index, action in pairs(actionBars) do
+				if action:getId() == actionBar:getId() then
+					table.remove(activeActionBars, index)
+				end
+			end
+		end
+		scheduleEvent(function() modules.game_actionbar.updateVisibleWidgets() end, 10)
+		return
+	end
+
+	if left then
+		local actionBar = actionBars[actionNumber + 3]
+		if not actionBar then
+			return true
+		end
+
+		actionBar:setVisible(visible)
+		actionBar:setOn(visible)
+		Options.actionBar[actionNumber + 3].isVisible = visible
+		Options.clientOptions["actionBarShowLeft" .. actionNumber] = visible
+		resizeLockButtons()
+		unbindActionBarEvent(actionBar)
+		isLoaded = false
+		setupActionBar(actionNumber + 3)
+		isLoaded = true
+
+		if visible then
+			table.insert(activeActionBars, actionBar)
+		else
+			for index, action in pairs(actionBars) do
+				if action:getId() == actionBar:getId() then
+					table.remove(activeActionBars, index)
+				end
+			end
+		end
+		scheduleEvent(function() modules.game_actionbar.updateVisibleWidgets() end, 10)
+		return
+	end
+
+	if right then
+		local actionBar = actionBars[actionNumber + 6]
+		if not actionBar then
+			return true
+		end
+
+		actionBar:setVisible(visible)
+		actionBar:setOn(visible)
+		Options.actionBar[actionNumber + 6].isVisible = visible
+		Options.clientOptions["actionBarShowRight" .. actionNumber] = visible
+		resizeLockButtons()
+		unbindActionBarEvent(actionBar)
+		isLoaded = false
+		setupActionBar(actionNumber + 6)
+		isLoaded = true
+
+		if visible then
+			table.insert(activeActionBars, actionBar)
+		else
+			for index, action in pairs(actionBars) do
+				if action:getId() == actionBar:getId() then
+					table.remove(activeActionBars, index)
+				end
+			end
+		end
+		scheduleEvent(function() modules.game_actionbar.updateVisibleWidgets() end, 10)
+		return
+	end
+end
+
+function resetActionBar()
+	if not player then
+		player = g_game.getLocalPlayer()
+	end
+
+	if dragButton and dragItem then
+		resetDragWidget(dragItem, dragButton)
+		dragItem = nil
+		dragButton = nil
+	end
+
+	isLoaded = false
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			if button.cache.hotkey then
+				g_keyboard.unbindKeyPress(button.cache.hotkey, nil, gameRootPanel)
+				g_keyboard.unbindKeyDown(button.cache.hotkey, nil, gameRootPanel)
+				button.cache.hotkey = nil
+				button.hotkeyLabel:setText("")
+			end
+
+			clearButton(button, false)
+			resetButtonCache(button)
+			updateButton(button)
+		end
+	end
+	isLoaded = true
+end
+
+-- Completely clear one action bar (the "Clear ... Action Bars" buttons in
+-- Options > Interface): drop every assignment (spell/text, item, passive, equip
+-- preset) from ALL of its slots and their hotkeys, then re-render it empty.
+function resetSlots(slot)
+	slot = tonumber(slot)
+	if not slot then
+		return
+	end
+
+	-- 1. Remove every stored mapping for this bar, regardless of its type. Iterate
+	--    backwards since we remove entries. This is the source of truth that the
+	--    buttons render from and that gets persisted, so doing it here works even if
+	--    the bar is not currently visible. (The previous version only searched the
+	--    VISIBLE bars and never re-rendered, so the icons stayed on screen.)
+	if Options.actionBarMappings then
+		for i = #Options.actionBarMappings, 1, -1 do
+			local data = Options.actionBarMappings[i]
+			if data and tonumber(data.actionBar) == slot then
+				table.remove(Options.actionBarMappings, i)
+			end
+		end
+	end
+
+	-- 2. If the bar is currently rendered, unbind each button's hotkey and re-render
+	--    it. updateButton() reads the (now-empty) mappings, so the button comes back
+	--    blank.
+	local actionbar = actionBars[slot]
+	if actionbar and actionbar.tabBar then
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			if button.cache and button.cache.hotkey then
+				g_keyboard.unbindKeyPress(button.cache.hotkey, nil, gameRootPanel)
+				g_keyboard.unbindKeyDown(button.cache.hotkey, nil, gameRootPanel)
+				button.cache.hotkey = nil
+				if button.hotkeyLabel then
+					button.hotkeyLabel:setText("")
+				end
+			end
+			Options.removeHotkey(button:getId())
+			updateButton(button)
+		end
+		-- Force the same on-screen refresh as the bar add/remove path (setupActionBar
+		-- re-renders every slot from the now-empty mappings and re-syncs hotkey items),
+		-- so the cleared bar updates immediately instead of only after the next rebuild.
+		setupActionBar(slot)
+	end
+end
+
+function getButtonById(id)
+	for _, actionbar in pairs(actionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			if button:getId() == id then
+				return button
+			end
+		end
+	end
+	return nil
+end
+
+function onDragSpellLeave(mousePos, spellWords, actionButton)
+	if not actionButton then
+		return true
+	end
+
+	local destButton = getButtonById(actionButton:getParent():getId())
+	if not destButton then
+		return true
+	end
+
+	local actionbar = destButton:getParent():getParent()
+	if actionbar.locked then
+		return true
+	end
+
+	local destBarID, destButtonID = string.match(destButton:getId(), "(.*)%.(.*)")
+	Options.createOrUpdateText(tonumber(destBarID), tonumber(destButtonID), spellWords, true)
+	updateButton(destButton)
+end
+
+function updateVisibleOptions(option, state)
+	for _, actionbar in pairs(activeActionBars) do
+		local childs = actionbar.tabBar:getChildren()
+		for _, button in pairs(childs) do
+			if not button:isVisible() then
+				goto continue
+			end
+
+			if option == "hotkey" then
+				button.hotkeyLabel:setVisible(state)
+			elseif option == "amount" then
+				button.item:setShowCount(state)
+			elseif option == "parameter" then
+				button.parameterText:setVisible(state)
+			end
+
+			if option == "tooltip" then
+				if not state then
+					button.item:setTooltip("")
+				else
+					setupButtonTooltip(button, false)
+				end
+			end
+
+			:: continue ::
+		end
+	end
+end
+
+function toggleCooldownOption()
+	for _, actionbar in pairs(activeActionBars) do
+		for _, button in pairs(actionbar.tabBar:getChildren()) do
+			local cache = getButtonCache(button)
+			if not (cache.isSpell or cache.isRuneSpell) then
+				goto continue
+			end
+
+			button.cooldown:showTime(m_settings.getOption("cooldownSecond"))
+			button.cooldown:showProgress(m_settings.getOption("graphicalCooldown"))
+			:: continue ::
+		end
+	end
+end
+
+function onReleaseActionKeys()
+	spellGroupPressed = {}
+end
+
+function isHotkeyGroupPressed(group)
+	return spellGroupPressed[tostring(group)] ~= nil
+end
+
+function canEquipItem(item)
+	if item:getClothSlot() == 0 and (item:getClassification() > 0 or item:isAmmo() or getSmartCast(item:getId())) then
+		return true
+	end
+
+	if item:getClothSlot() > 0 or (item:getClothSlot() == 0 and item:hasWearout()) then
+		return true
+	end
+	return false
+end
+
+function onSearchTextChange(text)
+	local spellList = window:recursiveGetChildById('spellList')
+	for _, child in pairs(spellList:getChildren()) do
+		local name = child:getText():lower()
+		if name:find(text:lower()) or text == '' or #text < 3 then
+			child:setVisible(true)
+		else
+			child:setVisible(false)
+		end
+	end
+  end
+
+function onClearSearchText()
+	local search = window:recursiveGetChildById('searchText')
+  search:setText('')
+end
+
+function removeHotkey(name)
+  local button = getUsedHotkeyButton(name)
+
+  if not button then return end
+
+  Options.removeHotkey(button:getId())
+  g_keyboard.unbindKeyPress(name, nil, m_interface.getRootPanel())
+  updateButton(button)
+end
+
+function updateButtonState(button)
+	if not button then return end
+
+	if not player then
+		player = g_game.getLocalPlayer()
+	end
+
+	if not player then return end
+	if not button.item then return end
+
+	local activeSpell = button:recursiveGetChildById('activeSpell')
+	activeSpell:setVisible(false)
+	if button.cache.isSpell then
+		setupButtonTooltip(button, false)
+		button.item.text.gray:setVisible(not playerCanUseSpell(button.cache.spellData))
+
+		activeSpell:setVisible(player:hasActiveStanceSpell(button.cache.spellData.id))
+	elseif button.cache.itemId ~= 0 then
+		local smartId = getSmartCast(button.cache.itemId)
+		local upgradeTier = button.cache.upgradeTier or 0
+		local isItemEquiped = player:hasEquippedItemId(button.cache.itemId, upgradeTier)
+		local isSmartEquiped = smartId and player:hasEquippedItemId(smartId, upgradeTier)
+		local itemCount = player:getInventoryCount(button.cache.itemId, upgradeTier)
+		if smartId then
+			itemCount = itemCount + player:getInventoryCount(smartId, upgradeTier)
+		end
+
+		-- update checked (pressed)
+		if button.cache.actionType == UseTypes["Equip"] and (not smartId or button.cache.smartMode) then
+			button.item:setChecked(itemCount ~= 0 and (isItemEquiped or isSmartEquiped))
+		end
+
+		-- update shadow (disabled)
+		button.item.gray:setVisible(itemCount == 0)
+
+		-- update item count
+		-- Non-stackable items report getCount()==1, so the count badge (which only
+		-- draws for stackable/chargeable/quiver with count>1) never showed their
+		-- owned amount. Force it on for non-stackables the player actually owns so the
+		-- action bar shows how many they have (value from getInventoryCount/0xF5);
+		-- stackables keep the default rule and an empty slot shows only the shadow.
+		local heldItem = button.item:getItem()
+		button.item:setShowCountAlways(heldItem ~= nil and not heldItem:isStackable() and itemCount > 0)
+		button.item:setItemCount(itemCount);
+
+		-- update tooltip
+		setupButtonTooltip(button, false)
+
+		-- update item
+		if button.cache.smartMode then
+			local activeId = getActiveSmartCast(button.cache.itemId) or button.cache.itemId
+			local inactiveId = getInactiveSmartCast(button.cache.itemId) or button.cache.itemId
+
+			if player:hasEquippedItemId(activeId, upgradeTier) then
+				button.item:setItemId(activeId, true)
+				button.cache.itemId = activeId
+			else
+				button.item:setItemId(inactiveId, true)
+				button.cache.itemId = inactiveId
+
+			end
+		end
+	end
+end

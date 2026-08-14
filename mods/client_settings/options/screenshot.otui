@@ -1,0 +1,390 @@
+ScreenshotWindow < Panel
+  id: screenshot
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  enabled: true
+  FlatPanel
+    size: 505 22
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: gameWindowScreen
+      size: 12 12
+      !text: tr('Only Capture Game Window')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you check this option, the screenshots will only be taken from\nthe game window instead of the complete client interface. This\nmight improve your game performance, particularly if you have\nticked the Screenshot Backlog option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: screenshotCombo
+      size: 12 12
+      !text: tr('Keep Backlog of the Screenshots of the Last 5 Seconds')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you check this option, the client takes a screenshot every\nsecond and caches the last 5 of them. Whenever a screenshot is\ntaken either automatically for a selected event or manually using a\nhotkey, also the screenshots of the previous 5 seconds will be\nsaved.\nIf you experience frame stuttering, you should consider disabling\nthis option..')
+
+  FlatPanel
+    size: 505 223
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: autoScreenshot
+      size: 12 12
+      !text: tr('Enable Auto Screenshots')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Enable this option to save screenshots of the most important\nmoments of your Nyxos career! Whenever one of the events you\nhave selected takes place, a screenshot will be taken\nautomatically.\n\nThe following events can be selected to trigger an auto screenshot:\n\n- Level Up: Your character has reached the next level\n- Skill Up: You advanced in one of your skills (e.g. Magic Level\nor Sword Fighting)\n- Achievement: You earned an achievement, either while\nplaying or upon login\n- Bestiary Entry Unlocked: You unlocked new information\nabout a creature in the Bestiary\n- Bestiary Entry Completed: You unlocked all information about\na creature in the Bestiary\n- Treasure Found: You received some reward from a container\nfor solving a quest or a riddle\n- Valuable Loot: You just found some loot which you have\nmarked in the Drop Tracker\n- Boss Defeated: You defeated a boss monster, either alone or\ntogether with other players, and are entitled to loot it\n- Death PvE: You were just killed by some creature (PvE)\n- Death PvP: You were just killed by another player (PvP)\n- Player Kill: You defeated another player\n- Player Killer Assist: You assisted the killing of another player\n- Player Attacking: Another player just started to attack you\n- Highest Damage Dealt: You dealt a new all-time high damage\non a foe. To see or reset your current all-time high, check\nthe Impact Analyser\n- Highest Healing Done: You healed someone with a new all-\ntime high healing value. To see or reset your current all-time\nhigh, check the Impact Analyser\n- Low Health: You have reached a threshold of deep red\nhealth Copy')
+
+    Label
+      id: selectLabel
+      !text: tr('Select all events that should trigger auto screenshots:')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 4
+      margin-left: 20
+
+    SettingsCheckBox
+      id: screenshotLevelUp
+      size: 12 12
+      !text: tr('Level Up')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotSkillUp
+      size: 12 12
+      !text: tr('Skill Up')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotAchievement
+      size: 12 12
+      !text: tr('Achievement')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotBestiaryUnlocked
+      size: 12 12
+      !text: tr('Bestiary Entry Unlocked')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotBestiaryComplete
+      size: 12 12
+      !text: tr('Bestiary Entry Completed')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotTreasure
+      size: 12 12
+      !text: tr('Treasure Found')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotValuableLoot
+      size: 12 12
+      !text: tr('Valuable Loot')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotBossDefeated
+      size: 12 12
+      !text: tr('Boss Defeated')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-left: 20
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotDeathPve
+      size: 12 12
+      !text: tr('Death PvE')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: selectLabel.bottom
+      margin-top: 6
+      margin-right: 152
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotDeathPvp
+      size: 12 12
+      !text: tr('Death PvP')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 152
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotPlayerKill
+      size: 12 12
+      !text: tr('Player Kill')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 152
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotPlayerKillAssist
+      size: 12 12
+      !text: tr('Player Kill Assist')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 108
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotPlayerAttacking
+      size: 12 12
+      !text: tr('Player Attacking')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 108
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotHighestDamage
+      size: 12 12
+      !text: tr('Player Damage Dealt')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 80
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotHighestHealing
+      size: 12 12
+      !text: tr('Player Healing Done')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 86
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotLowHealth
+      size: 12 12
+      !text: tr('Low Health')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 146
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: screenshotGiftOfLife
+      size: 12 12
+      !text: tr('Gift of Life Triggered')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-right: 903
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+  Button
+    id: openFolder
+    size: 128 20
+    !text: tr('Open Screenshot Folder')
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-bottom: 4
+    margin-left: 4
+    @onClick: modules.client_settings:openScreenshotFolder()
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings:resetScreenshotOptions()

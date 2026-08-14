@@ -1,0 +1,547 @@
+/*
+ * Copyright (c) 2010-2017 OTClient <https://github.com/edubart/otclient>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#include "creatures.h"
+#include "creature.h"
+#include "map.h"
+
+#include <framework/xml/tinyxml.h>
+#include <framework/core/resourcemanager.h>
+
+// Tibia 12+ staticdata protobuf (monsters/bosses with bestiary race ids).
+// protoc output lands in $(IntDir)proto, which is on the include path.
+#include "staticdata.pb.h"
+#include <fstream>
+
+CreatureManager g_creatures;
+
+static bool isInZone(const Position& pos/* placePos*/,
+                     const Position& centerPos,
+                     int radius)
+{
+    if(radius == -1)
+        return true;
+    return ((pos.x >= centerPos.x - radius) && (pos.x <= centerPos.x + radius) &&
+            (pos.y >= centerPos.y - radius) && (pos.y <= centerPos.y + radius)
+           );
+}
+
+void CreatureManager::terminate()
+{
+    clearSpawns();
+    clear();
+    m_nullCreature = nullptr;
+}
+
+void Spawn::load(TiXmlElement* node)
+{
+    Position centerPos;
+    centerPos.x = node->readType<int>("centerx");
+    centerPos.y = node->readType<int>("centery");
+    centerPos.z = node->readType<int>("centerz");
+
+    setCenterPos(centerPos);
+    setRadius(node->readType<int32>("radius"));
+
+    CreatureTypePtr cType(nullptr);
+    for(TiXmlElement* cNode = node->FirstChildElement(); cNode; cNode = cNode->NextSiblingElement()) {
+        if(cNode->ValueStr() != "monster" && cNode->ValueStr() != "npc")
+            stdext::throw_exception(stdext::format("invalid spawn-subnode %s", cNode->ValueStr()));
+
+        std::string cName = cNode->Attribute("name");
+        stdext::tolower(cName);
+        stdext::trim(cName);
+        stdext::ucwords(cName);
+
+        if (!(cType = g_creatures.getCreatureByName(cName)))
+            continue;
+
+        cType->setSpawnTime(cNode->readType<int>("spawntime"));
+        Otc::Direction dir = Otc::North;
+        int16 dir_ = cNode->readType<int16>("direction");
+        if(dir_ >= Otc::East && dir_ <= Otc::West)
+            dir = (Otc::Direction)dir_;
+        cType->setDirection(dir);
+
+        Position placePos;
+        placePos.x = centerPos.x + cNode->readType<int>("x");
+        placePos.y = centerPos.y + cNode->readType<int>("y");
+        placePos.z = cNode->readType<int>("z");
+
+        cType->setRace(cNode->ValueStr() == "npc" ? CreatureRaceNpc : CreatureRaceMonster);
+        addCreature(placePos, cType);
+    }
+}
+
+void Spawn::save(TiXmlElement* node)
+{
+    const Position& c = getCenterPos();
+    node->SetAttribute("centerx", c.x);
+    node->SetAttribute("centery", c.y);
+    node->SetAttribute("centerz", c.z);
+
+    node->SetAttribute("radius", getRadius());
+
+    TiXmlElement* creatureNode = nullptr;
+
+    for(const auto& pair : m_creatures) {
+        const CreatureTypePtr& creature = pair.second;
+        if(!(creatureNode = new TiXmlElement(creature->getRace() == CreatureRaceNpc ? "npc" : "monster")))
+            stdext::throw_exception("Spawn::save: Ran out of memory while allocating XML element!  Terminating now.");
+
+        creatureNode->SetAttribute("name", creature->getName());
+        creatureNode->SetAttribute("spawntime", creature->getSpawnTime());
+        creatureNode->SetAttribute("direction", creature->getDirection());
+
+        const Position& placePos = pair.first;
+        VALIDATE(placePos.isValid());
+
+        creatureNode->SetAttribute("x", placePos.x - c.x);
+        creatureNode->SetAttribute("y", placePos.y - c.y);
+        creatureNode->SetAttribute("z", placePos.z);
+
+        node->LinkEndChild(creatureNode);
+    }
+}
+
+void Spawn::addCreature(const Position& placePos, const CreatureTypePtr& cType)
+{
+    const Position& centerPos = getCenterPos();
+    int m_radius = getRadius();
+    if(!isInZone(placePos, centerPos, m_radius)) {
+        g_logger.warning(stdext::format("cannot place creature at %s (spawn's center position: %s, spawn radius: %d) (increment radius)",
+                                               stdext::to_string(placePos), stdext::to_string(centerPos),
+                                               m_radius
+                                              ));
+        return;
+    }
+
+    g_map.addThing(cType->cast(), placePos, 4);
+    m_creatures.insert(std::make_pair(placePos, cType));
+}
+
+void Spawn::removeCreature(const Position& pos)
+{
+    auto iterator = m_creatures.find(pos);
+    if(iterator != m_creatures.end()) {
+        VALIDATE(iterator->first.isValid());
+        VALIDATE(g_map.removeThingByPos(iterator->first, 4));
+        m_creatures.erase(iterator);
+    }
+}
+
+std::vector<CreatureTypePtr> Spawn::getCreatures()
+{
+    std::vector<CreatureTypePtr> creatures;
+    for (auto p : m_creatures)
+        creatures.push_back(p.second);
+    return creatures;
+}
+
+CreaturePtr CreatureType::cast()
+{
+    auto ret = std::make_shared<Creature>();
+
+    std::string cName = getName();
+    stdext::tolower(cName);
+    stdext::trim(cName);
+    stdext::ucwords(cName);
+    ret->setName(cName);
+
+    ret->setDirection(getDirection());
+    ret->setOutfit(getOutfit());
+    return ret;
+}
+
+std::map<int, std::tuple<std::string, int, int, int, int, int, int, int, int>> CreatureManager::getMonsterList()
+{
+    std::map<int, std::tuple<std::string, int, int, int, int, int, int, int, int>> list;
+    int fallbackRaceId = 1;
+
+    for(const CreatureTypePtr& creature : m_creatures) {
+        if(!creature)
+            continue;
+
+        const Outfit outfit = creature->getOutfit();
+
+        // staticdata entries carry the real bestiary race id; index by it so
+        // server race ids (bestiary/charms/bosstiary packets) resolve directly
+        int raceId = creature->getRaceId();
+        if(raceId > 0) {
+            if(list.find(raceId) == list.end())
+                list[raceId] = std::make_tuple(creature->getName(), outfit.getId(), outfit.getAuxId(), outfit.getHead(), outfit.getBody(), outfit.getLegs(), outfit.getFeet(), outfit.getAddons(), creature->isBoss() ? 1 : 0);
+            continue;
+        }
+
+        // legacy XML creatures have no race id: synthesize one from the looktype
+        raceId = outfit.getId() > 0 ? outfit.getId() : fallbackRaceId;
+        while(list.find(raceId) != list.end())
+            ++raceId;
+
+        list[raceId] = std::make_tuple(creature->getName(), outfit.getId(), outfit.getAuxId(), outfit.getHead(), outfit.getBody(), outfit.getLegs(), outfit.getFeet(), outfit.getAddons(), creature->isBoss() ? 1 : 0);
+        fallbackRaceId = raceId + 1;
+    }
+
+    return list;
+}
+
+bool CreatureManager::loadStaticData(const std::string& file)
+{
+    try {
+        // Read through PHYSFS (g_resources), NOT std::ifstream: staticdata.dat
+        // may live inside an in-memory encrypted data.zip with no real filesystem
+        // path. readFileContents transparently decrypts per-file-encrypted assets.
+        if(!g_resources.fileExists(file)) {
+            g_logger.error(stdext::format("CreatureManager::loadStaticData: cannot open '%s'", file));
+            return false;
+        }
+        const std::string data = g_resources.readFileContents(file);
+
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+        otclient::protobuf::staticdata::Staticdata staticData;
+        if(!staticData.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
+            g_logger.error(stdext::format("CreatureManager::loadStaticData: failed to parse '%s' (corrupt protobuf?)", file));
+            return false;
+        }
+
+        // staticdata is the sole population source on the modern asset path;
+        // reload replaces the previous version's creatures
+        m_creatures.clear();
+        m_achievements.clear();
+
+        auto addEntry = [this](const auto& c, bool isBoss) {
+            auto creatureType = std::make_shared<CreatureType>();
+            // staticdata names come lowercase ("orc warlord"); normalize like
+            // loadMonsters does so getCreatureByName's ucwords lookup matches
+            std::string name = c.has_name() ? c.name() : std::string();
+            stdext::trim(name);
+            stdext::ucwords(name);
+            creatureType->setName(name);
+            creatureType->setRaceId(c.has_raceid() ? static_cast<int32>(c.raceid()) : 0);
+            // boss-ness is known here from which repeated field the entry came from
+            // (monsters vs bosses); persist it so getMonsterList can expose isBoss
+            creatureType->setBoss(isBoss);
+
+            Outfit outfit;
+            if(c.has_outfit()) {
+                const auto& o = c.outfit();
+                outfit.setId(o.has_looktype() ? o.looktype() : 0);
+                outfit.setAuxId(o.has_lookitem() ? o.lookitem() : 0);
+                outfit.setAddons(o.has_lookaddons() ? o.lookaddons() : 0);
+                if(o.has_colors()) {
+                    const auto& colors = o.colors();
+                    outfit.setHead(colors.has_head() ? colors.head() : 0);
+                    outfit.setBody(colors.has_body() ? colors.body() : 0);
+                    outfit.setLegs(colors.has_legs() ? colors.legs() : 0);
+                    outfit.setFeet(colors.has_feet() ? colors.feet() : 0);
+                }
+            }
+            creatureType->setOutfit(outfit);
+            m_creatures.push_back(creatureType);
+        };
+
+        for(int i = 0; i < staticData.monsters_size(); ++i)
+            addEntry(staticData.monsters(i), false);
+        for(int i = 0; i < staticData.bosses_size(); ++i)
+            addEntry(staticData.bosses(i), true);
+
+        // achievements (cyclopedia 0xDA/5 resolves non-secret entries locally)
+        for(int i = 0; i < staticData.achievements_size(); ++i) {
+            const auto& a = staticData.achievements(i);
+            if(!a.has_id() || a.id() == 0)
+                continue;
+            StaticAchievement achievement;
+            achievement.id = static_cast<int>(a.id());
+            achievement.name = a.has_name() ? a.name() : std::string();
+            achievement.description = a.has_description() ? a.description() : std::string();
+            achievement.grade = a.has_grade() ? static_cast<int>(a.grade()) : 1;
+            m_achievements[achievement.id] = achievement;
+        }
+
+        m_loaded = true;
+        g_logger.info(stdext::format("Loaded %d monsters, %d bosses and %d achievements from %s",
+            staticData.monsters_size(), staticData.bosses_size(), (int)m_achievements.size(), file));
+        return true;
+    } catch(const std::exception& e) {
+        g_logger.error(stdext::format("CreatureManager::loadStaticData: exception loading '%s': %s", file, e.what()));
+        return false;
+    }
+}
+
+CreatureManager::CreatureManager()
+{
+    m_nullCreature = std::make_shared<CreatureType>();
+}
+
+void CreatureManager::clearSpawns()
+{
+    for(auto pair : m_spawns)
+        pair.second->clear();
+    m_spawns.clear();
+}
+
+void CreatureManager::loadMonsters(const std::string& file)
+{
+    TiXmlDocument doc;
+    doc.Parse(g_resources.readFileContents(file).c_str());
+    if(doc.Error())
+        stdext::throw_exception(stdext::format("cannot open monsters file '%s': '%s'", file, doc.ErrorDesc()));
+
+    TiXmlElement* root = doc.FirstChildElement();
+    if(!root || root->ValueStr() != "monsters")
+        stdext::throw_exception("malformed monsters xml file");
+
+    for(TiXmlElement* monster = root->FirstChildElement(); monster; monster = monster->NextSiblingElement()) {
+        std::string fname = file.substr(0, file.find_last_of('/')) + '/' + monster->Attribute("file");
+        if(fname.substr(fname.length() - 4) != ".xml")
+            fname += ".xml";
+
+        loadSingleCreature(fname);
+    }
+
+    doc.Clear();
+    m_loaded = true;
+}
+
+void CreatureManager::loadSingleCreature(const std::string& file)
+{
+    loadCreatureBuffer(g_resources.readFileContents(file));
+}
+
+void CreatureManager::loadNpcs(const std::string& folder)
+{
+    std::string tmp = folder;
+    if(!stdext::ends_with(tmp, "/"))
+        tmp += "/";
+
+    if(!g_resources.directoryExists(tmp))
+        stdext::throw_exception(stdext::format("NPCs folder '%s' was not found.", folder));
+
+    const auto& fileList = g_resources.listDirectoryFiles(tmp);
+    for(const std::string& file : fileList)
+        loadCreatureBuffer(g_resources.readFileContents(tmp + file));
+}
+
+void CreatureManager::loadSpawns(const std::string& fileName)
+{
+    if(!isLoaded()) {
+        g_logger.warning("creatures aren't loaded yet to load spawns.");
+        return;
+    }
+
+    if(m_spawnLoaded) {
+        g_logger.warning("attempt to reload spawns.");
+        return;
+    }
+
+    try {
+        TiXmlDocument doc;
+        doc.Parse(g_resources.readFileContents(fileName).c_str());
+        if(doc.Error())
+            stdext::throw_exception(stdext::format("cannot load spawns xml file '%s: '%s'", fileName, doc.ErrorDesc()));
+
+        TiXmlElement* root = doc.FirstChildElement();
+        if(!root || root->ValueStr() != "spawns")
+            stdext::throw_exception("malformed spawns file");
+
+        for(TiXmlElement* node = root->FirstChildElement(); node; node = node->NextSiblingElement()) {
+            if(node->ValueTStr() != "spawn")
+                stdext::throw_exception("invalid spawn node");
+
+            auto spawn = std::make_shared<Spawn>();
+            spawn->load(node);
+            m_spawns.insert(std::make_pair(spawn->getCenterPos(), spawn));
+        }
+        doc.Clear();
+        m_spawnLoaded = true;
+    } catch(std::exception& e) {
+        g_logger.error(stdext::format("Failed to load '%s': %s", fileName, e.what()));
+    }
+}
+
+void CreatureManager::saveSpawns(const std::string& fileName)
+{
+    try {
+        TiXmlDocument doc;
+        doc.SetTabSize(2);
+
+        TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "UTF-8", "");
+        doc.LinkEndChild(decl);
+
+        TiXmlElement* root = new TiXmlElement("spawns");
+        doc.LinkEndChild(root);
+
+        for(auto pair : m_spawns) {
+            TiXmlElement* elem = new TiXmlElement("spawn");
+            pair.second->save(elem);
+            root->LinkEndChild(elem);
+        }
+
+        if(!doc.SaveFile("data"+fileName))
+            stdext::throw_exception(stdext::format("failed to save spawns XML %s: %s", fileName, doc.ErrorDesc()));
+    } catch(std::exception& e) {
+        g_logger.error(stdext::format("Failed to save '%s': %s", fileName, e.what()));
+    }
+}
+
+void CreatureManager::loadCreatureBuffer(const std::string& buffer)
+{
+    TiXmlDocument doc;
+    doc.Parse(buffer.c_str());
+    if(doc.Error())
+        stdext::throw_exception(stdext::format("cannot load creature buffer: %s", doc.ErrorDesc()));
+
+    TiXmlElement* root = doc.FirstChildElement();
+    if(!root || (root->ValueStr() != "monster" && root->ValueStr() != "npc"))
+        stdext::throw_exception("invalid root tag name");
+
+    std::string cName = root->Attribute("name");
+    stdext::tolower(cName);
+    stdext::trim(cName);
+    stdext::ucwords(cName);
+
+    auto newType = std::make_shared<CreatureType>(cName);
+    for(TiXmlElement* attrib = root->FirstChildElement(); attrib; attrib = attrib->NextSiblingElement()) {
+        if(attrib->ValueStr() != "look")
+            continue;
+
+        internalLoadCreatureBuffer(attrib, newType);
+        break;
+    }
+
+    doc.Clear();
+}
+
+void CreatureManager::internalLoadCreatureBuffer(TiXmlElement* attrib, const CreatureTypePtr& m)
+{
+    if(std::find(m_creatures.begin(), m_creatures.end(), m) != m_creatures.end())
+        return;
+
+    Outfit out;
+
+    int32 type = attrib->readType<int32>("type");
+    if(type > 0) {
+        out.setCategory(ThingCategoryCreature);
+        out.setId(type);
+    } else {
+        out.setCategory(ThingCategoryItem);
+        out.setAuxId(attrib->readType<int32>("typeex"));
+    }
+
+    {
+        out.setHead(attrib->readType<int>(("head")));
+        out.setBody(attrib->readType<int>(("body")));
+        out.setLegs(attrib->readType<int>(("legs")));
+        out.setFeet(attrib->readType<int>(("feet")));
+        out.setAddons(attrib->readType<int>(("addons")));
+        out.setMount(attrib->readType<int>(("mount")));
+    }
+
+    m->setOutfit(out);
+    m_creatures.push_back(m);
+}
+
+const CreatureTypePtr& CreatureManager::getCreatureByName(std::string name)
+{
+    stdext::tolower(name);
+    stdext::trim(name);
+    stdext::ucwords(name);
+    auto it = std::find_if(m_creatures.begin(), m_creatures.end(),
+                           [=] (const CreatureTypePtr& m) -> bool { return m->getName() == name; });
+    if(it != m_creatures.end())
+        return *it;
+    g_logger.warning(stdext::format("could not find creature with name: %s", name));
+    return m_nullCreature;
+}
+
+const CreatureTypePtr& CreatureManager::getCreatureByLook(int look)
+{
+    auto findFun = [=] (const CreatureTypePtr& c) -> bool
+    {
+        const Outfit& o = c->getOutfit();
+        return o.getId() == look || o.getAuxId() == look;
+    };
+    auto it = std::find_if(m_creatures.begin(), m_creatures.end(), findFun);
+    if(it != m_creatures.end())
+        return *it;
+    g_logger.warning(stdext::format("could not find creature with looktype: %d", look));
+    return m_nullCreature;
+}
+
+SpawnPtr CreatureManager::getSpawn(const Position& centerPos)
+{
+    auto it = m_spawns.find(centerPos);
+    if(it != m_spawns.end())
+        return it->second;
+    g_logger.debug(stdext::format("failed to find spawn at center %s",stdext::to_string(centerPos)));
+    return nullptr;
+}
+
+SpawnPtr CreatureManager::getSpawnForPlacePos(const Position& pos)
+{
+    for (const auto& pair : m_spawns) {
+        const Position& centerPos = pair.first;
+        const SpawnPtr& spawn = pair.second;
+
+        if (isInZone(pos, centerPos, spawn->getRadius()))
+            return spawn;
+    }
+
+    return nullptr;
+}
+
+SpawnPtr CreatureManager::addSpawn(const Position& centerPos, int radius)
+{
+    auto iter = m_spawns.find(centerPos);
+    if(iter != m_spawns.end()) {
+        if(iter->second->getRadius() != radius)
+            iter->second->setRadius(radius);
+        return iter->second;
+    }
+
+    auto ret = std::make_shared<Spawn>();
+
+    ret->setRadius(radius);
+    ret->setCenterPos(centerPos);
+
+    m_spawns.insert(std::make_pair(centerPos, ret));
+    return ret;
+}
+
+void CreatureManager::deleteSpawn(const SpawnPtr& spawn)
+{
+    const Position& centerPos = spawn->getCenterPos();
+    auto it = m_spawns.find(centerPos);
+    if(it != m_spawns.end())
+        m_spawns.erase(it);
+}
+
+std::vector<SpawnPtr> CreatureManager::getSpawns()
+{
+    std::vector<SpawnPtr> spawns;
+    for (auto p : m_spawns)
+        spawns.push_back(p.second);
+    return spawns;
+}
+
+/* vim: set ts=4 sw=4 et: */

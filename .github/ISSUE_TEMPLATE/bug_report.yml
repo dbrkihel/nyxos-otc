@@ -1,0 +1,93 @@
+name: Bug report
+description: Something in the client behaves incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening: search existing issues, and confirm the problem is in
+        the **client**, not in your server. If a feature needs server support,
+        check [Server-side changes](https://github.com/dbrkihel/nyxos-otc/blob/main/docs/server-side.md)
+        first.
+
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: What you see, and what you expected instead.
+      placeholder: |
+        The minimap is black after logging in again, even in areas I explored
+        last session. I expected the explored area to persist.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: From client start. Be exact — "sometimes it breaks" is not reproducible.
+      placeholder: |
+        1. Start the client
+        2. Log in and walk around Thais for a minute
+        3. Log out, close the client
+        4. Start it again and log in
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Nyxos.log
+      description: |
+        Attach the whole file — drag it into this box. It sits next to the
+        executable. Do not paste only the part you think matters; the useful
+        line is often earlier than you would guess.
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 23H2 / Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build
+    attributes:
+      label: How did you get the client?
+      options:
+        - Built it myself (Release)
+        - Built it myself (Debug)
+        - Downloaded a CI artifact or release
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release
+      description: Output of `git rev-parse --short HEAD`, or the release tag.
+      placeholder: 02e10bc
+    validations:
+      required: true
+
+  - type: input
+    id: server
+    attributes:
+      label: Server software
+      description: Which server you connected to, and its version.
+      placeholder: Canary 3.1 / Crystal Server / TFS 1.5
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: assets
+    attributes:
+      label: Confirmations
+      options:
+        - label: I supplied my own game assets and the client otherwise renders correctly
+          required: true
+        - label: I searched for an existing issue describing this
+          required: true

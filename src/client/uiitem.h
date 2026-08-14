@@ -1,0 +1,95 @@
+/*
+ * Copyright (c) 2010-2017 OTClient <https://github.com/edubart/otclient>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#ifndef UIITEM_H
+#define UIITEM_H
+
+#include "declarations.h"
+#include <framework/ui/uiwidget.h>
+#include "item.h"
+
+class UIItem : public UIWidget
+{
+public:
+    UIItem();
+    void drawSelf(Fw::DrawPane drawPane);
+
+    void setItemId(int id);
+    void setItemCount(int count);
+    void setItemSubType(int subType);
+    void setItemVisible(bool visible) { m_itemVisible = visible; }
+    void setItem(const ItemPtr& item);
+    void setVirtual(bool virt) { m_virtual = virt; }
+    void setHotkeyItem(bool value) { m_hotkeyItem = value; }
+    void clearItem() { setItemId(0); }
+    void setShowCount(bool value) { m_showCount = value; }
+    void setShowCountAlways(bool value) { m_showCountAlways = value; }
+    void setAbbreviateCount(bool value);
+    void setDrawLootValue(bool value) { m_drawLootValue = value; }
+    bool getDrawLootValue() { return m_drawLootValue; }
+    void setItemShader(const std::string& str);
+    void setItemColor(const Color& color) { m_itemColor = color; }
+    void setHash(const std::string& hash) { if(m_item) m_item->setHash(hash); }
+
+    int getItemId() { return m_item ? m_item->getId() : 0; }
+    int getItemCount() { return m_item ? m_item->getCount() : 0; }
+    int getItemSubType() { return m_item ? m_item->getSubType() : 0; }
+    int getItemCountOrSubType() { return m_item ? m_item->getCountOrSubType() : 0; }
+    ItemPtr getItem() { return m_item; }
+    bool isVirtual() { return m_virtual; }
+    // Marks the action-bar/hotkey preview slots (hotkey-item: true in the otui).
+    // They are virtual, so generic UIItem hover/drag guards skip them; this lets
+    // those slots opt back into the drop highlight. See modules/gamelib/ui/uiitem.lua.
+    bool isHotkeyItem() { return m_hotkeyItem; }
+    bool isItemVisible() { return m_itemVisible; }
+
+    // Uniform draw scale (mirrors UICreature). 1.0 = fill the padding rect; the item
+    // sprite and its count/tier overlays are drawn from the padding rect's top-left
+    // scaled by this factor. Bound in luafunctions_client.
+    void setScale(float scale) { m_scale = scale; }
+    float getScale() { return m_scale; }
+
+protected:
+    void onStyleApply(const std::string& styleName, const OTMLNodePtr& styleNode);
+    void cacheCountText();
+
+    ItemPtr m_item;
+    Color m_itemColor;
+    stdext::boolean<false> m_virtual;
+    stdext::boolean<false> m_hotkeyItem;
+    stdext::boolean<true> m_itemVisible;
+    stdext::boolean<false> m_showId;
+    stdext::boolean<true> m_showCount;
+    stdext::boolean<false> m_showCountAlways;
+    stdext::boolean<false> m_abbreviateCount;
+    stdext::boolean<false> m_drawLootValue;
+    float m_scale = 1.0f;
+    std::string m_shader;
+    std::string m_countText;
+
+    ticks_t m_lastDecayUpdate;
+    std::string m_decayText;
+    Color m_decayColor;
+    Color m_decayPausedColor;
+};
+
+#endif

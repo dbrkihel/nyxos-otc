@@ -1,0 +1,8 @@
+Module
+  name: game_transfer
+  description: World Transfer Window
+  author: Christianlb && ...
+  sandboxed: true
+  scripts: [ worldTransfer ]
+  @onLoad: init()
+  @onUnload: terminate()

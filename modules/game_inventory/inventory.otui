@@ -1,0 +1,436 @@
+InventoryItem < Item
+  virtual: false
+  draggable: true
+  $on:
+    image-source: /images/ui/item-blessed
+
+NoneInventoryItem < Item
+  priceable: false
+  virtual: true
+  draggable: false
+  &position: {x=65535, y=5, z=0}
+  image-source: /images/ui/item
+
+HeadSlot < InventoryItem
+  id: slot1
+  image-source: /images/game/slots/head
+  &position: {x=65535, y=1, z=0}
+  $on:
+    image-source: /images/game/slots/head-blessed
+
+BodySlot < InventoryItem
+  id: slot4
+  image-source: /images/game/slots/body
+  &position: {x=65535, y=4, z=0}
+  $on:
+    image-source: /images/game/slots/body-blessed
+
+LegSlot < InventoryItem
+  id: slot7
+  image-source: /images/game/slots/legs
+  &position: {x=65535, y=7, z=0}
+  $on:
+    image-source: /images/game/slots/legs-blessed
+
+FeetSlot < InventoryItem
+  id: slot8
+  image-source: /images/game/slots/feet
+  &position: {x=65535, y=8, z=0}
+  $on:
+    image-source: /images/game/slots/feet-blessed
+
+NeckSlot < InventoryItem
+  id: slot2
+  image-source: /images/game/slots/neck
+  &position: {x=65535, y=2, z=0}
+  $on:
+    image-source: /images/game/slots/neck-blessed
+
+LeftSlot < InventoryItem
+  id: slot6
+  image-source: /images/game/slots/left-hand
+  &position: {x=65535, y=6, z=0}
+  @onItemChange: modules.game_inventory.onLeftSlotChange(self:getItemId())
+  $on:
+    image-source: /images/game/slots/left-hand-blessed
+
+FingerSlot < InventoryItem
+  id: slot9
+  image-source: /images/game/slots/finger
+  &position: {x=65535, y=9, z=0}
+  $on:
+    image-source: /images/game/slots/finger-blessed
+
+BackSlot < InventoryItem
+  id: slot3
+  image-source: /images/game/slots/back
+  &position: {x=65535, y=3, z=0}
+  $on:
+    image-source: /images/game/slots/back-blessed
+
+RightSlot < InventoryItem
+  id: slot5
+  image-source: /images/game/slots/right-hand
+  &position: {x=65535, y=5, z=0}
+  $on:
+    image-source: /images/game/slots/right-hand-blessed
+  
+  UIWidget
+    id: slot5Dual
+    size: 34 34
+    image-source: /images/game/slots/smoth-pattern
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: -1
+    margin-left: -1
+    visible: false
+
+AmmoSlot < InventoryItem
+  id: slot10
+  image-source: /images/game/slots/ammo
+  &position: {x=65535, y=10, z=0}
+  $on:
+    image-source: /images/game/slots/ammo-blessed
+
+PurseButton < UIButton
+  id: purseButton
+  size: 34 12
+  !tooltip: tr('Open purse')
+  icon-source: /images/game/slots/purse
+  icon-clip: 0 0 34 12
+
+  $on:
+    icon-clip: 0 12 34 12
+
+  $pressed:
+    icon-clip: 0 12 34 12
+
+CombatBox < UICheckBox
+  size: 20 20
+  image-clip: 0 0 20 20
+
+  $checked:
+    image-clip: 0 20 20 20
+
+  $pressed !on:
+    image-clip: 0 20 20 20
+
+CombatType < UICheckBox
+  size: 20 20
+  image-clip: 0 0 20 20
+
+  $disabled:
+    image-clip: 0 0 20 20
+  $on:
+    image-clip: 0 20 20 20
+  $checked:
+    image-clip: 0 40 20 20
+  $pressed !on:
+    image-clip: 0 40 20 20
+
+PvPBox  < UICheckBox
+  size: 42 20
+  image-clip: 0 0 42 20
+
+  $checked:
+    image-clip: 0 20 42 20
+
+  $pressed !on:
+    image-clip: 0 20 42 20
+
+InventoryButton < Button
+  height: 20
+  margin-top: 2
+  text-align: center
+
+SoulCapLabel < UIWidget
+  text-align: center
+  font: verdana-cap-bold
+  color: $var-text-cip-color
+  margin-top: 4
+  text-offset: 0 6
+
+FightOffensiveBox < CombatBox
+  image-source: /images/game/combatmodes/fightoffensive
+FightBalancedBox < CombatBox
+  image-source: /images/game/combatmodes/fightbalanced
+FightDefensiveBox < CombatBox
+  image-source: /images/game/combatmodes/fightdefensive
+SafeFightBox < PvPBox
+  image-source: /images/game/combatmodes/pvp
+
+//open pvp
+PvPType < CombatType
+  image-source: /images/game/combatmodes/pvpmode
+  enabled: false
+  tooltip: Toggle expert pvp settings
+  tooltip-delayed: true
+DoveMode < CombatBox
+  image-source: /images/game/combatmodes/whitedovemode
+  !tooltip: tr('Dove Mode: You are only able to defend yourself against aggressors.\nBe wary, if you use spells that affect also other characters you may get a red or black skull.')
+  tooltip-delayed: true
+WhiteMode < CombatBox
+  image-source: /images/game/combatmodes/whitehandmode
+  !tooltip: tr('White Hand Mode: You are able to defend yourself and your\ngroup against aggressors. You risk getting a yellow skull.\nBe wary, in certain situations you may even get a red or black skull.')
+  tooltip-delayed: true
+YellowMode < CombatBox
+  image-source: /images/game/combatmodes/yellowhandmode
+  !tooltip: tr('Yellow Hand Mode: You are able to attack any skulled player.\nYou risk getting a yellow skull and a protection zone block.')
+  tooltip-delayed: true
+RedMode < CombatBox
+  image-source: /images/game/combatmodes/redfistmode
+  !tooltip: tr('Red Fist Mode: You are able to attack and block anyone. You risk\nwhite, red and black skulls as well as a protection zone block.')
+  tooltip-delayed: true
+
+NonClosableMiniWindow
+  height: 170
+  id: inventoryWindow
+  @onClose: modules.game_inventory.onMiniWindowClose()
+  &type: 'inventoryWindow'
+  NonClosableMiniWindowContents
+    NeckSlot
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 18
+      margin-right: 5
+      margin-left: 5
+
+    LeftSlot
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      anchors.left: prev.left
+      margin-top: 4
+
+    FingerSlot
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      anchors.left: prev.left
+      margin-top: 4
+
+    HeadSlot
+      anchors.top: parent.top
+      anchors.left: slot2.right
+      margin-top: 4
+      margin-left: 4
+
+    BodySlot
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+
+    LegSlot
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+
+    FeetSlot
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+
+    BackSlot
+      anchors.top: slot2.top
+      anchors.left: slot1.right
+      margin-left: 4
+
+    RightSlot
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+
+    AmmoSlot
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+
+    SoulCapLabel
+      id: capLabel
+      size: 34 20
+      anchors.top: slot10.bottom
+      anchors.horizontalCenter: slot10.horizontalCenter
+      image-source: /images/game/slots/soulcap
+      image-clip: 0 20 34 20
+      !tooltip: tr("Capacity: The amount of weight you are able to carry.")
+      tooltip-delayed: true
+
+      Label
+        id: label
+        anchors.fill: parent
+        text-offset: 0 7
+        text-align: center
+        font: verdana-cap-bold
+        color: $var-text-cip-color
+
+    SoulCapLabel
+      id: soulLabel
+      size: 34 20
+      anchors.top: slot9.bottom
+      anchors.horizontalCenter: slot9.horizontalCenter
+      image-source: /images/game/slots/soulcap
+      image-clip: 0 0 34 20
+      !tooltip: tr("Soul Points: Needed to cast spells that create items such as runes,\nfood or ammunition. They can be regained by killing monsters,\nsleeping in a bed, or in resting areas provided you have reached\nthe needed reward streak.")
+      tooltip-delayed: true
+
+    PurseButton
+      anchors.left: slot3.left
+      anchors.bottom: slot3.top
+      margin-bottom: 3
+
+    Panel
+      id: conditionPanel
+      image-source: /images/ui/conditionPanel
+      layout:
+        type: horizontalBox
+      height: 13
+      padding: 2
+      anchors.top: slot8.bottom
+      anchors.left: slot6.left
+      anchors.right: slot5.right
+      margin-top: 3
+
+    FightOffensiveBox
+      id: fightOffensiveBox
+      anchors.left: slot3.right
+      anchors.top: slot3.top
+      margin-left: 8
+      margin-top: -14
+      !tooltip: tr("Offensive: Increases your attack strength but reduces\nyour defence. Your magical damage is not affected")
+      tooltip-delayed: true
+
+    FightBalancedBox
+      id: fightBalancedBox
+      anchors.left: prev.left
+      anchors.top: prev.bottom
+      margin-top: 4
+      !tooltip: tr("Balanced: Balances out your attack strength as well as your\ndefence strength. Your magical damage is not affected.")
+      tooltip-delayed: true
+
+    FightDefensiveBox
+      id: fightDefensiveBox
+      anchors.left: prev.left
+      anchors.top: prev.bottom
+      margin-top: 4
+      !tooltip: tr("Defensive: Increases your defence but reduces your\nattack strength. Your magical damage is not affected.")
+      tooltip-delayed: true
+
+    CombatBox
+      id: chaseModeBoxStand
+      image-source: /images/game/combatmodes/standmode
+      anchors.left: fightOffensiveBox.right
+      anchors.top: fightOffensiveBox.top
+      margin-left: 3
+      tooltip: Stand while fighting
+      tooltip-delayed: true
+
+    CombatBox
+      id: chaseModeBoxChase
+      image-source: /images/game/combatmodes/chasemode
+      anchors.left: prev.left
+      anchors.top: prev.bottom
+      margin-top: 4
+      tooltip: Chase opponent
+      tooltip-delayed: true
+
+    UICheckBox
+      id: openPvpButton
+      size: 20 20
+      image-clip: 0 0 20 20
+      image-source: /images/game/combatmodes/pvpmode
+      anchors.left: prev.left
+      anchors.top: prev.bottom
+      margin-top: 4
+      $on:
+        image-clip: 0 20 20 20
+      $!on:
+        image-clip: 0 0 20 20
+      $checked:
+        image-clip: 0 40 20 20
+
+    SafeFightBox
+      id: safeFightBox
+      anchors.left: fightDefensiveBox.left
+      anchors.top: fightDefensiveBox.bottom
+      margin-top: 6
+      tooltip-delayed: true
+
+    Panel
+      id: pvpModesPanel
+      size: 42 43
+      anchors.top: prev.bottom
+      anchors.left: prev.left
+      margin-top: 7
+      visible: false
+      DoveMode
+        id: doveMode
+        anchors.top: parent.top
+        anchors.left: parent.left
+      WhiteMode
+        id: whiteMode
+        anchors.top: prev.top
+        anchors.left: prev.right
+        margin-left: 3
+      YellowMode
+        id: yellowMode
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+      RedMode
+        id: redMode
+        anchors.top: prev.top
+        anchors.left: prev.right
+        margin-left: 3
+
+
+    InventoryButton
+      id: stopButton
+      height: 13
+      !text: tr('Stop')
+      anchors.top: fightDefensiveBox.bottom
+      anchors.left: fightDefensiveBox.left
+      margin-top: 82
+      tooltip: Stop current action (esc)
+      tooltip-delayed: true
+      @onClick: g_game.stop() g_game.cancelAttackAndFollow()
+
+  UIButton
+    id: minButton
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 4
+    margin-left: 10
+    size: 12 12
+    image-source: /images/ui/miniwindow_buttons
+    image-clip: 1 1 12 12
+    tooltip: Minimise inventory
+    tooltip-delayed: true
+    @onClick: onInventoryMinimize(not self:isOn())
+
+    $hover:
+      image-clip: 1 15 12 12
+
+    $pressed:
+      image-clip: 1 29 12 12
+
+    $on:
+      image-clip: 15 1 12 12
+
+    $on hover:
+      image-clip: 15 15 12 12
+
+    $on pressed:
+      image-clip: 15 29 12 12
+
+  UIButton
+    id: blessedButton
+    anchors.top: minButton.top
+    anchors.left: minButton.right
+    size: 12 12
+    image-source: /images/game/blessings/button-blessings-grey-idle
+    image-clip: 0 0 12 12
+    margin-left: 4
+
+    @onClick: openBlessedWindow()
+    $hover:
+      image-clip: 0 0 12 12
+
+    $pressed:
+      image-clip: 0 0 12 12

@@ -1,0 +1,143 @@
+MiniWindow
+  id: xpAnalyserMiniWindow
+  &type: 'xpAnalyser'
+  !text: tr('XP Analyser')
+  height: 160
+  icon: /images/icons/icon-progressanalyser-widget
+  &save: true
+  &autoOpen: false
+  @onExtra: modules.game_analyser.onXPExtra(g_window.getMousePosition())
+
+  ScrollablePanel
+    id: contentsPanel
+    anchors.fill: parent
+    margin: 16 18 5 5
+    vertical-scrollbar: miniwindowScrollBar
+    UIWidget
+      id: topParent
+      size: 1 1
+      anchors.top: parent.top
+      anchors.left: parent.left
+
+    Label
+      id: rawXpLabel
+      !text: tr('Raw XP Gain:')
+      anchors.top: topParent.bottom
+      anchors.left: parent.left
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: rawXpGain
+      !text: tr('0')
+      anchors.top: topParent.top
+      anchors.right: parent.right
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: xpLabel
+      !text: tr('XP Gain:')
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 5
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: xpGain
+      !text: tr('0')
+      anchors.top: prev.top
+      anchors.right: parent.right
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: rawXpHourLabel
+      !text: tr('Raw XP/h:')
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 5
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: rawXpHour
+      !text: tr('0')
+      anchors.top: prev.top
+      anchors.right: parent.right
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: xpHourLabel
+      !text: tr('XP/h:')
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 5
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: xpHour
+      !text: tr('0')
+      anchors.top: prev.top
+      anchors.right: parent.right
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: nextLevelLabel
+      !text: tr('Next Level:')
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 5
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    Label
+      id: nextLevel
+      !text: tr('-')
+      anchors.top: prev.top
+      anchors.right: parent.right
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    ProgressBar
+      id: percent
+      background-color: #008000
+      height: 5
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 5
+      phantom: false
+
+  UIWidget
+    id: miniborder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    image-source: /images/ui/miniborder
+    size: 14 14
+    margin-left: 2
+    margin-bottom: 2
+
+  ResizeBorder
+    id: bottomResizeBorder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 3
+    minimum: 50
+    margin-left: 3
+    margin-right: 3

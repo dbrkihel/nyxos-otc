@@ -1,0 +1,9 @@
+Module
+  name: game_console
+  description: Manage chat window
+  author: edubart, andrefaramir, baxnie, sn4ake, BeniS
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  scripts: [ console, classes/Chat, classes/Message, classes/TabMessages, classes/Communication, classes/Channel ]
+  @onLoad: init()
+  @onUnload: terminate()

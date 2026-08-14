@@ -1,0 +1,69 @@
+ExperienceBar < ProgressBar
+  id: experienceBar
+  background-color: #B6E866
+  anchors.top: prev.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin: 1
+  margin-top: 3
+
+SoulLabel < GameLabel
+  id: soulLabel
+  text-align: right
+  color: white
+  font: verdana-11px-rounded
+  anchors.bottom: parent.bottom
+  anchors.right: parent.right
+  anchors.left: parent.horizontalCenter
+  margin-top: 5
+  margin-right: 3
+  on: true
+
+  $!on:
+    visible: false
+    margin-top: 0
+    height: 0
+
+CapLabel < GameLabel
+  id: capLabel
+  color: white
+  font: verdana-11px-rounded
+  anchors.bottom: parent.bottom
+  anchors.left: parent.left
+  anchors.right: parent.horizontalCenter
+  margin-top: 5
+  margin-left: 3
+  on: true
+
+  $!on:
+    visible: false
+    margin-top: 0
+    height: 0
+
+ConditionWidget < UIWidget
+  size: 9 9
+
+  $!first:
+    margin-left: 2
+      
+HealthOverlay < UIWidget
+  id: healthOverlay
+  anchors.fill: parent
+  phantom: true
+  visible: false
+  
+  HealthBar
+    id: topHealthBar
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    phantom: true
+    visible: false
+
+  ManaBar
+    id: topManaBar
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.left: parent.horizontalCenter
+    phantom: true
+    visible: false

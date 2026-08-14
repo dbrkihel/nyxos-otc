@@ -1,0 +1,280 @@
+HotkeysWindow < Panel
+  id: generalHotkeys
+  anchors.fill: parent
+  size: 519 442
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+
+  ComboBox
+    id: profile
+    size: 330 20
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-left: 5
+    margin-top: 5
+    !text: tr('Vocation')
+    color: $var-text-cip-color
+    @onSetup: |
+      modules.client_settings.onSetupProfile(self)
+
+    @onOptionChange: modules.client_settings.onChangeProfile(self:getCurrentOption().text)
+  Button
+    id: add
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 5
+    size: 30 20
+    !text: tr('Add')
+    @onClick: modules.client_settings.onCreateProfile("General")
+  Button
+    id: copy
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 6
+    size: 35 20
+    !text: tr('Copy')
+    @onClick: modules.client_settings.onCopyProfile("General")
+  Button
+    id: rename
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 6
+    size: 45 20
+    !text: tr('Rename')
+    @onClick: modules.client_settings.onRenameProfile("General")
+  Button
+    id: remove
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 6
+    size: 45 20
+    !text: tr('Remove')
+    @onClick: modules.client_settings.onRemoveProfile("General")
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 5
+    margin-right: 4
+
+    CheckBox
+      id: autoSwitchHotkey
+      size: 12 12
+      !text: tr('Auto-Switch Hotkey Preset')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: parent.top
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      margin-top: 5
+      margin-left: 5
+      @onCheckChange: modules.client_settings.setOption(self:getId(), self:isChecked())
+      change-cursor-image: false
+      $hover !disabled:
+        color: $var-text-cip-color
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you have named your hotkey presets the same like your\ncharacter\'s and have checked this option, the preset with the same\nname as the corresponding character will be activated upon login \nautomatically.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 5
+    margin-right: 4
+
+    CheckBox
+      id: chatOnCheckBox
+      size: 12 12
+      !text: tr('Chat Mode On')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: parent.top
+      image-source: /images/ui/checkboxcircle
+      image-clip: 0 0 12 12
+      margin-top: 5
+      margin-left: 5
+      @onCheckChange: |
+        if self:isChecked() then
+          modules.client_settings.onChatOnCheck("General")
+        end
+
+      change-cursor-image: false
+      $hover !disabled:
+        color: $var-text-cip-color
+
+    CheckBox
+      id: chatOffCheckBox
+      size: 12 12
+      !text: tr('Chat Mode Off')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: prev.right
+      anchors.top: parent.top
+      image-source: /images/ui/checkboxcircle
+      image-clip: 0 0 12 12
+      margin-top: 5
+      margin-left: 145
+      @onCheckChange: |
+        if self:isChecked() then
+          modules.client_settings.onChatOffCheck("General")
+        end
+      change-cursor-image: false
+      $hover !disabled:
+        color: $var-text-cip-color
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('There are two chat modes for each hotkey preset: Chat On and Chat\nOff. You can find a small button that tells you which mode is\n currently active on the right side of the entry line of the chat\n console. Press this button to switch between the two chat modes. Of\n course, you can also set a hotkey to toggle between Chat On and Off.\n\n                      * Chat On\n                          In this mode, you will be able to write text in the entry line of\n                          the chat console. However, if you have assigned an action to\n                          a letter key, the action will be triggered.\n\n                      * Chat On*\n                          This is the temporary Chat On mode. In the default hotkey\n                          preset, the Return key switches between Chat Off and this\n                          mode. If the chat mode is off and you press this hotkey, it\n                          temporarily activates the chat mode so that you can write\n                          one message in the console. As soon as you press Return to\n                          send the message, your chat mode will be set to Chat Off\n                          again so that you can continue walking with WASD, for\n                          example.\n                      * Chat Off\n                          In this mode, you will not be able to write any text in the\n                          entry line of the console, but you can use your predefined\n                          hotkeys to walk or cast spells, for example. You can assign\n                          functions to all keys of your keyboard, e.g., walk with WASD.')
+
+  Label
+    !text: tr('Type to search for a hotkey:')
+    font: $var-cip-font
+    text-auto-resize: true
+    color: $var-text-cip-color
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 4
+    margin-right: 4
+
+  TextEdit
+    id: searchText
+    focusable: true
+    font: $var-cip-font
+    text-auto-resize: true
+    color: $var-text-cip-color
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 6
+    margin-right: 29
+    max-length: 35
+    @onFocusChange: onUpdateOnStates(self)
+    @onTextChange: modules.client_settings.onSearchHotkey(self, 'generalHotkeys')
+
+  Button
+    id: clearSearchButton
+    anchors.top: prev.top
+    anchors.right: parent.right
+    margin-right: 5
+    margin-top: -3
+    size: 20 20
+    image-source: /images/ui/erase-button
+    image-clip: 0 0 20 20
+    $hover !pressed:
+      image-clip: 0 0 20 20
+    $pressed:
+      image-clip: 0 20 20 20
+    @onClick: clearSearch('generalHotkeys')
+
+  Panel
+    size: 505 298
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-right: 5
+    margin-left: 5
+    margin-top: 5
+    TextList
+      id: hotkeyList
+      size: 505 298
+      anchors.top: hotkeysTable.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      vertical-scrollbar: hotkeyListScrollBar
+    VerticalScrollBar
+      id: hotkeyListScrollBar
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 298
+      margin-top: 16
+      margin-bottom: 1
+      margin-right: 1
+      step: 14
+      pixels-scroll: true
+    UIWidget
+      id: hotkeysTable
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 16
+      border-width: 1
+      border-color: #171817
+      background-color: #363636
+    UIWidget
+      id: action
+      size: 288 14
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr("Action")
+      text-align: left
+      text-offset: 3 0
+      color: $var-text-cip-color
+      margin-top: 1
+    UIWidget
+      anchors.left: prev.right
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      image-source: /images/ui/separator_vertical
+      margin-left: 1
+    UIWidget
+      id: firstKey
+      size: 98 14
+      anchors.top: parent.top
+      anchors.left: prev.right
+      !text: tr("First Key")
+      text-align: left
+      text-offset: 3 0
+      color: $var-text-cip-color
+      margin-top: 1
+    UIWidget
+      anchors.left: prev.right
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      image-source: /images/ui/separator_vertical
+    UIWidget
+      id: secondKey
+      size: 116 14
+      anchors.top: parent.top
+      anchors.left: prev.right
+      !text: tr("Second Key")
+      text-align: left
+      text-offset: 3 0
+      color: $var-text-cip-color
+      margin-top: 1
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings.resetHotkey()

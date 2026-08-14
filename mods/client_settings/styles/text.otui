@@ -1,0 +1,70 @@
+CustomTextWindow < NewMainWindow
+  id: assignTextWindow
+  size: 275 148
+  text: Assign Text
+
+  Panel
+    id: contentPanel
+    anchors.fill: parent
+    margin: 12 12 12 12
+    Label
+      anchors.top: parent.top
+      anchors.left: parent.left
+      text: Text:
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-horizontal-auto-resize: true
+    TextEdit
+      id: text
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      max-length: 255
+
+    FlatPanel
+      id: checkPanel
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 22
+      CheckBox
+        id: tick
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.right: parent.right
+        margin-left: 5
+        text: Send automatically
+        font: $var-cip-font
+        color: $var-text-cip-color
+        checked: false
+
+    HorizontalSeparator
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 11
+
+    Button
+      id: buttonClose
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      size: 43 20
+      text: Cancel
+    Button
+      id: buttonApply
+      anchors.right: prev.left
+      margin-right: 6
+      anchors.bottom: parent.bottom
+      size: 43 20
+      font: cipsoftFont
+      text: Apply
+    Button
+      id: buttonOk
+      anchors.right: prev.left
+      margin-right: 6
+      anchors.bottom: parent.bottom
+      size: 43 20
+      font: cipsoftFont
+      text: Ok

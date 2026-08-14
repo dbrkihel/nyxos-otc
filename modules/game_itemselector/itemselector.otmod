@@ -1,0 +1,10 @@
+Module
+  name: game_itemselector
+  description: Allow to select item
+  author: NyxosClient
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  dependencies: [ game_interface ]
+  scripts: [ itemselector ]
+  @onLoad: init()
+  @onUnload: terminate()

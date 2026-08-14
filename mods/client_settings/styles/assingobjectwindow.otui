@@ -1,0 +1,102 @@
+AssingObjectWindow < MainWindow
+  size: 275 170
+  !text: tr('Assing Object')
+
+  FlatPanel
+    id: itemPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 85 85
+    UIItem
+      id: item
+      size: 60 60
+      anchors.fill: parent
+      virtual: true
+
+  CheckBox
+    id: useOnYourSelf
+    anchors.top: parent.top
+    anchors.left: itemPanel.right
+    image-source: /images/ui/checkbox_round
+    margin-left: 5
+    enabled: false
+  Label
+    !text: tr('Use on yourself')
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 5
+  CheckBox
+    id: useOnTarget
+    anchors.top: prev.bottom
+    anchors.left: itemPanel.right
+    image-source: /images/ui/checkbox_round
+    margin-left: 5
+    margin-top: 5
+    enabled: false
+  Label
+    !text: tr('Use on target')
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 5
+  CheckBox
+    id: WithCrosshair
+    anchors.top: prev.bottom
+    anchors.left: itemPanel.right
+    image-source: /images/ui/checkbox_round
+    margin-top: 5
+    margin-left: 5
+    enabled: false
+  Label
+    !text: tr('With crosshair')
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 5
+  CheckBox
+    id: equipDequip
+    anchors.top: prev.bottom
+    anchors.left: itemPanel.right
+    image-source: /images/ui/checkbox_round
+    margin-top: 5
+    margin-left: 5
+    enabled: false
+  Label
+    !text: tr('Equip/unequip')
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 5
+  CheckBox
+    id: use
+    anchors.top: prev.bottom
+    anchors.left: itemPanel.right
+    image-source: /images/ui/checkbox_round
+    margin-top: 5
+    margin-left: 5
+  Label
+    !text: tr('Use')
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 5
+
+  HorizontalSeparator
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 20
+
+  Button
+    id: cancel
+    !text: tr('Cancel')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    size: 60 20
+    font: cipsoftFont
+    opacity: 0.7
+  Button
+    id: okButton
+    !text: tr('Ok')
+    anchors.bottom: parent.bottom
+    anchors.right: prev.left
+    size: 60 20
+    font: cipsoftFont
+    margin-right: 5
+    opacity: 0.7

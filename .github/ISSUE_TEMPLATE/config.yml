@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Build problem
+    url: https://github.com/dbrkihel/nyxos-otc/blob/main/docs/building-windows.md
+    about: Compilation failures are usually covered by the build docs — check the "Common failures" section before opening an issue.
+  - name: Setup and configuration
+    url: https://github.com/dbrkihel/nyxos-otc/blob/main/docs/getting-started.md
+    about: Assets, config.lua and first run.
+  - name: Feature needs server changes
+    url: https://github.com/dbrkihel/nyxos-otc/blob/main/docs/server-side.md
+    about: Ambience, sounds and the HWID handshake need matching server support.
+  - name: Questions and discussion
+    url: https://github.com/dbrkihel/nyxos-otc/discussions
+    about: For anything that is not a bug report or a concrete proposal.

@@ -1,0 +1,13 @@
+Font
+  name: Verdana Bold-8px
+  ttf-file: verdanab.ttf
+  size: 8
+  ttf-outline: false
+  // Equivale a smallFont do cliente 15.25: Verdana 8 em negrito com o
+  // espacamento levemente aberto (+0.1). As fontes de 8px que ja existiam aqui
+  // sao bitmap e nao aceitam esse ajuste, por isso esta e uma TTF.
+  //
+  // height e baseline ficam de fora de proposito: sem override o engine calcula
+  // a partir da propria TTF, o que evita chutar metricas em tamanho pequeno --
+  // onde errar por um pixel e justamente o que faz o texto parecer torto.
+  letter-spacing: 0.1

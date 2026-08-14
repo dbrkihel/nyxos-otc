@@ -1,0 +1,9 @@
+Module
+  name: game_minimap
+  description: Manage minimap
+  author: edubart, BeniS, ZLukSrT#8740
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  scripts: [ minimap, party ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,0 +1,354 @@
+PresetEmptyItem < Item
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot1 < PresetEmptyItem
+  id: equipSlot1
+  image-source: /images/game/slots/head
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot4 < PresetEmptyItem
+  id: equipSlot4
+  image-source: /images/game/slots/body
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot7 < PresetEmptyItem
+  id: equipSlot7
+  image-source: /images/game/slots/legs
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot8 < PresetEmptyItem
+  id: equipSlot8
+  image-source: /images/game/slots/feet
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot2 < PresetEmptyItem
+  id: equipSlot2
+  image-source: /images/game/slots/neck
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot6 < PresetEmptyItem
+  id: equipSlot6
+  image-source: /images/game/slots/left-hand
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot9 < PresetEmptyItem
+  id: equipSlot9
+  image-source: /images/game/slots/finger
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot3 < PresetEmptyItem
+  id: equipSlot3
+  image-source: /images/game/slots/back
+  priceable: false
+  draggable: false
+  virtual: true
+  phantom: true
+
+Slot5 < PresetEmptyItem
+  id: equipSlot5
+  image-source: /images/game/slots/right-hand
+  priceable: false
+  draggable: false
+  virtual: true
+
+Slot10 < PresetEmptyItem
+  id: equipSlot10
+  image-source: /images/game/slots/ammo
+  priceable: false
+  draggable: false
+  virtual: true
+
+EquipmentIcon < UIWidget
+  size: 32 32
+  image-source: /images/game/actionbar/equip-preset/icon_1
+  border-width: 1
+  border-color-top: #181818
+  border-color-left: #181818
+  border-color-bottom: #757575
+  border-color-right: #757575
+  UIWidget
+    id: imageContainer
+    size: 30 30
+    margin-top: 1
+    margin-left: 1
+    anchors.left: parent.left
+    anchors.top: parent.top
+    phantom: true
+  UIWidget
+    id: selectedFrame
+    size: 33 33
+    anchors.left: parent.left
+    anchors.top: parent.top
+    visible: false
+    image-source: /images/game/actionbar/equip-preset/selected_frame
+
+SelectEquipPresetIcon < NewHeadlessWindow
+  id: selectPresetIcon
+  anchors.horizontalCenter: parent.horizontalCenter
+  size: 363 169
+  @onEscape: modules.game_actionbar.onCloseSelectPresetIcon()
+  UIWidget
+    size: 145 56
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: -33
+    image-source: /images/game/tutorial/backdrop_crestr
+    phantom: true
+  Panel
+    id: mainPanel
+    anchors.fill: parent
+    margin: 15 13 17 13
+    Label
+      id: infoLabel
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 10
+      !text: 'Choose an icon to represent this Equipment Preset.'
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-align: center
+      wrap: true
+      text-auto-resize: true
+
+    TextList
+      id: selectEquipPresetPanel
+      anchors.top: infoLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 62
+      margin-top: 10
+      margin-bottom: 10
+      horizontal-scrollbar: selectEquipPresetScrollBar
+      padding-top: 8
+      padding-left: 8
+      padding-right: 8
+      layout:
+        type: grid
+        cell-size: 32 32
+        cell-spacing: 7
+        num-lines: 1
+        num-columns: 50
+      @onSetup: |
+          for i = 1, 12 do
+            local widget = g_ui.createWidget("EquipmentIcon", self)
+            widget.imageContainer:setImageSource('/images/game/actionbar/equip-preset/icon_' .. i)
+          end
+
+    HorizontalScrollBar
+      id: selectEquipPresetScrollBar
+      anchors.bottom: prev.bottom
+      anchors.right: prev.right
+      anchors.left: prev.left
+      step: 65
+      margin: 0 1 1 2
+      pixels-scroll: true
+      visible: true
+
+    HorizontalSeparator
+      id: separator
+      anchors.bottom: next.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 10
+    Button
+      id: close
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      !text: tr('Close')
+      size: 43 20
+      @onClick: modules.game_actionbar.onCloseSelectPresetIcon()
+
+    Button
+      id: selectButton
+      size: 63 20
+      image-border: 2
+      anchors.bottom: parent.bottom
+      anchors.right: prev.left
+      margin-right: 5
+      !text: tr('Select')
+      enabled: false
+      @onClick: modules.game_actionbar.onSelectPresetIcon()
+
+NewHeadlessWindow
+  id: equipmentPreset
+  anchors.horizontalCenter: parent.horizontalCenter
+  size: 158 247
+  @onEscape: modules.game_actionbar.closePresetWindow()
+  UIWidget
+    size: 145 56
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: -33
+    image-source: /images/game/tutorial/backdrop_crestr
+    phantom: true
+  Panel
+    id: contentPanel
+    anchors.fill: parent
+    margin: 29 13 13 13
+    Slot2
+      anchors.top: parent.top
+      anchors.left: parent.left 
+      margin-top: 18
+      margin-right: 5
+      margin-left: 12
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot6
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      anchors.left: prev.left
+      margin-top: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot9
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      anchors.left: prev.left
+      margin-top: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot1
+      anchors.top: parent.top
+      anchors.left: equipSlot2.right
+      margin-top: 4
+      margin-left: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot4
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot7
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot8
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot3
+      anchors.top: equipSlot2.top
+      anchors.left: equipSlot1.right
+      margin-left: 4
+    Slot5
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+    Slot10
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 4
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+        end
+
+    Button
+      id: copy
+      anchors.top: equipSlot10.bottom
+      anchors.left: equipSlot10.left
+      !text: tr('Copy')
+      margin-top: 4
+      size: 34 13
+      tooltip: Copy your equipped items
+      tooltip-delayed: true
+      @onClick: modules.game_actionbar.assignPlayerEquipments()
+
+    HorizontalSeparator
+      id: separator
+      anchors.bottom: iconPresetWidget.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 11
+    Button
+      id: close
+      size: 43 20
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      !text: tr('Close')
+    UIWidget
+      id: iconPresetWidget
+      size: 32 32
+      anchors.bottom: parent.bottom
+      anchors.right: prev.left
+      margin-right: 7
+      image-source: /images/game/actionbar/actionbarslot
+      border-width: 1
+      $hover:
+        border-color: white
+      $!hover:
+        border-color-top: #181818
+        border-color-left: #181818
+        border-color-bottom: #757575
+        border-color-right: #757575
+      
+      UIWidget
+        id: imageContainer
+        size: 30 30
+        margin-top: 1
+        margin-left: 1
+        anchors.left: parent.left
+        anchors.top: parent.top
+        phantom: true
+
+      @onMouseRelease: |
+        function(self, mousePos, mouseButton)
+          modules.game_actionbar.editPresetIcon(self, mousePos, mouseButton)
+        end
+    UIWidget
+      id: missingIcon
+      size: 12 12
+      anchors.bottom: apply.top
+      anchors.left: apply.left
+      margin-left: 15
+      margin-bottom: 7
+      image-source: /images/skin/show-gui-help-red
+      !tooltip: tr('Please choose a icon')
+    Button
+      id: apply
+      size: 43 20
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      !text: tr('Apply')
+      enabled: true
+      margin-right: 5

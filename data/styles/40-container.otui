@@ -1,0 +1,122 @@
+PageButton < Button
+  size: 16 16
+
+ContainerWindow < MiniWindow
+  height: 48
+  &save: true
+  &containerWindow: true
+  &type: 'container'
+
+  UIItem
+    id: containerItemWidget
+    virtual: true
+    phantom: true
+    size: 15 15
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 1
+    margin-left: 4
+
+  UIButton
+    id: upButton
+    anchors.top: lockButton.top
+    anchors.right: lockButton.left
+    margin-right: 1
+    size: 12 12
+    image-source: /images/ui/miniwindow_buttons
+    image-clip: 43 1 12 12
+
+    $hover:
+      image-clip: 43 15 12 12
+
+    $pressed:
+      image-clip: 43 29 12 12
+      
+  UIButton
+    id: searchButton
+    anchors.top: lockButton.top
+    anchors.right: lockButton.left
+    margin-right: 16
+    size: 12 12
+    image-source: /images/ui/miniwindow_buttons
+    image-clip: 127 1 12 12
+    visible: false
+    @onClick: modules.game_search_locker.onRequestSearch()
+
+    $pressed:
+      image-clip: 127 29 12 12
+
+  MiniWindowContents
+    id: contentsPanel
+    margin-top: 19
+    padding-right: 0
+    padding-left: 8
+    padding-bottom: 1
+    layout:
+      type: grid
+      cell-size: 34 34
+      cell-spacing: 3
+      flow: true
+
+  Panel
+    id: pagePanel
+    size: 168 24
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-right: 4
+    margin-left: 4
+    anchors.top: contentsPanel.bottom
+    image-source: /images/ui/rPagination
+    
+    $on:
+      visible: true
+
+    $!on:
+      visible: false
+
+    Label
+      id: pageLabel
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 4
+      margin-left: -3
+      text-auto-resize: true
+      color: $var-text-cip-color
+      font: $var-cip-font
+
+    PageButton
+      id: prevPageButton
+      size: 18 18
+      margin-top: 3
+      margin-left: 3
+      anchors.top: parent.top
+      anchors.left: parent.left
+      image-source: /images/ui/browse-arrow-left
+      image-clip: 0 0 18 18
+      visible: false
+
+      $pressed:
+        image-clip: 18 0 18 18
+
+    PageButton
+      id: nextPageButton
+      size: 18 18
+      margin-top: 3
+      margin-right: 3
+      anchors.top: parent.top
+      anchors.right: parent.right
+      image-source: /images/ui/browse-arrow-right
+      image-clip: 0 0 18 18
+      visible: false
+
+      $pressed:
+        image-clip: 18 0 18 18
+
+  UIWidget
+    id: miniborder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    image-source: /images/ui/miniborder
+    size: 14 14
+    margin-left: 3
+    margin-bottom: 3

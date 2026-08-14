@@ -1,0 +1,8 @@
+Module
+  name: game_tibia_market
+  description: Market like real Nyxos.
+  author: R!ck && Christianlb
+  sandboxed: true
+  scripts: [ t_market, classes/t_history, classes/t_ownOffers, t_market_protocol ]
+  @onLoad: init()
+  @onUnload: terminate()

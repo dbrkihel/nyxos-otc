@@ -1,0 +1,8 @@
+Module
+  name: game_sounds
+  description: Plays the server's 0x83 sound effects through the Sound options
+  author: Nyxos
+  sandboxed: true
+  scripts: [ sounds ]
+  @onLoad: init()
+  @onUnload: terminate()

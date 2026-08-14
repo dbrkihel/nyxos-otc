@@ -1,0 +1,30 @@
+UIWidget
+  id: game_stats
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-left: 10
+  size: 220 100
+  visible: false
+  phantom: true
+  layout:
+    type: verticalBox  
+  
+  UIWidget
+    id: imagePing
+    image-source: /images/latency/latency-low
+    image-size: 15 15
+    margin-left: -10
+  Label
+    id: ping
+    font: verdana-11px-rounded
+    margin-left: 32
+    margin-top: -14
+    text-auto-resize: true
+  Label
+    id: worldName
+    font: verdana-11px-rounded
+    margin-left: 32
+  Label
+    id: fps
+    font: verdana-11px-rounded
+    margin-left: 32

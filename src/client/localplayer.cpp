@@ -1,0 +1,961 @@
+/*
+ * Copyright (c) 2010-2017 OTClient <https://github.com/edubart/otclient>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#include "localplayer.h"
+#include "container.h"
+#include "map.h"
+#include "game.h"
+#include "tile.h"
+#include <framework/core/eventdispatcher.h>
+#include <framework/graphics/graphics.h>
+#include <framework/platform/platformwindow.h>
+#include <framework/util/extras.h>
+
+#include <algorithm>
+
+LocalPlayer::LocalPlayer()
+{
+    m_states = 0;
+    m_vocation = 0;
+    m_blessings = Otc::BlessingNone;
+    m_taints = 0;
+    m_groupType = 0;
+    m_magicLoyalty = 0;
+    m_monkPassive = 0;
+    m_walkLockExpiration = 0;
+    m_teleportWalkDelay = 0;
+
+    m_skillsLevel.resize(Otc::LastSkill + 1, 0);
+    m_skillsBaseLevel.resize(Otc::LastSkill + 1, 0);
+    m_skillsLevelPercent.resize(Otc::LastSkill + 1, 0);
+    m_skillsLoyalty.resize(Otc::LastSkill + 1, 0);
+
+    m_health = -1;
+    m_maxHealth = -1;
+    m_freeCapacity = -1;
+    m_experience = -1;
+    m_level = -1;
+    m_levelPercent = -1;
+    m_mana = -1;
+    m_maxMana = -1;
+    m_magicLevel = -1;
+    m_magicLevelPercent = -1;
+    m_baseMagicLevel = -1;
+    m_soul = -1;
+    m_stamina = -1;
+    m_baseSpeed = -1;
+    m_regenerationTime = -1;
+    m_offlineTrainingTime = -1;
+    m_totalCapacity = -1;
+    m_baseCapacity = -1;
+}
+
+void LocalPlayer::draw(const Point& dest, bool animate, LightView* lightView)
+{
+    Creature::draw(dest, animate, lightView);
+}
+
+
+void LocalPlayer::lockWalk(int millis)
+{
+    m_walkLockExpiration = std::max<int>(m_walkLockExpiration, (ticks_t) g_clock.millis() + millis);
+}
+
+bool LocalPlayer::canWalk(Otc::Direction direction, bool ignoreLock)
+{
+    // cannot walk while locked
+    if ((m_walkLockExpiration != 0 && g_clock.millis() < m_walkLockExpiration) && !ignoreLock)
+        return false;
+
+    // paralyzed
+    if (m_speed == 0)
+        return false;
+
+    // last walk is not done yet
+    if (m_walking && (m_walkTimer.ticksElapsed() < getStepDuration()) && !isAutoWalking() && !isServerWalking())
+        return false;
+
+    auto tile = g_map.getTile(getPrewalkingPosition(true));
+    if (isPreWalking() && (!m_lastPrewalkDone || (tile && tile->isBlocking())))
+        return false;
+
+    // cannot walk while already walking
+    if ((m_walking && !isAutoWalking() && !isServerWalking()) && (!isPreWalking() || !m_lastPrewalkDone))
+        return false;
+
+    // Without new walking limit only to 1 prewalk
+    if (!m_preWalking.empty() && !g_game.getFeature(Otc::GameNewWalking))
+        return false;
+
+    // Limit pre walking steps
+    if (m_preWalking.size() >= g_game.getMaxPreWalkingSteps()) { // max 3 extra steps
+        if (m_walkTimer.ticksElapsed() >= getStepDuration() + 300)
+            return true;
+        return false;
+    }
+
+    if (!m_preWalking.empty()) { // disallow diagonal extented prewalking walking
+        auto dir = m_position.getDirectionFromPosition(m_preWalking.back());
+        if ((dir == Otc::NorthWest || dir == Otc::NorthEast || dir == Otc::SouthWest || dir == Otc::SouthEast)) {
+            return false;
+        }
+        if (!g_map.getTile(getPrewalkingPosition())->isWalkable())
+            return false;
+    }
+
+    return true;
+}
+
+void LocalPlayer::walk(const Position& oldPos, const Position& newPos)
+{
+    if (g_extras.debugWalking) {
+        g_logger.info(stdext::format("[%i] LocalPlayer::walk", (int)g_clock.millis()));
+    }
+
+    m_lastAutoWalkRetries = 0;
+    // a prewalk was going on
+    if (isPreWalking()) {
+        for (auto it = m_preWalking.begin(); it != m_preWalking.end(); ++it) {
+            if (*it == newPos) {
+                m_preWalking.erase(m_preWalking.begin(), ++it);
+                if (!isPreWalking()) // reset pre walking
+                    updateWalk();
+                return;
+            }
+        }
+        if (g_extras.debugWalking) {
+            g_logger.info(stdext::format("[%i] LocalPlayer::walk invalid prewalk", (int)g_clock.millis()));
+        }
+
+        // invalid pre walk
+        m_preWalking.clear();
+        m_serverWalking = true;
+        if (m_serverWalkEndEvent)
+            m_serverWalkEndEvent->cancel();
+
+        Creature::walk(oldPos, newPos);
+    } else { // no prewalk was going on, this must be an server side automated walk
+        if (g_extras.debugWalking) {
+            g_logger.info(stdext::format("[%i] LocalPlayer::walk server walk", (int)g_clock.millis()));
+        }
+
+        m_serverWalking = true;
+        if (m_serverWalkEndEvent)
+            m_serverWalkEndEvent->cancel();
+        m_lastAutoWalkRetries = 0;
+
+        Creature::walk(oldPos, newPos);
+    }
+}
+
+void LocalPlayer::preWalk(Otc::Direction direction)
+{
+    Position startPos = m_position;
+    if (!m_preWalking.empty())
+        startPos = m_preWalking.back();
+    Position newPos = startPos.translatedToDirection(direction);
+
+    // Hard wall guard at the source: never pre-walk onto a genuine wall (a tile that has
+    // ground but is not walkable). This is the last line of defence against the GM/GOD
+    // "walk into walls" desync — the Lua walk() guard can be bypassed by fast server-walking
+    // paths that recompute toPos from an advanced base, but every visible step still goes
+    // through here. Floor-change holes (no ground) and the Ctrl walk-through modifier are
+    // intentionally NOT blocked. Without this, a refused step still advanced the local
+    // position into the wall and never got corrected, leaving the char stuck on the wall.
+    // Note: isKeyPressed(Fw::KeyCtrl) is always false (processKeyDown early-returns for
+    // modifier keys, storing them only in keyboardModifiers), so check modifiers instead.
+    if (g_window.getKeyboardModifiers() != Fw::KeyboardCtrlModifier) {
+        const TilePtr& destTile = g_map.getTile(newPos);
+        if (destTile && destTile->getGround() && !destTile->isWalkable()) {
+            return;
+        }
+    }
+
+    if (m_serverWalkEndEvent)
+        m_serverWalkEndEvent->cancel();
+
+    m_lastPrewalkDone = false;
+    m_preWalking.push_back(newPos);
+    if (m_preWalking.size() > 1)
+        g_map.requestVisibleTilesCacheUpdate();
+
+    m_lastPrewalkDir = direction;
+    schedulePreWalkWatchdog();
+
+    Creature::walk(startPos, newPos);
+}
+
+void LocalPlayer::schedulePreWalkWatchdog()
+{
+    // Re-arm from scratch: any pending watchdog belonged to an earlier step. A new
+    // prewalk means the old one is either already reconciled or superseded.
+    if (m_preWalkTimeoutEvent)
+        m_preWalkTimeoutEvent->cancel();
+
+    // The confirmation (server MoveCreature) is STEP-bound, not ping-bound. The server
+    // schedules the move by the player's step duration (his speed over the ground speed
+    // of the tile), so the round trip measures that, not the link latency.
+    //
+    // This used to be `ping * 2 + 200` clamped to a 300ms floor, on the assumption that
+    // the window was purely a round trip. On a local server (ping ~5ms) that collapsed to
+    // the 300ms floor, while measured confirmations for a low-level character on foot came
+    // back in 276-326ms: every step was a coin flip against the limit, and the ones landing
+    // past 300ms rubber-banded the character a tile back. That is not a benign cost -- the
+    // rollback leaves client and server disagreeing about position and facing for the tens
+    // of milliseconds until the real confirmation lands, which is enough to send a
+    // direction-based spell at the wrong target.
+    //
+    // So budget the step itself, times the number of steps still queued (with
+    // GameNewWalking the client may run several ahead, and each one drains at its own step
+    // duration), plus the ping round trip and a fixed slack for the outgoing governor queue
+    // and dispatcher jitter. The watchdog exists only to unstick a genuinely lost packet;
+    // recovering in half a second instead of a third of one costs nothing, and never firing
+    // early is what matters.
+    int ping = g_game.getPing();
+    if (ping < 0) // not measured yet (before the first pong)
+        ping = 100;
+    const int queuedSteps = std::max<int>(1, (int)m_preWalking.size());
+    const int budget = getStepDuration() * queuedSteps + ping * 2 + 200;
+    const int timeout = std::clamp(budget, (int)PREWALK_TIMEOUT_MIN, (int)PREWALK_TIMEOUT_MAX);
+    auto self = asLocalPlayer();
+    m_preWalkTimeoutEvent = g_dispatcher.scheduleEvent([self] {
+        self->m_preWalkTimeoutEvent = nullptr;
+        if (self->m_preWalking.empty())
+            return; // step was reconciled by the server in time — nothing to recover
+
+        if (g_extras.debugWalking) {
+            g_logger.info(stdext::format("[%i] preWalk watchdog: recovering stuck prewalk (size %i)",
+                                         (int)g_clock.millis(), (int)self->m_preWalking.size()));
+        }
+
+        // Recover exactly as a server-side walk cancel would: drop the phantom step,
+        // snap back to the real tile, re-arm autowalk retry and fire onCancelWalk so
+        // the Lua walk pipeline unblocks. Without this the char stays frozen forever.
+        self->cancelNewWalk(self->m_lastPrewalkDir);
+    }, timeout);
+}
+
+void LocalPlayer::cancelNewWalk(Otc::Direction dir)
+{
+    if (g_extras.debugWalking) {
+        g_logger.info(stdext::format("[%i] cancelWalk", (int)g_clock.millis()));
+    }
+
+    bool clearedPrewalk = !m_preWalking.empty();
+
+    m_preWalking.clear();
+    g_map.requestVisibleTilesCacheUpdate();
+
+    if (clearedPrewalk) {
+        stopWalk();
+    }
+
+    m_idleTimer.restart();
+
+    if (retryAutoWalk()) return;
+
+    if (!g_game.isIgnoringServerDirection() || !g_game.getFeature(Otc::GameNewWalking)) {
+        setDirection(dir);
+    }
+    callLuaField("onCancelWalk", dir);
+}
+
+bool LocalPlayer::predictiveCancelWalk(const Position& pos, uint32_t predictionId, Otc::Direction dir)
+{
+    if (g_extras.debugPredictiveWalking) {
+        g_logger.info(stdext::format("[%i] predictiveCancelWalk: %i - %i", (int)g_clock.millis(), predictionId, (int)m_preWalking.size()));
+    }
+
+    m_walkMatrix.update(pos, predictionId); // for debugging, not used
+
+    for (auto it = m_preWalking.begin(); it != m_preWalking.end(); ++it) {
+        if (*it != pos) {
+            continue;
+        }
+        if (g_extras.debugPredictiveWalking) {
+            g_logger.info(stdext::format("[%i] predictiveCancelWalk: canceling walk", (int)g_clock.millis()));
+        }
+
+        if (it == m_preWalking.begin()) {
+            cancelNewWalk(dir);
+            return true;
+        }
+        while (it != m_preWalking.end()) {
+            it = m_preWalking.erase(it);
+        }
+
+        m_walkTimer.restart();
+        m_walkTimer.adjust(-(getStepDuration(true) + 50));
+        updateWalk();
+        g_map.requestVisibleTilesCacheUpdate();
+
+        return true;
+    }
+
+    return false;
+}
+
+bool LocalPlayer::retryAutoWalk()
+{
+    if (m_autoWalkDestination.isValid()) {
+        g_game.stop();
+        auto self = asLocalPlayer();
+
+        if (m_lastAutoWalkRetries <= 3) {
+            if (m_autoWalkContinueEvent)
+                m_autoWalkContinueEvent->cancel();
+            m_autoWalkContinueEvent = g_dispatcher.scheduleEvent(std::bind(&LocalPlayer::autoWalk, asLocalPlayer(), m_autoWalkDestination, true), 200);
+            self->m_lastAutoWalkRetries += 1;
+            return true;
+        } else {
+            self->m_autoWalkDestination = Position();
+        }
+    }
+    return false;
+}
+
+
+bool LocalPlayer::autoWalk(Position destination, bool retry)
+{
+    // reset state
+    m_autoWalkDestination = Position();
+    m_lastAutoWalkPosition = Position();
+    if (m_autoWalkContinueEvent)
+        m_autoWalkContinueEvent->cancel();
+    m_autoWalkContinueEvent = nullptr;
+
+    if (!retry)
+        m_lastAutoWalkRetries = 0;
+
+    if (destination == getPrewalkingPosition())
+        return true;
+
+    m_autoWalkDestination = destination;
+    auto self(asLocalPlayer());
+    g_map.findPathAsync(getPrewalkingPosition(), destination, [self](PathFindResult_ptr result) {
+        if (self->m_autoWalkDestination != result->destination)
+            return;
+        if (g_extras.debugWalking) {
+            g_logger.info(stdext::format("Async path search finished with complexity %i/50000", result->complexity));
+        }
+
+        if (result->status != Otc::PathFindResultOk) {
+            if (self->m_lastAutoWalkRetries > 0 && self->m_lastAutoWalkRetries <= 3) { // try again in 300, 700, 1200 ms if canceled by server
+                self->m_autoWalkContinueEvent = g_dispatcher.scheduleEvent(std::bind(&LocalPlayer::autoWalk, self, result->destination, true), 200 + self->m_lastAutoWalkRetries * 100);
+                return;
+            }
+            self->m_autoWalkDestination = Position();
+            self->callLuaField("onAutoWalkFail", result->status);
+            return;
+        }
+
+        if (!g_game.getFeature(Otc::GameNewWalking) && result->path.size() > 127)
+            result->path.resize(127);
+        else if (result->path.size() > 4095)
+            result->path.resize(4095);
+
+        if (result->path.empty()) {
+            self->m_autoWalkDestination = Position();
+            self->callLuaField("onAutoWalkFail", result->status);
+            return;
+        }
+
+        auto finalAutowalkPos = self->getPrewalkingPosition().translatedToDirections(result->path).back();
+        if (self->m_autoWalkDestination != finalAutowalkPos) {
+            self->m_lastAutoWalkPosition = finalAutowalkPos;
+        }
+
+        g_game.autoWalk(result->path, result->start);
+    });
+
+    if (!retry)
+        lockWalk();
+    return true;
+}
+
+void LocalPlayer::cancelWalk(Otc::Direction direction)
+{
+    if (g_game.getFeature(Otc::GameNewWalking)) {
+        return;
+    }
+
+    return cancelNewWalk(direction);
+}
+
+void LocalPlayer::stopAutoWalk()
+{
+    m_autoWalkDestination = Position();
+    m_lastAutoWalkPosition = Position();
+
+    if (m_autoWalkContinueEvent) {
+        m_autoWalkContinueEvent->cancel();
+        m_autoWalkContinueEvent = nullptr;
+    }
+}
+
+void LocalPlayer::stopWalk() {
+    if (g_extras.debugWalking) {
+        g_logger.info(stdext::format("[%i] stopWalk", (int)g_clock.millis()));
+    }
+
+    Creature::stopWalk(); // will call terminateWalk
+
+    m_preWalking.clear();
+}
+
+void LocalPlayer::updateWalkOffset(uint8 totalPixelsWalked, bool inNextFrame)
+{
+    // pre walks offsets are calculated in the oposite direction
+    if(isPreWalking()) {
+        Point& walkOffset = inNextFrame ? m_walkOffsetInNextFrame : m_walkOffset;
+        walkOffset = Point(0,0);
+        if(m_walkDirection == Otc::North || m_walkDirection == Otc::NorthEast || m_walkDirection == Otc::NorthWest)
+            walkOffset.y = -totalPixelsWalked;
+        else if(m_walkDirection == Otc::South || m_walkDirection == Otc::SouthEast || m_walkDirection == Otc::SouthWest)
+            walkOffset.y = totalPixelsWalked;
+
+        if(m_walkDirection == Otc::East || m_walkDirection == Otc::NorthEast || m_walkDirection == Otc::SouthEast)
+            walkOffset.x = totalPixelsWalked;
+        else if(m_walkDirection == Otc::West || m_walkDirection == Otc::NorthWest || m_walkDirection == Otc::SouthWest)
+            walkOffset.x = -totalPixelsWalked;
+    } else
+        Creature::updateWalkOffset(totalPixelsWalked, inNextFrame);
+}
+
+void LocalPlayer::updateWalk()
+{
+    if (!m_walking)
+        return;
+
+    Creature::updateWalk();
+
+    // terminate walk only when client and server side walk are completed
+    if (m_walking && m_walkTimer.ticksElapsed() >= getStepDuration()) {
+        m_lastPrewalkDone = true;
+        if (!isPreWalking()) {
+            terminateWalk();
+        }
+    }
+}
+
+void LocalPlayer::terminateWalk()
+{
+    if (g_extras.debugWalking) {
+        g_logger.info(stdext::format("[%i] terminateWalk", (int)g_clock.millis()));
+    }
+
+    Creature::terminateWalk();
+    m_idleTimer.restart();
+    m_preWalking.clear();
+    m_walking = false;
+
+    // The step resolved normally — the watchdog for it is no longer needed.
+    if (m_preWalkTimeoutEvent) {
+        m_preWalkTimeoutEvent->cancel();
+        m_preWalkTimeoutEvent = nullptr;
+    }
+
+    if(m_serverWalking) {
+        if(m_serverWalkEndEvent)
+            m_serverWalkEndEvent->cancel();
+        auto self = asLocalPlayer();
+        m_serverWalkEndEvent = g_dispatcher.scheduleEvent([self] {
+            self->m_serverWalking = false;
+        }, 100);
+    }
+
+    callLuaField("onWalkFinish");
+}
+
+void LocalPlayer::onAppear()
+{
+    Creature::onAppear();
+
+    /* Does not seem to be needed anymore
+    // on teleports lock the walk
+    if(!m_oldPosition.isInRange(m_position,1,1))
+        lockWalk();
+    */
+}
+
+void LocalPlayer::onPositionChange(const Position& newPos, const Position& oldPos)
+{
+    Creature::onPositionChange(newPos, oldPos);
+
+    if(newPos == m_autoWalkDestination)
+        stopAutoWalk();
+    else if(m_autoWalkDestination.isValid() && newPos == m_lastAutoWalkPosition)
+        autoWalk(m_autoWalkDestination);
+
+    m_walkMatrix.updatePosition(newPos);
+}
+
+void LocalPlayer::turn(Otc::Direction direction)
+{
+    Creature::setDirection(direction);
+    callLuaField("onTurn", direction);
+}
+
+void LocalPlayer::setStates(int states)
+{
+    if(m_states != states) {
+        int oldStates = m_states;
+        m_states = states;
+
+        std::vector<int> statesList = getStatesList();
+        std::vector<int> removedStates;
+        for(int bit = 0; bit < 31; ++bit) {
+            int state = 1 << bit;
+            if((oldStates & state) != 0 && (m_states & state) == 0)
+                removedStates.push_back(state);
+        }
+
+        callLuaField("onStatesChange", states, oldStates, statesList, removedStates);
+    }
+}
+
+std::vector<int> LocalPlayer::getStatesList()
+{
+    std::vector<int> states;
+    for(int bit = 0; bit < 31; ++bit) {
+        int state = 1 << bit;
+        if((m_states & state) != 0)
+            states.push_back(state);
+    }
+    return states;
+}
+
+void LocalPlayer::setSkill(uint8_t skill, int level, int levelPercent)
+{
+    if(skill >= m_skillsLevel.size()) {
+        m_skillsLevel.resize(skill + 1, 0);
+        m_skillsBaseLevel.resize(skill + 1, 0);
+        m_skillsLevelPercent.resize(skill + 1, 0);
+    }
+
+    int oldLevel = m_skillsLevel[skill];
+    int oldLevelPercent = m_skillsLevelPercent[skill];
+
+    if(level != oldLevel || levelPercent != oldLevelPercent) {
+        m_skillsLevel[skill] = level;
+        m_skillsLevelPercent[skill] = levelPercent;
+
+        callLuaField("onSkillChange", skill, level, levelPercent, oldLevel, oldLevelPercent);
+    }
+}
+
+void LocalPlayer::setBaseSkill(uint8_t skill, int baseLevel)
+{
+    if (skill >= m_skillsLevel.size()) {
+        m_skillsLevel.resize(skill + 1, 0);
+        m_skillsBaseLevel.resize(skill + 1, 0);
+        m_skillsLevelPercent.resize(skill + 1, 0);
+    }
+
+    int oldBaseLevel = m_skillsBaseLevel[skill];
+    if(baseLevel != oldBaseLevel) {
+        m_skillsBaseLevel[skill] = baseLevel;
+
+        callLuaField("onBaseSkillChange", skill, baseLevel, oldBaseLevel);
+    }
+}
+
+void LocalPlayer::setHealth(double health, double maxHealth)
+{
+    if(m_health != health || m_maxHealth != maxHealth) {
+        double oldHealth = m_health;
+        double oldMaxHealth = m_maxHealth;
+        m_health = health;
+        m_maxHealth = maxHealth;
+
+        callLuaField("onHealthChange", health, maxHealth, oldHealth, oldMaxHealth);
+
+        // cannot walk while dying
+        if(health == 0) {
+            if(isPreWalking())
+                stopWalk();
+            lockWalk();
+        }
+    }
+}
+
+void LocalPlayer::setFreeCapacity(double freeCapacity)
+{
+    if(m_freeCapacity != freeCapacity) {
+        double oldFreeCapacity = m_freeCapacity;
+        m_freeCapacity = freeCapacity;
+
+        callLuaField("onFreeCapacityChange", freeCapacity, oldFreeCapacity);
+    }
+}
+
+void LocalPlayer::setTotalCapacity(double totalCapacity)
+{
+    if(m_totalCapacity != totalCapacity) {
+        double oldTotalCapacity = m_totalCapacity;
+        m_totalCapacity = totalCapacity;
+
+        callLuaField("onTotalCapacityChange", totalCapacity, oldTotalCapacity);
+    }
+}
+
+void LocalPlayer::setBaseCapacity(double baseCapacity)
+{
+    if(m_baseCapacity != baseCapacity) {
+        double oldBaseCapacity = m_baseCapacity;
+        m_baseCapacity = baseCapacity;
+
+        callLuaField("onBaseCapacityChange", baseCapacity, oldBaseCapacity);
+    }
+}
+
+void LocalPlayer::setExperience(double experience)
+{
+    if(m_experience != experience) {
+        double oldExperience = m_experience;
+        m_experience = experience;
+
+        callLuaField("onExperienceChange", experience, oldExperience);
+    }
+}
+
+void LocalPlayer::setLevel(double level, double levelPercent)
+{
+    if(m_level != level || m_levelPercent != levelPercent) {
+        double oldLevel = m_level;
+        double oldLevelPercent = m_levelPercent;
+        m_level = level;
+        m_levelPercent = levelPercent;
+
+        callLuaField("onLevelChange", level, levelPercent, oldLevel, oldLevelPercent);
+    }
+}
+
+void LocalPlayer::setMana(double mana, double maxMana)
+{
+    if(m_mana != mana || m_maxMana != maxMana) {
+        double oldMana = m_mana;
+        double oldMaxMana = m_maxMana;
+        m_mana = mana;
+        m_maxMana = maxMana;
+
+        callLuaField("onManaChange", mana, maxMana, oldMana, oldMaxMana);
+    }
+}
+
+void LocalPlayer::setManaShield(double remaining, double total)
+{
+    if(m_manaShield != remaining || m_maxManaShield != total) {
+        double oldRemaining = m_manaShield;
+        double oldTotal = m_maxManaShield;
+        m_manaShield = remaining;
+        m_maxManaShield = total;
+
+        callLuaField("onManaShieldChange", remaining, total, oldRemaining, oldTotal);
+    }
+}
+
+void LocalPlayer::setMagicLevel(double magicLevel, double magicLevelPercent)
+{
+    if(m_magicLevel != magicLevel || m_magicLevelPercent != magicLevelPercent) {
+        double oldMagicLevel = m_magicLevel;
+        double oldMagicLevelPercent = m_magicLevelPercent;
+        m_magicLevel = magicLevel;
+        m_magicLevelPercent = magicLevelPercent;
+
+        callLuaField("onMagicLevelChange", magicLevel, magicLevelPercent, oldMagicLevel, oldMagicLevelPercent);
+    }
+}
+
+void LocalPlayer::setBaseMagicLevel(double baseMagicLevel)
+{
+    if(m_baseMagicLevel != baseMagicLevel) {
+        double oldBaseMagicLevel = m_baseMagicLevel;
+        m_baseMagicLevel = baseMagicLevel;
+
+        callLuaField("onBaseMagicLevelChange", baseMagicLevel, oldBaseMagicLevel);
+    }
+}
+
+void LocalPlayer::setSoul(double soul)
+{
+    if(m_soul != soul) {
+        double oldSoul = m_soul;
+        m_soul = soul;
+
+        callLuaField("onSoulChange", soul, oldSoul);
+    }
+}
+
+void LocalPlayer::setStamina(double stamina)
+{
+    if(m_stamina != stamina) {
+        double oldStamina = m_stamina;
+        m_stamina = stamina;
+
+        callLuaField("onStaminaChange", stamina, oldStamina);
+    }
+}
+
+void LocalPlayer::setExpRates(int base, int lowLevel, int storeBoost, int staminaMulti)
+{
+    if(m_baseXpGain != base || m_grindingXpBoost != lowLevel || m_storeXpBoostPercent != storeBoost || m_staminaXpBoost != staminaMulti) {
+        m_baseXpGain = base;
+        m_grindingXpBoost = lowLevel;
+        m_storeXpBoostPercent = storeBoost;
+        m_staminaXpBoost = staminaMulti;
+
+        callLuaField("onUpdateGainRate", base, lowLevel, storeBoost, staminaMulti);
+    }
+}
+
+void LocalPlayer::setStoreExpBoost(int seconds, bool canBuy)
+{
+    if(m_storeXpBoostTime != seconds) {
+        m_storeXpBoostTime = seconds;
+
+        callLuaField("onExpBoostChange", seconds, canBuy);
+    }
+}
+
+void LocalPlayer::setInventoryItem(Otc::InventorySlot inventory, const ItemPtr& item)
+{
+    if(inventory >= Otc::LastInventorySlot) {
+        g_logger.traceError("invalid slot");
+        return;
+    }
+
+    if(m_inventoryItems[inventory] != item) {
+        ItemPtr oldItem = m_inventoryItems[inventory];
+        m_inventoryItems[inventory] = item;
+
+        callLuaField("onInventoryChange", inventory, item, oldItem);
+    }
+}
+
+namespace {
+int countMatchingItems(const ItemPtr& item, int itemId)
+{
+    if(!item || itemId <= 0)
+        return 0;
+
+    int count = 0;
+    if(static_cast<int>(item->getId()) == itemId)
+        count += item->isStackable() ? std::max<int>(1, item->getCount()) : 1;
+
+    for(const ItemPtr& containerItem : item->getContainerItems())
+        count += countMatchingItems(containerItem, itemId);
+
+    return count;
+}
+}
+
+void LocalPlayer::setInventoryItemsCount(const std::map<int, int>& counts)
+{
+    m_inventoryItemsCount = counts;
+    m_inventoryIdsReceived = true;
+}
+
+void LocalPlayer::setInventoryItemsCountByTier(const std::map<int, std::map<int, int>>& counts)
+{
+    m_inventoryItemsCountByTier = counts;
+}
+
+bool LocalPlayer::hasActiveStanceSpell(uint16 spellId)
+{
+    return std::find(m_activeStanceSpellIds.begin(), m_activeStanceSpellIds.end(), spellId) != m_activeStanceSpellIds.end();
+}
+
+void LocalPlayer::setActiveStanceSpellIds(const std::vector<uint16>& spellIds)
+{
+    if (m_activeStanceSpellIds == spellIds)
+        return;
+
+    const auto oldSpellIds = m_activeStanceSpellIds;
+    m_activeStanceSpellIds = spellIds;
+    callLuaField("onStanceChange", m_activeStanceSpellIds, oldSpellIds);
+}
+
+int LocalPlayer::getInventoryCount(int itemId, int upgradeTier)
+{
+    if(itemId <= 0)
+        return 0;
+
+    // A positive tier asks for that classification only; serve it from the parallel
+    // per-tier totals (0xF5). tier <= 0 falls through to the tier-agnostic sum below,
+    // so every existing caller (action bar, helper) keeps its current behavior.
+    if(upgradeTier > 0) {
+        const auto tit = m_inventoryItemsCountByTier.find(itemId);
+        if(tit == m_inventoryItemsCountByTier.end())
+            return 0;
+        const auto tierIt = tit->second.find(upgradeTier);
+        return tierIt != tit->second.end() ? tierIt->second : 0;
+    }
+
+    // Prefer the authoritative server totals (0xF5): they cover the entire
+    // inventory including closed backpacks and are refreshed by the server on
+    // every add/remove, so the action bar / helper stay correct without the
+    // container being open.
+    if(m_inventoryIdsReceived) {
+        const auto it = m_inventoryItemsCount.find(itemId);
+        return it != m_inventoryItemsCount.end() ? it->second : 0;
+    }
+
+    // Fallback used only until the first 0xF5 arrives: scan the equipped slots
+    // and any open container (closed containers are unknown to the client here).
+    int count = 0;
+    for(int slot = Otc::InventorySlotHead; slot < Otc::LastInventorySlot; ++slot)
+        count += countMatchingItems(m_inventoryItems[slot], itemId);
+
+    for(const auto& it : g_game.getContainers()) {
+        const ContainerPtr& container = it.second;
+        if(!container || container->isClosed())
+            continue;
+
+        for(const ItemPtr& item : container->getItems())
+            count += countMatchingItems(item, itemId);
+    }
+
+    return count;
+}
+
+bool LocalPlayer::hasEquippedItemId(int itemId, int)
+{
+    if(itemId <= 0)
+        return false;
+
+    for(int slot = Otc::InventorySlotHead; slot < Otc::LastInventorySlot; ++slot) {
+        const ItemPtr& item = m_inventoryItems[slot];
+        if(item && static_cast<int>(item->getId()) == itemId)
+            return true;
+    }
+
+    return false;
+}
+
+void LocalPlayer::setVocation(int vocation)
+{
+    if(m_vocation != vocation) {
+        int oldVocation = m_vocation;
+        m_vocation = vocation;
+
+        callLuaField("onVocationChange", vocation, oldVocation);
+    }
+}
+
+void LocalPlayer::setPremium(bool premium)
+{
+    if(m_premium != premium) {
+        m_premium = premium;
+
+        callLuaField("onPremiumChange", premium);
+    }
+}
+
+void LocalPlayer::setRegenerationTime(double regenerationTime)
+{
+    if(m_regenerationTime != regenerationTime) {
+        double oldRegenerationTime = m_regenerationTime;
+        m_regenerationTime = regenerationTime;
+
+        callLuaField("onRegenerationChange", regenerationTime, oldRegenerationTime);
+    }
+}
+
+void LocalPlayer::setOfflineTrainingTime(double offlineTrainingTime)
+{
+    if(m_offlineTrainingTime != offlineTrainingTime) {
+        double oldOfflineTrainingTime = m_offlineTrainingTime;
+        m_offlineTrainingTime = offlineTrainingTime;
+
+        callLuaField("onOfflineTrainingChange", offlineTrainingTime, oldOfflineTrainingTime);
+    }
+}
+
+void LocalPlayer::setSpells(const std::vector<int>& spells)
+{
+    if(m_spells != spells) {
+        std::vector<int> oldSpells = m_spells;
+        m_spells = spells;
+
+        callLuaField("onSpellsChange", spells, oldSpells);
+    }
+}
+
+void LocalPlayer::setBlessings(int blessings)
+{
+    if(blessings != m_blessings) {
+        int oldBlessings = m_blessings;
+        m_blessings = blessings;
+
+        callLuaField("onBlessingsChange", blessings, oldBlessings);
+    }
+}
+
+void LocalPlayer::setBlessStatus(int status)
+{
+    // A real 0x9C landed: the status is now server-confirmed. Set this BEFORE the changed-check
+    // so it flips true even when the value equals the (stale) default -- e.g. reviving blessed
+    // (status 2), where the "if changed" below would otherwise never fire and leave it unknown.
+    m_blessStatusKnown = true;
+
+    if(status != m_blessStatus) {
+        m_blessStatus = status;
+
+        // The 0x9C status byte (1 = <5 blesses, 2 = 5-6, 3 = all) can change
+        // without the cosmetic glow flag in m_blessings changing (e.g. going
+        // from 5-6 to all blesses), so setBlessings() would not fire the Lua
+        // hook in that case. Drive it here too so the inventory blessed button
+        // turns gold -> green live, without waiting for a relog.
+        callLuaField("onBlessingsChange", m_blessings, m_blessings);
+    }
+}
+
+void LocalPlayer::setTaints(int taints)
+{
+    if(taints != m_taints) {
+        int oldTaints = m_taints;
+        m_taints = taints;
+
+        callLuaField("onTaintsChange", taints, oldTaints);
+    }
+}
+
+void LocalPlayer::setResourceValue(int resource, uint64 amount)
+{
+    uint64 oldAmount = getResourceValue(resource);
+    if(amount != oldAmount) {
+        m_resources[resource] = amount;
+        callLuaField("onResourceValueChange", resource, amount, oldAmount);
+    }
+}
+
+uint64 LocalPlayer::getResourceValue(int resource)
+{
+    const auto it = m_resources.find(resource);
+    return it != m_resources.end() ? it->second : 0;
+}
+
+bool LocalPlayer::hasSight(const Position& pos)
+{
+    return m_position.isInRange(pos, g_map.getAwareRange().left - 1, g_map.getAwareRange().top - 1);
+}

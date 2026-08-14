@@ -1,0 +1,10 @@
+Module
+  name: client_feedback
+  description: Allow to send feedback
+  author: nyxos-client
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  dependencies: [ game_interface ]
+  scripts: [ feedback ]
+  @onLoad: init()
+  @onUnload: terminate()

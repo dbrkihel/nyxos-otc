@@ -1,0 +1,247 @@
+SkillPanel < Panel
+  margin-left: 16
+  height: 19
+
+  UIWidget
+    id: level
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    text: 999
+    font: verdana-11px-rounded
+    text-align: center
+    margin-left: 7
+
+  UIWidget
+    id: icon
+    anchors.left: prev.right
+    anchors.verticalCenter: parent.verticalCenter
+    image-source: /images/game/topbar/icons
+    size: 9 9
+    image-clip: 0 0 9 7
+    margin-left: 7
+
+  ProgressBar
+    id: progress
+    anchors.left: prev.right
+    anchors.right: next.left
+    margin-left: 7
+    margin-right: 7
+    anchors.verticalCenter: parent.verticalCenter
+    background-color: #c00000
+    height: 5
+    border: 1 black
+
+  UIWidget
+    id: shop
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    image-source: /images/game/topbar/boost
+    size: 76 14
+    margin-right: 3
+    @onClick: g_game.openStore()
+    image-clip: 0 0 76 14
+
+    $pressed:
+      image-clip: 0 14 76 14
+
+  VerticalSeparator
+    id: left
+    anchors.top: progress.top
+    anchors.right: progress.horizontalCenter
+    image-source: /images/game/topbar/marker_top
+    size: 7 11
+
+  VerticalSeparator
+    id: middle
+    anchors.top: progress.top
+    anchors.right: progress.horizontalCenter
+    image-source: /images/game/topbar/marker_top
+    size: 7 11
+
+  VerticalSeparator
+    id: right
+    anchors.top: progress.top
+    anchors.right: progress.right
+    image-source: /images/game/topbar/marker_top
+    size: 7 11
+
+Panel
+  id: topbar
+  focusable: false
+  image-source: /images/game/topbar/topBarBG
+  image-border: 2
+  margin-left: 3
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  Panel
+    id: topbarBackground
+    margin-left: 16
+    height: 30
+    Panel
+      id: healthContainer
+      anchors.left: parent.left
+      anchors.right: proficiencyPanel.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 3
+      margin-top: 2
+      margin-right: 6
+      image-source: /images/game/topbar/large/large-container
+      HealthBarSD
+        id: healthBar
+        anchors.fill: parent
+        margin: 1 2 1 1
+        background-color: alpha
+    Panel
+      id: stats
+      size: 53 27
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 2
+      image-source: /images/game/topbar/large/small-container
+      UIWidget
+        id: box
+        anchors.fill: parent
+        margin: 2 0 0 0
+        layout:
+          type: grid
+          num-columns: 4
+          num-lines: 2
+          cell-size: 10 9
+
+    Panel
+      id: harmony
+      size: 96 13
+      anchors.top: prev.top
+      anchors.left: prev.right
+      margin-left: 6
+      margin-top: 7
+      layout:
+        type: horizontalBox
+        cell-size: 13 13
+      UIWidget
+        id: harmony0
+        image-source: /images/game/topbar/icon-combopoint-empty
+      UIWidget
+        id: harmony1
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-left: 2
+      UIWidget
+        id: harmony2
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-left: 2
+      UIWidget
+        id: harmony3
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-left: 2
+      UIWidget
+        id: harmony4
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-left: 2
+      
+      VerticalSeparator
+        id: separatorSerene
+        height: 13
+        margin-left: 5
+
+      UIWidget
+        id: serenity
+        image-source: /images/game/topbar/icon-serene-off
+        size: 13 13
+        margin-left: 5
+
+    Panel
+      id: manaContainer
+      height: 25
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: prev.right
+      margin-left: 6
+      margin-right: 4
+      margin-top: 2
+      image-source: /images/game/topbar/large/large-container
+
+      InvManaBar
+        id: manaBar
+        anchors.fill: parent
+        margin: 1 1 1 1
+        background-color: alpha
+
+      InvManaBar
+        id: manaBarSecond
+        height: 10
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        background-color: alpha
+        margin: 1 1 1 1
+        visible: false
+
+      InvManaBar
+        id: manaShield
+        height: 10
+        anchors.top: manaBarSecond.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin: 4 1 1 1
+        background-color: alpha
+        visible: false
+
+      Label
+        id: statusMana
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        text-auto-resize: true
+        margin-bottom: 1
+        !text: tr('0 / 0')
+      Label
+        id: statusManaShield
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        margin-top: 5
+        text-auto-resize: true
+        !text: tr('0 / 0')
+
+    Panel
+      id: proficiencyPanel
+      size: 29 29
+      anchors.top: stats.top
+      anchors.right: stats.left
+      margin-right: 4
+      UIButton
+        id: proficiencyButton
+        size: 27 27
+        anchors.top: parent.top
+        anchors.left: parent.left
+        image-source: /images/game/topbar/proficiency-large-button
+        image-clip: 0 0 27 27
+        !tooltip: tr('Open Weapon Proficiency Dialog')
+        tooltip-delayed: true
+        @onClick: modules.game_proficiency.requestOpenWindow()
+        $hover !pressed:
+          image-clip: 0 0 27 27
+        $pressed:
+          image-clip: 0 27 27 27
+      UIWidget
+        id: highlightProficiencyButton
+        size: 29 29
+        anchors.top: prev.top
+        anchors.left: prev.left
+        margin-top: -1
+        margin-left: -1
+        visible: false
+        phantom: true
+        image-source: /images/game/topbar/highlight-proficiency-large-button
+
+  Panel
+    id: skills
+    margin-left: 16
+    layout:
+      type: grid
+      num-columns: 2
+      fit-children: true
+
+  UIWidget
+    id: bottomBar
+    image-source: /images/game/topbar/bottom-topbar

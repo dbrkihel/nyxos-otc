@@ -1,0 +1,95 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "vendor": {
+        "nyxos-client.note/v1": {
+            "comment": [
+                "Two Windows build paths exist and both work:",
+                "  - vc17/NyxosClient.sln (MSBuild, /MT static CRT) -- driven by compile.ps1",
+                "  - these CMake presets (Ninja + MSVC) -- driven by compile-cmake.ps1",
+                "The presets require VCPKG_ROOT to point at a bootstrapped vcpkg clone and must",
+                "be run from a shell where vcvars64.bat has been sourced. compile-cmake.ps1 does",
+                "both for you, so prefer it unless you are wiring up an IDE or CI that speaks",
+                "CMakePresets natively."
+            ]
+        }
+    },
+    "configurePresets": [
+        {
+            "name": "windows-x64",
+            "displayName": "Windows x64 (shared deps, vcpkg)",
+            "description": "Default Windows build. Dependencies link as DLLs, which vcpkg copies next to the exe. Fastest first build.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "VCPKG_TARGET_TRIPLET": "x64-windows",
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "windows-x64-debug",
+            "inherits": "windows-x64",
+            "displayName": "Windows x64 Debug",
+            "binaryDir": "${sourceDir}/build-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "windows-x64-static",
+            "inherits": "windows-x64",
+            "displayName": "Windows x64 (static, vcpkg)",
+            "description": "Standalone exe with no DLLs beside it. Triplet x64-windows-static matches the vc17 /MT static-CRT configuration, so the vcpkg binary cache is shared between both build paths. Much slower to build the first time.",
+            "binaryDir": "${sourceDir}/build-static",
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+                "VCPKG_HOST_TRIPLET": "x64-windows-static"
+            }
+        },
+        {
+            "name": "linux-x64",
+            "displayName": "Linux x64 (vcpkg)",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "windows-x64",
+            "configurePreset": "windows-x64"
+        },
+        {
+            "name": "windows-x64-debug",
+            "configurePreset": "windows-x64-debug"
+        },
+        {
+            "name": "windows-x64-static",
+            "configurePreset": "windows-x64-static"
+        },
+        {
+            "name": "linux-x64",
+            "configurePreset": "linux-x64"
+        }
+    ]
+}

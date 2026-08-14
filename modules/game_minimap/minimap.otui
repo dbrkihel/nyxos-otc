@@ -1,0 +1,209 @@
+InvisibleMinimapButton < UIButton
+  opacity: 0
+  size: 15 15
+
+MapMiniWindow
+  id: minimapWindow
+  &type: 'miniMap'
+  @onClose: modules.game_minimap.onClose()
+
+  Minimap
+    id: minimap
+    anchors.fill: parent
+    margin: 15 4 4 4
+    @onHoverPosition: |
+      function(self, mapPos)
+          -- todo
+      end
+  UIWidget
+    id: title
+    size: 58 10
+    focusable: false
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 3
+    image-source: /images/game/minimap/mapview-label
+    phantom: true
+
+  ResizeBorder
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    enabled: true
+    minimum: 200
+
+  UIWidget
+    id: centerMap
+    size: 29 32
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-top: 23
+    margin-right: 14
+    image-source: /images/game/minimap/timedisplay-scroll-full
+    //image-border: 2
+    image-clip: 64 0 34 34
+    @onClick: modules.game_minimap.center()
+  UIWidget
+    id: glass
+    size: 47 46
+    image-source: /images/game/minimap/timedisplay-glass
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-top: 17
+    margin-right: 5
+
+  InvisibleMinimapButton
+    anchors.right: glass.right
+    anchors.verticalCenter: glass.verticalCenter
+    @onClick: function() minimapWidget:move(-10,0) end
+
+  InvisibleMinimapButton
+    anchors.left: glass.left
+    anchors.verticalCenter: glass.verticalCenter
+    @onClick: function() minimapWidget:move(10,0) end
+
+  InvisibleMinimapButton
+    anchors.top: glass.top
+    anchors.horizontalCenter: glass.horizontalCenter
+    @onClick: function() minimapWidget:move(0,10) end
+
+  InvisibleMinimapButton
+    anchors.bottom: glass.bottom
+    anchors.horizontalCenter: glass.horizontalCenter
+    @onClick: function() minimapWidget:move(0,-10) end
+
+  InvisibleMinimapButton
+    anchors.top: glass.top
+    anchors.left: glass.left
+    @onClick: function() minimapWidget:move(10, 10) end
+
+  InvisibleMinimapButton
+    anchors.top: glass.top
+    anchors.right: glass.right
+    @onClick: function() minimapWidget:move(-10, 10) end
+
+  InvisibleMinimapButton
+    anchors.bottom: glass.bottom
+    anchors.left: glass.left
+    @onClick: function() minimapWidget:move(10, -10) end
+
+  InvisibleMinimapButton
+    anchors.bottom: glass.bottom
+    anchors.right: glass.right
+    @onClick: function() minimapWidget:move(-10, -10) end
+
+  InvisibleMinimapButton
+    anchors.verticalCenter: glass.verticalCenter
+    anchors.horizontalCenter: glass.horizontalCenter
+    @onClick: function() minimapWidget:reset() end
+
+  Label
+    id: floorPosition
+    image-source: /images/game/minimap/automap-indicator-maplayers
+    size: 14 67
+    image-clip: 98 0 14 67
+    anchors.left: parent.left
+    anchors.bottom: fullSize.top
+    margin-left: 10
+    margin-bottom: 5
+    visible: false
+    UIButton
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 16 32
+      @onClick: modules.game_minimap.floor(true)
+
+    UIButton
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      size: 16 32
+      @onClick: modules.game_minimap.floor(false)
+
+  Button
+    id: floorUp
+    size: 20 20
+    image-source: /images/game/minimap/floor_up
+    image-clip: 0 0 20 20
+    anchors.left: parent.left
+    anchors.bottom: next.top
+    margin-left: 5
+    margin-bottom: 2
+    tooltip: Change Layer (Ctrl + Mouse Wheel or Alt+PageUp for a higher floor, Alt+PageDown for a lower floor)
+    tooltip-delayed: true
+    $hover !pressed:
+      image-clip: 0 0 20 20
+    $pressed:
+      image-clip: 0 20 20 20
+    @onClick: modules.game_minimap.floor(true)
+
+  Button
+    id: floorDown
+    size: 20 20
+    image-source: /images/game/minimap/floor_down
+    image-clip: 0 0 20 20
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-left: 5
+    margin-bottom: 5
+    tooltip: Change Layer (Ctrl + Mouse Wheel or Alt+PageUp for a higher floor, Alt+PageDown for a lower floor)
+    tooltip-delayed: true
+    $hover !pressed:
+      image-clip: 0 0 20 20
+    $pressed:
+      image-clip: 0 20 20 20
+    @onClick: modules.game_minimap.floor(false)
+
+  Button
+    id: zoomInWidget
+    size: 20 20
+    image-source: /images/game/minimap/automap-button-zoomin-up
+    image-clip: 0 0 20 20
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 5
+    margin-bottom: 5
+    tooltip: Zoom in (Alt + End)
+    tooltip-delayed: true
+    $hover !pressed:
+      image-clip: 0 0 20 20
+    $pressed:
+      image-clip: 0 0 20 20
+      image-source: /images/game/minimap/automap-button-zoomin-down
+    @onClick: modules.game_minimap.zoom(true)
+
+  Button
+    id: zoomOutWidget
+    size: 20 20
+    image-source: /images/game/minimap/automap-button-zoomout-up
+    image-clip: 0 0 20 20
+    anchors.right: parent.right
+    anchors.bottom: prev.top
+    margin-right: 5
+    margin-bottom: 2
+    tooltip: Zoom out (Alt + Home)
+    tooltip-delayed: true
+    $hover !pressed:
+      image-clip: 0 0 20 20
+    $pressed:
+      image-clip: 0 0 20 20
+      image-source: /images/game/minimap/automap-button-zoomout-down
+    @onClick: modules.game_minimap.zoom(false)
+
+  Button
+    id: fullSize
+    size: 20 20
+    image-source: /images/game/minimap/automap-button-cyclopediamap-up
+    image-clip: 0 0 20 20
+    anchors.left: parent.left
+    anchors.bottom: zoomOutWidget.top
+    margin-bottom: 2
+    margin-left: 5
+    tooltip: Go to Cyclopedia Map
+    tooltip-delayed: true
+    @onClick: modules.game_cyclopedia.toggleRedirect("Map")
+    $hover !pressed:
+      image-clip: 0 0 20 20
+
+    $pressed:
+      image-clip: 0 0 20 20
+      image-source: /images/game/minimap/automap-button-cyclopediamap-down

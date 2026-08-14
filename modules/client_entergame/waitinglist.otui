@@ -1,0 +1,62 @@
+NewMainWindow
+  id: waitingWindow
+  !text: tr('Please Wait')
+  size: 250 170
+  @onEscape: CharacterList.cancelWait()
+
+  Panel
+    id: contentPanel
+    anchors.fill: parent
+    margin: 11 12 12 13
+
+    Label
+      id: infoLabel
+      anchors.top: parent.top
+      anchors.bottom: progressBar.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      text-wrap: true
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-auto-resize: true
+
+    UIWidget
+      size: 218 11
+      anchors.bottom: timeLabel.top
+      anchors.left: parent.left
+      image-source: /images/ui/schedule-progress
+      margin-bottom: 12
+      image-clip: 0 0 218 11
+
+    ProgressBarSD
+      size: 218 11
+      id: progressBar
+      anchors.top: prev.top
+      anchors.left: parent.left
+      image-source: /images/ui/schedule-progress
+      image-clip: 0 11 218 11
+
+    Label
+      id: timeLabel
+      anchors.bottom: separator.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 12
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-auto-resize: true
+
+    HorizontalSeparator
+      id: separator
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: next.top
+      margin-bottom: 11
+
+    Button
+      size: 43 20
+      id: buttonCancel
+      !text: tr('Abort')
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      @onClick: CharacterList.cancelWait()

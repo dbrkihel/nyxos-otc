@@ -1,0 +1,115 @@
+// Dashboard layout: a large current/next skull icon on the left, the frag
+// count + progress on the right, and the timer lines below. The day/week/month
+// progress bars from the old layout were replaced by a single "most urgent
+// window" readout (matching the !frags command the user wanted).
+
+FragProgressBg < UIWidget
+  height: 6
+  image-source: /images/game/skull_progress
+  image-clip: 0 0 71 6
+
+FragProgressBar < ProgressBarSD
+  height: 4
+  image-source: /game_cyclopedia/images/ui/mosnter-bar
+
+MiniWindow
+  id: unjustifiedPointsWindow
+  &type: 'unjustifiedPoints'
+  !text: tr('Unjustified Points')
+  height: 126
+  icon: /images/icons/icon-unjustified-points-widget
+  @onClose: modules.game_unjustifiedpoints.onMiniWindowClose()
+
+  MiniWindowContents
+    padding: 4 6 4 6
+
+    // Big current/next skull icon
+    UIWidget
+      id: bigSkull
+      size: 36 36
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 2
+      image-source: /images/game/skull_socket
+      phantom: true
+
+    // Frag counter "2 / 20"
+    Label
+      id: fragsLabel
+      anchors.left: bigSkull.right
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-left: 10
+      margin-top: 0
+      font: verdana-11px-rounded
+      color: #ffffff
+      text-auto-resize: true
+      !text: '0 / 0'
+
+    // Status / skull name ("Safe", "RED SKULL", ...)
+    Label
+      id: statusLabel
+      anchors.left: bigSkull.right
+      anchors.top: prev.bottom
+      anchors.right: parent.right
+      margin-left: 10
+      margin-top: 1
+      font: $var-cip-font
+      color: #61c861
+      text-auto-resize: true
+      !text: tr('Safe')
+
+    // Frag progress bar (toward the next skull level)
+    FragProgressBg
+      id: fragBarBg
+      anchors.left: bigSkull.right
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-left: 10
+      margin-top: 3
+
+    FragProgressBar
+      id: fragBar
+      anchors.left: prev.left
+      anchors.right: prev.right
+      anchors.verticalCenter: prev.verticalCenter
+      margin-left: 1
+      margin-right: 1
+
+    // "18 more for Red Skull" / "5 kills until Ban"
+    Label
+      id: detailLabel
+      height: 14
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: bigSkull.bottom
+      margin-top: 8
+      font: $var-cip-font
+      color: #c0c0c0
+      text-align: left
+
+    // "Next frag drops in: 3h 12m"
+    Label
+      id: nextFragLabel
+      height: 14
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 4
+      font: $var-cip-font
+      color: #c0c0c0
+      text-align: left
+      !tooltip: tr('Time until your oldest frag ages out of the window.')
+
+    // "Red skull ends in: 6d 4h" (hidden when no skull)
+    Label
+      id: skullTimeLabel
+      height: 14
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin-top: 4
+      font: $var-cip-font
+      color: #df6464
+      text-align: left
+      visible: false

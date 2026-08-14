@@ -1,0 +1,9 @@
+Module
+  name: client_background
+  description: Handles the background of the login screen
+  author: edubart
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  scripts: [ background, schedule, casts ]
+  @onLoad: init()
+  @onUnload: terminate()

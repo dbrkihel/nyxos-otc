@@ -1,0 +1,6 @@
+Module
+  name: game_questlog
+  sandboxed: true
+  scripts: [ questlog ]
+  @onLoad: init()
+  @onUnload: terminate()

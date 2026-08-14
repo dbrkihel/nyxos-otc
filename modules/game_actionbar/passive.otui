@@ -1,0 +1,108 @@
+PassivePreview < UICheckBox
+  height: 34
+  focusable: true
+  text-offset: 38 8
+  change-cursor-image: false
+  margin-top: 2
+  margin-left: 3
+  font: $var-cip-font
+
+  $!checked:
+    background-color: alpha
+
+  $checked:
+    background-color: #ffffff22
+
+  $disabled:
+    image-color: #dfdfdf88
+    color: #dfdfdf88
+    opacity: 0.8
+
+  UIWidget
+    id: image
+    anchors.left: parent.left
+    anchors.top: parent.top
+    phantom: true
+    padding: 1
+    size: 34 34
+
+NewMainWindow
+  id: assignPassiveWindow
+  size: 275 261
+  @onEscape: self:destroy()
+
+  Panel
+    id: contentPanel
+    anchors.fill: parent
+    margin: 12 12 12 12
+    PassivePreview
+      id: preview
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      focusable: false
+
+      $!checked:
+        background-color: alpha
+
+      $checked:
+        background-color: alpha
+
+    HorizontalSeparator
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 9
+
+    TextList
+      id: passiveList
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 11
+      height: 120
+      padding: 1
+      focusable: false
+      vertical-scrollbar: listScrollBar
+      background-color: #484848
+
+    VerticalScrollBar
+      id: listScrollBar
+      anchors.top: passiveList.top
+      anchors.right: passiveList.right
+      margin: 1 1 1 0
+      anchors.bottom: passiveList.bottom
+      step: 14
+      pixels-scroll: true
+
+    HorizontalSeparator
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 12
+
+    Button
+      id: buttonClose
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      size: 43 20
+      font: cipsoftFont
+      text: Cancel
+
+    Button
+      id: buttonApply
+      anchors.right: prev.left
+      margin-right: 6
+      anchors.bottom: parent.bottom
+      size: 43 20
+      font: cipsoftFont
+      text: Apply
+
+    Button
+      id: buttonOk
+      anchors.right: prev.left
+      margin-right: 6
+      anchors.bottom: parent.bottom
+      size: 43 20
+      font: cipsoftFont
+      text: Ok

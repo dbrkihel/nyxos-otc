@@ -1,0 +1,7 @@
+Module
+  name: game_exiva_options
+  author: Christianlb && R!ck
+  sandboxed: true
+  scripts: [ exiva_option ]
+  @onLoad: init()
+  @onUnload: terminate()

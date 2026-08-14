@@ -1,0 +1,8 @@
+Module
+  name: game_realminimap
+  description: Manage real minimap
+  author: jopheno
+  sandboxed: true
+  scripts: [ realminimap, markers, regions ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,0 +1,144 @@
+TopButton < UIButton
+  size: 26 26
+  image-clip: 0 0 26 26
+  image-border: 3
+  image-color: #ffffffff
+  icon-color: #ffffffff
+  icon-clip: 0 0 20 20
+  
+  $on:
+    icon-clip: 0 20 20 20
+
+  $pressed:
+    image-clip: 52 0 26 26
+    icon-clip: 0 20 20 20
+
+  $disabled:
+    image-color: #ffffff44
+    icon-color: #ffffff44
+
+TopToggleButton < UIButton
+  size: 20 20
+  image-source: /images/ui/button_top
+  image-clip: 0 0 26 26
+  image-color: #ffffffff
+  image-border: 3
+  icon-clip: 0 0 20 20
+  icon-color: #ffffffff
+  
+  $on:
+    icon-clip: 0 20 20 20
+
+  $hover !disabled:
+    image-clip: 26 0 26 26
+
+  $pressed:
+    image-clip: 52 0 26 26
+    icon-clip: 0 20 20 20
+
+  $disabled:
+    image-color: #ffffff44
+    icon-color: #ffffff44
+    
+TopMenuButtonsPanel < Panel
+  layout:
+    type: horizontalBox
+    spacing: 4
+    fit-children: true
+  padding: 6 4
+
+TopMenuPanel < Panel
+  height: 36
+  image-source: /images/ui/panel_top
+  image-repeated: true
+  image-border: 3
+  image-border-top: 0
+  focusable: false
+
+TopMenuFrameCounterLabel < Label
+  font: verdana-11px-rounded
+  color: white
+  margin-top: 4
+  margin-left: 5
+
+TopMenuPingLabel < Label
+  font: verdana-11px-rounded
+
+TopMenu < TopMenuPanel
+  id: topMenu
+  width: 800
+  height: 30
+  anchors.horizontalCenter: parent.horizontalCenter
+  anchors.top: parent.top
+  &hideIngame: true
+  &reverseButtons: true
+
+  UIWidget
+    id: discord
+    size: 18 18
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 8
+    image-source: /images/ui/discord
+    @onClick: g_platform.openUrl("https://discord.gg/nyxos")
+  UIWidget
+    id: discordLabel
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 7
+    margin-left: 5
+    text: "Join Discord"
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-offset: 0 -1
+    @onClick: g_platform.openUrl("https://discord.gg/nyxos")
+    $hover !pressed:
+      color: $var-text-cip-color-highlight
+    $pressed:
+      color: $var-text-cip-color-green
+
+  Label
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 6
+    margin-left: 323
+    image-source: /images/ui/people
+
+  TopMenuButtonsPanel
+    id: rightButtonsPanel
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: prev.right
+
+  TopMenuButtonsPanel
+    id: rightGameButtonsPanel
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: prev.right
+    visible: false
+
+  Label
+    id: onlineLabel
+    !text: tr('Updating...')
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-align: center
+    margin-top: -1
+    margin-left: 3
+    text-auto-resize: true
+
+  TopMenuButtonsPanel
+    id: leftButtonsPanel
+    margin-top: -5
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+
+  TopMenuButtonsPanel
+    id: leftGameButtonsPanel
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: prev.left
+    visible: false

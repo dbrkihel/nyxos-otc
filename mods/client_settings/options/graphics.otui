@@ -1,0 +1,269 @@
+GraphicsWindow < Panel
+  id: graphics
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+
+  Label
+    size: 120 15
+    !text: tr('Graphics Engine:')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 6
+    color: $var-text-cip-color
+  ComboBox
+    id: engine
+    size: 200 20
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 16
+    margin-top: -5
+    color: $var-text-cip-color
+    @onSetup: |
+      self:addOption("Vulkan", nil, true)
+      self:addOption("DirectX11", nil, true)
+      self:addOption("DirectX11 (WARP)", nil, true)
+      self:addOption("DirectX9", nil, true)
+      self:addOption("OpenGL", nil, true)
+
+    @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+
+  Label
+    size: 120 15
+    !text: tr('Antialiasing Mode:')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 6
+    color: $var-text-cip-color
+  ComboBox
+    id: antialiasing
+    size: 200 20
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 16
+    margin-top: -5
+    color: $var-text-cip-color
+    @onSetup: |
+      self:addOption("None", nil, true)
+      self:addOption("Antialiasing", nil, true)
+      self:addOption("Smooth Retro", nil, true)
+
+    @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+
+  UIWidget
+    size: 12 12
+    anchors.top: prev.top
+    anchors.right: parent.right
+    margin-right: 9
+    margin-top: 3
+    image-source: /images/skin/show-gui-help-grey
+    !tooltip: tr('If you select "Antialiasing", the Nyxos graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: fullscreen
+      size: 12 12
+      !text: tr('Full Screen Mode')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: parent.top
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      margin-top: 5
+      margin-left: 5
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('You can play Nyxos both in a full screen mode and in a windowed \nmode. In full screen mode, Nyxos will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: dontStretchShrink
+      size: 12 12
+      !text: tr('Scale Using Only Integral Multiples')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      margin-top: 5
+      margin-left: 5
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Nyxos when you do not use \nAntialiasing.')
+
+  FlatPanel
+    size: 505 76
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: vsync
+      size: 12 12
+      !text: tr('V-Sync')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 4
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('It might help to uncheck this option if your frame rate is low. \nHowever, disabling V-Sync can lead to screen tearing.')
+
+    SettingsCheckBox
+      id: noFrameCheckBox
+      size: 12 12
+      !text: tr('No Frame Rate Limit')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 8
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: -1
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Nyxos, you should rather try to set a frame rate limit.')
+
+    Label
+      id: frameRateLabel
+      !text: tr('Frame Rate Limit: 60')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-cip-inactive-color
+      anchors.left: parent.left
+      anchors.top: noFrameCheckBox.bottom
+      margin-top: 4
+      margin-left: 20
+      @onSetup: |
+        local value = modules.client_settings.getOption('noFrameCheckBox')
+        if not value then
+          self:setColor("$var-text-cip-color")
+        end
+
+        local value = modules.client_settings.getOption('backgroundFrameRate')
+        self:setText(tr('Frame Rate Limit: %d', value))
+
+    HorizontalScrollBar
+      id: backgroundFrameRate
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 27
+      margin-right: 21
+      margin-top: 1
+      pixels-scroll: true
+      value: 60
+      minimum: 10
+      maximum: 500
+      default-scroll: true
+      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+
+      $!on:
+        width: 0
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: -1
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Nyxos, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
+
+    Label
+      id: currentFrameRateLabel
+      size: 194 15
+      !text: tr('Current Frame Rate: x fps')
+      font: $var-cip-font
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-bottom: 3
+      margin-left: 20
+      @onSetup: |
+        local value = modules.client_settings.getOption('backgroundFrameRate')
+        self:setText(tr('Current Frame Rate: %d fps', value))
+        function checkFps()
+          self:setText(tr('Current Frame Rate: %d fps', g_app.getFps()))
+        end
+        cycleEvent(checkFps, 3000)
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 1
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you are logged into the game, you can see your current frame \nrate here. Press Alt+F8 to show or hide your current frame rate in \nthe game window.')
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings.resetGraphics()

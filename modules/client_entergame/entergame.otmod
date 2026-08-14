@@ -1,0 +1,12 @@
+Module
+  name: client_entergame
+  description: Manages enter game and character list windows
+  author: Mateuzkl / Equipe Skyyzyy
+  website: https://github.com/Mateuzkl/NyxosClient
+  scripts: [ entergame, characterlist, classes/login, classes/proxy, classes/world ]
+  @onLoad: EnterGame.init() CharacterList.init()
+  @onUnload: EnterGame.terminate() CharacterList.terminate()
+
+  load-later:
+    - game_things
+    - game_features

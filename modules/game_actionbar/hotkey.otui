@@ -1,0 +1,85 @@
+MainWindow
+  id: assignHotkeyWindow
+  size: 400 215
+  font: $var-cip-font
+  color: #909090
+
+  Label
+    id: chatMode
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-left: 130
+    margin-top: -7
+    text-auto-resize: true
+    text: Mode: "Chat On"
+    font: $var-cip-font
+    color: $var-text-cip-color
+
+  FlatLabel
+    id: display
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 33
+    margin-top: 10
+    text-align: center
+    font: $var-cip-font
+    color: $var-text-cip-color
+
+  Label
+    id: desc
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    margin-left: -1
+    text-auto-resize: true
+    text-wrap: true
+    text: Click "Ok" to assign the hotkey. Click "Clear" to remove the hotkey from "
+    font: $var-cip-font
+    color: $var-text-cip-color
+
+  Label
+    id: warning
+    anchors.top: prev.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 8
+    text-auto-resize: true
+    text: This hotkey is already in use and will be overwritten.
+    color: #f75f5f
+    text-align: center
+    font: $var-cip-font
+    visible: false
+
+  HorizontalSeparator
+    anchors.top: prev.bottom
+    margin-top: 10
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+  Button
+    id: buttonClose
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 45 21
+    font: cipsoftFont
+    text: Close
+    @onClick: self:getParent():destroy()
+
+  Button
+    id: buttonClear
+    anchors.right: prev.left
+    margin-right: 5
+    anchors.bottom: parent.bottom
+    size: 45 21
+    font: cipsoftFont
+    text: Clear
+
+  Button
+    id: buttonOk
+    anchors.right: prev.left
+    margin-right: 5
+    anchors.bottom: parent.bottom
+    size: 45 21
+    font: cipsoftFont
+    text: Ok

@@ -1,0 +1,258 @@
+BarSpellGroupIcon < UIWidget
+  size: 22 24
+  image-size: 22 24
+  image-source: /images/game/spells/cooldowns
+  focusable: false
+  margin-top: 2
+
+BarSpellIcon < UIWidget
+  size: 22 24
+  image-size: 22 24
+  focusable: false
+  tooltip-delayed: true
+
+  $!first:
+    margin-left: 1
+
+BarSpellProgressRect < ProgressBarSD
+  size: 20 2
+  percent: 0
+  image-source: /images/game/spells/progress
+  image-clip: 0 0 20 2
+
+GroupCooldownParticles < UIParticles
+  effect: groupcooldown-effect
+
+Panel
+  id: panelCooldown
+  height: 26
+  focusable: false
+  image-source: /images/ui/background-dark
+  image-border: 4
+  BarSpellGroupIcon
+    id: groupIconAttack
+    image-clip: 0 0 22 24
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-left: 2
+    tooltip: Attack
+    tooltip-delayed: true
+    $on:
+      image-clip: 0 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectAttack
+    anchors.bottom: groupIconAttack.bottom
+    anchors.left: groupIconAttack.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Attack')
+
+  BarSpellGroupIcon
+    id: groupIconHealing
+    image-clip: 22 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconAttack.right
+    margin-left: 4
+    tooltip: Healing
+    tooltip-delayed: true
+    $on:
+      image-clip: 22 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectHealing
+    anchors.bottom: groupIconHealing.bottom
+    anchors.left: groupIconHealing.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Healing')
+
+  BarSpellGroupIcon
+    id: groupIconSupport
+    image-clip: 44 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconHealing.right
+    margin-left: 4
+    tooltip: Support
+    tooltip-delayed: true
+    $on:
+      image-clip: 44 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectSupport
+    anchors.bottom: groupIconSupport.bottom
+    anchors.left: groupIconSupport.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Support')
+
+  BarSpellGroupIcon
+    id: groupIconSpecial
+    image-clip: 66 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconSupport.right
+    margin-left: 4
+    tooltip: Special
+    tooltip-delayed: true
+    $on:
+      image-clip: 66 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectSpecial
+    anchors.bottom: groupIconSpecial.bottom
+    anchors.left: groupIconSpecial.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Special')
+
+  BarSpellGroupIcon
+    id: groupIconCripple
+    image-clip: 88 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconSpecial.right
+    margin-left: 4
+    tooltip: Cripple
+    tooltip-delayed: true
+    $on:
+      image-clip: 88 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectCripple
+    anchors.bottom: groupIconCripple.bottom
+    anchors.left: groupIconCripple.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Cripple')
+
+  BarSpellGroupIcon
+    id: groupIconFocus
+    image-clip: 110 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconCripple.right
+    margin-left: 4
+    tooltip: Focus
+    tooltip-delayed: true
+    $on:
+      image-clip: 110 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectFocus
+    anchors.bottom: groupIconFocus.bottom
+    anchors.left: groupIconFocus.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Focus')
+
+  BarSpellGroupIcon
+    id: groupIconUltimate Strikes
+    image-clip: 132 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconFocus.right
+    margin-left: 4
+    tooltip: Ultimate Strikes
+    tooltip-delayed: true
+    $on:
+      image-clip: 132 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectUltimate Strikes
+    anchors.bottom: groupIconUltimate Strikes.bottom
+    anchors.left: groupIconUltimate Strikes.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Ultimate Strikes')
+
+  BarSpellGroupIcon
+    id: groupIconBursts of Nature
+    image-clip: 176 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconUltimate Strikes.right
+    margin-left: 4
+    tooltip: Bursts of Nature
+    tooltip-delayed: true
+    $on:
+      image-clip: 176 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectBursts of Nature
+    anchors.bottom: groupIconBursts of Nature.bottom
+    anchors.left: groupIconBursts of Nature.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Bursts of Nature')
+
+  BarSpellGroupIcon
+    id: groupIconGreat Beams
+    image-clip: 154 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconBursts of Nature.right
+    margin-left: 4
+    tooltip: Great Beams
+    tooltip-delayed: true
+    $on:
+      image-clip: 154 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectGreat Beams
+    anchors.bottom: groupIconGreat Beams.bottom
+    anchors.left: groupIconGreat Beams.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Great Beams')
+
+  BarSpellGroupIcon
+    id: groupIconAoE MS
+    image-clip: 198 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconGreat Beams.right
+    margin-left: 4
+    tooltip: Master Sorcerer AoE
+    tooltip-delayed: true
+    $on:
+      image-clip: 198 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectAoE MS
+    anchors.bottom: groupIconAoE MS.bottom
+    anchors.left: groupIconAoE MS.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Master Sorcerer AoE')
+
+  BarSpellGroupIcon
+    id: groupIconED Bursts
+    image-clip: 176 0 22 24
+    anchors.top: parent.top
+    anchors.left: groupIconAoE MS.right
+    margin-left: 4
+    tooltip: Elder Druid Bursts
+    tooltip-delayed: true
+    $on:
+      image-clip: 176 24 22 24
+
+  BarSpellProgressRect
+    id: progressRectED Bursts
+    anchors.bottom: groupIconED Bursts.bottom
+    anchors.left: groupIconED Bursts.left
+    margin-bottom: 1
+    margin-left: 1
+    !tooltip: tr('Elder Druid Bursts')
+
+  VerticalSeparator
+    id: separator
+    anchors.top: parent.top
+    anchors.left: groupIconED Bursts.right
+    margin-left: 5
+    margin-top: 2
+    height: 22
+
+  FlatPanel
+    id: cooldownPanel
+    image-source: /images/ui/background-dark
+    layout:
+      type: horizontalBox
+    anchors.top: parent.top
+    anchors.left: separator.right
+    margin-left: 5
+    margin-top: 2
+    height: 22

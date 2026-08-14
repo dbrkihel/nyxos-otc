@@ -1,0 +1,8 @@
+Module
+  name: game_buttons
+  description: Shows miniwindow with buttons
+  author: Mateuzkl / Equipe Skyyzyy
+  sandboxed: true
+  scripts: [ buttons ]
+  @onLoad: init()
+  @onUnload: terminate()

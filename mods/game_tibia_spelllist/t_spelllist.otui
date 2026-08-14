@@ -1,0 +1,83 @@
+DraggableSpellIcon < UIItem
+  id: moveableImage
+  size: 32 32
+  draggable: true
+  virtual: true
+  &selectable: true
+  &editable: false
+  image-source: /images/game/spells/spell-icons-32x32
+
+SpellListData < UIWidget
+  size: 155 35
+  background-opacity: 0.85
+
+  UIItem
+    id: fixedImage
+    size: 32 32
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 2
+    margin-left: 2
+    image-source: /images/game/spells/spell-icons-32x32
+
+  DraggableSpellIcon
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 2
+    margin-left: 2
+
+  Panel
+    id: gray
+    size: 32 32
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 2
+    margin-left: 2
+    image-source: /images/ui/ditherpattern
+    image-repeated: true
+    image-smooth: false
+    visible: false
+
+  UIWidget
+    id: name
+    font: $var-cip-font
+    color: $var-text-cip-color
+    anchors.left: prev.right
+    anchors.top: parent.top
+    margin-top: 4
+    margin-left: 2
+    text-auto-resize: true
+  UIWidget
+    id: words
+    font: $var-cip-font
+    color: $var-text-cip-color
+    anchors.left: fixedImage.right
+    anchors.top: prev.bottom
+    margin-top: -1
+    margin-left: 2
+    text-auto-resize: true
+
+SpellListWindow
+  id: spellListWidget
+  !text: tr('Spell List')
+  font: $var-cip-font
+  text-offset: 20 0
+  height: 180
+  icon: /images/icons/icon-spell-list-widget
+  focusable: true
+
+  SpellListContents
+    height: 38
+    padding-right: 1
+    padding-left: 2
+    padding-bottom: 1
+    layout: verticalBox
+
+  UIWidget
+    id: miniborder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    image-source: /images/ui/miniborder
+    size: 14 14
+    margin-left: 2
+    margin-bottom: 2

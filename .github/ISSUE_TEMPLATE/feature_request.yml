@@ -1,0 +1,72 @@
+name: Feature request
+description: Propose a new feature or a change in behaviour
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This client mirrors the official Tibia client where a reference exists.
+        If you are asking for something the official client already does, saying
+        so — with a screenshot — makes the request far easier to act on.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation, not the solution you have in mind.
+      placeholder: |
+        The minimap has no way to get a full world map without walking it,
+        so a new player starts with a black minimap everywhere.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should it do?
+      description: The behaviour you want, concretely.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reference
+    attributes:
+      label: Does the official client do this?
+      options:
+        - Yes — and I can provide a screenshot or reference
+        - "No — this is new behaviour"
+        - I do not know
+    validations:
+      required: true
+
+  - type: textarea
+    id: reference-detail
+    attributes:
+      label: Reference
+      description: |
+        Screenshot, or where it appears in the official client. Attach images by
+        dragging them in. Skip if this is new behaviour.
+
+  - type: dropdown
+    id: server
+    attributes:
+      label: Does this need server support?
+      description: |
+        A feature that needs the server to send something new has to be designed
+        on both sides. See docs/server-side.md.
+      options:
+        - "No — purely client-side"
+        - "Yes — the server must send new data"
+        - I do not know
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Confirmations
+      options:
+        - label: This is not a bot or automation feature aimed at official Tibia servers
+          required: true
+        - label: I searched for an existing request describing this
+          required: true

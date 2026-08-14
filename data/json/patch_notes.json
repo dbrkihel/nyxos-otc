@@ -1,0 +1,29 @@
+{
+    "title": "   Version: 3.695\nDate: 13/01/2025",
+    "patchNote": "2.0",
+    "notes": [
+        { "text": "Personagens GM/CM/GOD aparecerão com o nome visualmente distinto para os jogadores." },
+        { "text": "Os botões do analytics selector foram redimensionados para exibição correta." },
+        { "text": "Situações em que o jogador armazenava itens (stow) de qualquer lugar foram corrigidas." },
+        { "text": "Conflitos de configurações em hotkeys foram resolvidos e estão normalizados." },
+        { "text": "Agora é obrigatória a confirmação dos termos para utilizar o helper." },
+        { "text": "Foi adicionada uma janela de confirmação para a compra de charm runes." },
+        { "text": "As exercise dummies foram revisadas para reconhecimento pelo helper." },
+        { "text": "Algumas correções foram feitas na interação do jogador com o market dentro do jogo." },
+        { "text": "A porcentagem da divine grenade foi visualmente ajustada." },
+        { "text": "Os erros ainda presentes na lupa do depot foram totalmente corrigidos, normalizando o sistema." },
+        { "text": "A inspeção dos itens agora mostrará corretamente o imbuement aplicado no item inspecionado." },
+        { "text": "Um erro que permitia que a mensagem de loot fosse clicável foi corrigido." },
+        { "text": "Os cadeados dos containers foram revisados e estão completamente funcionais." },
+        { "text": "Corrigimos visualmente a soma de damage/healing na roda de habilidades do personagem." },
+        { "text": "Ao clicar em um hireling com a configuração classic control, ele retornará normalmente para a lâmpada." },
+        { "text": "Foram feitas correções visuais e funcionais no sistema de hunting task." },
+        { "text": "O cliente agora não permitirá mais adicionar nomes à vip list com espaços no final." },
+        { "text": "O botão da cyclopedia na aba de casas teve sua funcionalidade corrigida." },
+        { "text": "Corrigimos a leitura das teclas para evitar o acesso ao chat on quando utilizadas na janela do bestiary." },
+        { "text": "Todas as infinite foods foram revisadas e adicionadas para reconhecimento no helper." },
+        { "text": "Alguns itens que tinham seus nomes cortados na cyclopedia foram corrigidos." },
+        { "text": "O comportamento dos modos smart mode e normal mode para anéis e colares foi refeito e está funcional." },
+        { "text": "Toda a funcionalidade de busca no depot foi refeita, tornando-a mais rápida e eficaz." }
+    ]
+}

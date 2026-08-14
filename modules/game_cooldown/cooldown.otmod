@@ -1,0 +1,9 @@
+Module
+  name: game_cooldown
+  description:
+  author: baxnie, ZLukSrT#8740
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  scripts: [ cooldown ]
+  @onLoad: init()
+  @onUnload: terminate()

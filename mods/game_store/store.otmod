@@ -1,0 +1,10 @@
+Module
+  name: game_store
+  description: Nyxos Game Store
+  author: ZLukSrT#8740 && Christianlb and R!ck
+  sandboxed: true
+  scripts: [ store, classes/Store, classes/Categories, classes/Home, classes/Offers, classes/Gift, classes/Bazaar, storeprotocol ]
+  @onLoad: init()
+  @onUnload: terminate()
+  load-later:
+    - game_transfer

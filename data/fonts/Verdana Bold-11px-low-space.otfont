@@ -1,0 +1,10 @@
+Font
+  name: Verdana Bold-11px-low-space
+  ttf-file: verdanab.ttf
+  size: 11
+  ttf-outline: false
+  height: 15
+  baseline: 12
+  // Equivale a defaultTightFont do cliente 15.25, que aperta o espacamento em
+  // -0.8. Ate aqui o nome prometia o efeito mas nenhum valor era aplicado.
+  letter-spacing: -0.8

@@ -1,0 +1,1500 @@
+skillsWindow = nil
+storeXPButton = nil
+
+local storeBoostTimerEvent = nil
+local storeBoostTime = 0
+
+local healthUpdateEvent = nil
+local manaUpdateEvent = nil
+local lastHealthValue = nil
+local lastManaValue = nil
+
+skillWidgetsOptions = {}
+
+local skillNames = {
+  [0] = "Fist",
+  [1] = "Club",
+  [2] = "Sword",
+  [3] = "Axe",
+  [4] = "Distance",
+  [5] = "Shielding",
+  [6] = "Fishing",
+  [13] = "Magic Level"
+}
+
+local combatNames = {
+  [0] = "Physical",
+  [1] = "Fire",
+  [2] = "Earth",
+  [3] = "Energy",
+  [4] = "Ice",
+  [5] = "Holy",
+  [6] = "Death",
+  [7] = "Healing",
+  [8] = "Drowning",
+  [9] = "Life Drain",
+  [10] = "Mana Drain",
+  [11] = "Agony"
+}
+
+-- XP boost slots (Exp Potion / VIP / Exp Elixir), shown in the Skills panel in place of
+-- the old "Temporary" row. The server appends each slot to 0xA1 (percent + seconds);
+-- Exp Potion time is hunting-time (shown static), VIP/Elixir are real-time and counted
+-- down locally by the ticker below. State lives here so offline() can reach it.
+local xpBoostState = {
+  potion = { pct = 0, seconds = 0 },
+  vip = { pct = 0, seconds = 0 },
+  elixir = { pct = 0, seconds = 0 },
+}
+local xpBoostTickEvent = nil
+
+local expPotionNames = {
+  [25] = "Lesser Exp Potion",
+  [50] = "Exp Potion",
+  [100] = "Greater Exp Potion",
+}
+local expElixirNames = {
+  [5] = "Blue Exp Elixir",
+  [10] = "Red Exp Elixir",
+}
+
+-- MM:SS for the Exp Potion's hunting-time (only ticks while gaining XP, so it is shown
+-- static between packets rather than counted down).
+local function formatHuntTime(seconds)
+  seconds = math.max(0, math.floor(seconds or 0))
+  return string.format("%02d:%02d", math.floor(seconds / 60), seconds % 60)
+end
+
+-- DD:HH:MM for the real-time VIP / Elixir countdowns.
+local function formatRealTime(seconds)
+  seconds = math.max(0, math.floor(seconds or 0))
+  local days = math.floor(seconds / 86400)
+  local hours = math.floor((seconds % 86400) / 3600)
+  local minutes = math.floor((seconds % 3600) / 60)
+  return string.format("%02d:%02d:%02d", days, hours, minutes)
+end
+
+local function renderXpBoostSlot(id, labelId, valueId, active, name, valueText, tooltip)
+  local widget = skillsWindow:recursiveGetChildById(id)
+  if not widget then
+    return
+  end
+  widget:setVisible(active)
+  if not active then
+    widget:removeTooltip()
+    return
+  end
+  local label = widget:getChildById(labelId)
+  if label then
+    label:setText(name)
+  end
+  local value = widget:getChildById(valueId)
+  if value then
+    value:setText(valueText)
+  end
+  widget:setTooltip(tooltip)
+end
+
+local function renderXpBoosts()
+  local potion = xpBoostState.potion
+  renderXpBoostSlot('expPotionBoost', 'expPotionBoostLabel', 'expPotionBoostValue',
+    potion.pct > 0,
+    expPotionNames[potion.pct] or tr('Exp Potion'),
+    formatHuntTime(potion.seconds),
+    tr('+%s%s experience while hunting.', potion.pct, "%"))
+
+  local vip = xpBoostState.vip
+  renderXpBoostSlot('vipBoost', 'vipBoostLabel', 'vipBoostValue',
+    vip.pct > 0,
+    tr('VIP'),
+    vip.seconds > 0 and formatRealTime(vip.seconds) or tr('Active'),
+    tr('+%s%s experience.', vip.pct, "%"))
+
+  local elixir = xpBoostState.elixir
+  renderXpBoostSlot('elixirBoost', 'elixirBoostLabel', 'elixirBoostValue',
+    elixir.pct > 0,
+    expElixirNames[elixir.pct] or tr('Exp Elixir'),
+    formatRealTime(elixir.seconds),
+    tr('+%s%s experience.', elixir.pct, "%"))
+
+  scheduleEvent(function()
+    if skillsWindow then
+      skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+    end
+  end, 100)
+end
+
+local function stopXpBoostTicker()
+  if xpBoostTickEvent then
+    removeEvent(xpBoostTickEvent)
+    xpBoostTickEvent = nil
+  end
+end
+
+-- Tick the real-time VIP / Elixir countdowns once per second. The Exp Potion is NOT
+-- decremented here (it is hunting-time, not wall-clock); only its label text is set on
+-- each packet by renderXpBoosts.
+local function startXpBoostTicker()
+  stopXpBoostTicker()
+  if xpBoostState.vip.seconds <= 0 and xpBoostState.elixir.seconds <= 0 then
+    return
+  end
+  xpBoostTickEvent = cycleEvent(function()
+    if xpBoostState.vip.seconds > 0 then
+      xpBoostState.vip.seconds = xpBoostState.vip.seconds - 1
+      local vipValue = skillsWindow:recursiveGetChildById('vipBoostValue')
+      if vipValue then
+        vipValue:setText(xpBoostState.vip.seconds > 0 and formatRealTime(xpBoostState.vip.seconds) or tr('Active'))
+      end
+    end
+    if xpBoostState.elixir.seconds > 0 then
+      xpBoostState.elixir.seconds = xpBoostState.elixir.seconds - 1
+      local elixirValue = skillsWindow:recursiveGetChildById('elixirBoostValue')
+      if elixirValue then
+        elixirValue:setText(formatRealTime(xpBoostState.elixir.seconds))
+      end
+    end
+    if xpBoostState.vip.seconds <= 0 and xpBoostState.elixir.seconds <= 0 then
+      stopXpBoostTicker()
+    end
+  end, 1000)
+end
+
+local function resetXpBoosts()
+  stopXpBoostTicker()
+  xpBoostState.potion.pct, xpBoostState.potion.seconds = 0, 0
+  xpBoostState.vip.pct, xpBoostState.vip.seconds = 0, 0
+  xpBoostState.elixir.pct, xpBoostState.elixir.seconds = 0, 0
+end
+
+-- Fed by the C++ parser (parsePlayerSkillsModern) from the tail of 0xA1, so the rows
+-- auto-refresh with the rest of the Skills panel whenever the packet is re-sent.
+function onUpdateXpBoosts(localPlayer, potionPct, potionSecs, vipPct, vipSecs, elixirPct, elixirSecs)
+  xpBoostState.potion.pct = potionPct or 0
+  xpBoostState.potion.seconds = potionSecs or 0
+  xpBoostState.vip.pct = vipPct or 0
+  xpBoostState.vip.seconds = vipSecs or 0
+  xpBoostState.elixir.pct = elixirPct or 0
+  xpBoostState.elixir.seconds = elixirSecs or 0
+
+  renderXpBoosts()
+  startXpBoostTicker()
+end
+
+function init()
+  connect(LocalPlayer, {
+    onExperienceChange = onExperienceChange,
+    onLevelChange = onLevelChange,
+    onHealthChange = onHealthChange,
+    onManaChange = onManaChange,
+    onSoulChange = onSoulChange,
+    onFreeCapacityChange = onFreeCapacityChange,
+    onTotalCapacityChange = onTotalCapacityChange,
+    onBaseCapacityChange = onBaseCapacityChange,
+    onStaminaChange = onStaminaChange,
+    onOfflineTrainingChange = onOfflineTrainingChange,
+    onRegenerationChange = onRegenerationChange,
+    onSpeedChange = onSpeedChange,
+    onBaseSpeedChange = onBaseSpeedChange,
+    onMagicLevelChange = onMagicLevelChange,
+    onBaseMagicLevelChange = onBaseMagicLevelChange,
+    onSkillChange = onSkillChange,
+    onBaseSkillChange = onBaseSkillChange,
+    onUpdateGainRate = onUpdateGainRate,
+    onExpBoostChange = onExpBoostChange,
+    onUpdateOffenceStats = onUpdateOffenceStats,
+    onUpdateDefenceStats = onUpdateDefenceStats,
+    onUpdateMiscStats = onUpdateMiscStats,
+    onUpdateXpBoosts = onUpdateXpBoosts,
+    onBattlePassBonusChange = onBattlePassBonusChange,
+    onMagicBoostChange = onMagicBoostChange,
+    onUpdateCustomSkills = onUpdateCustomSkills,
+  })
+  connect(g_game, {
+    onGameStart = onGameStart,
+    onGameEnd = offline
+  })
+
+  skillsWindow = g_ui.loadUI('skills')
+  storeXPButton = skillsWindow:recursiveGetChildById('boostButton')
+  skillsWindow:hide()
+
+  -- this disables scrollbar auto hiding
+  local scrollbar = skillsWindow:getChildById('miniwindowScrollBar')
+  scrollbar:mergeStyle({ ['$!on'] = {} })
+
+  skillsWindow.onMouseRelease = function(widget, mousePos, mouseButton)
+    if mouseButton == MouseRightButton then
+      showSkillsPopUp(mousePos)
+    end
+  end
+
+  refresh()
+  skillsWindow:setup()
+end
+
+function terminate()
+  if healthUpdateEvent then
+    removeEvent(healthUpdateEvent)
+    healthUpdateEvent = nil
+  end
+
+  if manaUpdateEvent then
+    removeEvent(manaUpdateEvent)
+    manaUpdateEvent = nil
+  end
+
+  disconnect(LocalPlayer, {
+    onExperienceChange = onExperienceChange,
+    onLevelChange = onLevelChange,
+    onHealthChange = onHealthChange,
+    onManaChange = onManaChange,
+    onSoulChange = onSoulChange,
+    onFreeCapacityChange = onFreeCapacityChange,
+    onTotalCapacityChange = onTotalCapacityChange,
+    onBaseCapacityChange = onBaseCapacityChange,
+    onStaminaChange = onStaminaChange,
+    onOfflineTrainingChange = onOfflineTrainingChange,
+    onRegenerationChange = onRegenerationChange,
+    onSpeedChange = onSpeedChange,
+    onBaseSpeedChange = onBaseSpeedChange,
+    onMagicLevelChange = onMagicLevelChange,
+    onBaseMagicLevelChange = onBaseMagicLevelChange,
+    onSkillChange = onSkillChange,
+    onBaseSkillChange = onBaseSkillChange,
+    onUpdateGainRate = onUpdateGainRate,
+    onExpBoostChange = onExpBoostChange,
+    onUpdateOffenceStats = onUpdateOffenceStats,
+    onUpdateDefenceStats = onUpdateDefenceStats,
+    onUpdateMiscStats = onUpdateMiscStats,
+    onUpdateXpBoosts = onUpdateXpBoosts,
+    onBattlePassBonusChange = onBattlePassBonusChange,
+    onMagicBoostChange = onMagicBoostChange,
+    onUpdateCustomSkills = onUpdateCustomSkills,
+  })
+  disconnect(g_game, {
+    onGameStart = onGameStart,
+    onGameEnd = offline
+  })
+
+  skillsWindow:destroy()
+end
+
+function expForLevel(level)
+  return math.floor((50 * level * level * level) / 3 - 100 * level * level + (850 * level) / 3 - 200)
+end
+
+function expToAdvance(currentLevel, currentExp)
+  return expForLevel(currentLevel + 1) - currentExp
+end
+
+function resetSkillColor(id)
+  local skill = skillsWindow:recursiveGetChildById(id)
+  if not skill then
+    return
+  end
+  local widget = skill:getChildById('value')
+  widget:setColor('#bbbbbb')
+end
+
+function toggleSkill(id, state)
+  local skill = skillsWindow:recursiveGetChildById(id)
+  if not skill then
+    return
+  end
+  skill:setVisible(state)
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+function showOrHidePercentBar(skillId)
+  if skillId then
+    local skill = skillsWindow:recursiveGetChildById(skillId)
+    local percentBar = skill:getChildById('percent')
+    local skillIcon = skill:getChildById('skillIcon')
+    local toggleVisible = not percentBar:isVisible()
+    percentBar:setVisible(toggleVisible)
+    if toggleVisible then
+      skill:setHeight(21)
+      for k, v in pairs(skillWidgetsOptions["invisibleProgressBars"]) do
+        if v == skillId then
+          table.remove(skillWidgetsOptions["invisibleProgressBars"], k)
+          break
+        end
+      end
+    else
+      skill:setHeight(21 - 7)
+      table.insert(skillWidgetsOptions["invisibleProgressBars"], skillId)
+    end
+
+    if skillIcon then
+      skillIcon:setVisible(toggleVisible)
+    end
+
+    scheduleEvent(function()
+      skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+    end, 100)
+    return
+  end
+
+  -- Hide/Show all
+  local options = { "level", "stamina", "offlineTraining", "magiclevel" }
+  for i = Skill.Fist, Skill.Fishing do
+    table.insert(options, "skillId" .. i)
+  end
+
+  local isVisible = #skillWidgetsOptions["invisibleProgressBars"] == 0
+  for _, skillId in pairs(options) do
+    local skill = skillsWindow:recursiveGetChildById(skillId)
+    local percentBar = skill:getChildById('percent')
+    local skillIcon = skill:getChildById('skillIcon')
+    if skillIcon then
+      skillIcon:setVisible(not isVisible)
+    end
+
+    if isVisible then
+      percentBar:setVisible(false)
+      skill:setHeight(21 - 7)
+      table.insert(skillWidgetsOptions["invisibleProgressBars"], skillId)
+    else
+      percentBar:setVisible(true)
+      skill:setHeight(21)
+      for k, v in pairs(skillWidgetsOptions["invisibleProgressBars"]) do
+        if v == skillId then
+          table.remove(skillWidgetsOptions["invisibleProgressBars"], k)
+          break
+        end
+      end
+    end
+  end
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+function updateVisblePercentBar()
+  for i = Skill.Fist, Skill.Fishing do
+    local skillId = "skillId" .. i
+    local skill = skillsWindow:recursiveGetChildById(skillId)
+    local percentBar = skill:getChildById('percent')
+    local skillIcon = skill:getChildById('skillIcon')
+    if table.find(skillWidgetsOptions["invisibleProgressBars"], skillId) == nil then
+      percentBar:setVisible(true)
+      skill:setHeight(21)
+      if skillIcon then
+        skillIcon:setVisible(true)
+      end
+    else
+      percentBar:setVisible(false)
+      skill:setHeight(21 - 7)
+      if skillIcon then
+        skillIcon:setVisible(false)
+      end
+    end
+  end
+end
+
+function resetPercentVisibility()
+  local options = { "level", "stamina", "offlineTraining", "magiclevel" }
+  for i = Skill.Fist, Skill.Fishing do
+    table.insert(options, "skillId" .. i)
+  end
+
+  for _, skillId in pairs(options) do
+    local skill = skillsWindow:recursiveGetChildById(skillId)
+    local percentBar = skill:getChildById('percent')
+    percentBar:setVisible(true)
+    skill:setHeight(21)
+  end
+end
+
+function getContentPanelHeight()
+  local calculatedHeight = 0
+  local contentPanel = skillsWindow:recursiveGetChildById("contentsPanel")
+  if not contentPanel then
+    return 0
+  end
+
+  for _, widget in pairs(contentPanel:getChildren()) do
+    if widget:isVisible() then
+      calculatedHeight = calculatedHeight + widget:getHeight()
+
+      if widget:getMarginTop() > 0 then
+        calculatedHeight = calculatedHeight + widget:getMarginTop()
+      end
+
+      if widget:getId() == 'miscPanel' and widget:getMarginBottom() > 0 then
+        calculatedHeight = calculatedHeight + widget:getMarginBottom() + 8
+      end
+    end
+  end
+  return calculatedHeight
+end
+
+function showSkillsPopUp(mousePosition)
+  local menu = g_ui.createWidget('PopupMenu')
+  menu:setGameMenu(true)
+  menu:addOption(tr('Reset Experience Counter'), function() g_game.getLocalPlayer().expSpeed = 0; end) -- aqui tem que trocar a tooltip tbm
+  menu:addSeparator()
+  menu:addCheckBoxOption(tr('Level'), function() showOrHidePercentBar("level") end, "",
+    table.find(skillWidgetsOptions["invisibleProgressBars"], "level") == nil)
+  menu:addCheckBoxOption(tr('Stamina'), function() showOrHidePercentBar("stamina") end, "",
+    table.find(skillWidgetsOptions["invisibleProgressBars"], "stamina") == nil)
+  menu:addCheckBoxOption(tr('Offline Training'), function() showOrHidePercentBar("offlineTraining") end, "",
+    table.find(skillWidgetsOptions["invisibleProgressBars"], "offlineTraining") == nil)
+  menu:addCheckBoxOption(tr('Magic'), function() showOrHidePercentBar("magiclevel") end, "",
+    table.find(skillWidgetsOptions["invisibleProgressBars"], "magiclevel") == nil)
+  for i = Skill.Fist, Skill.Fishing do
+    local skillName = skillNames[i]
+    menu:addCheckBoxOption(tr(skillName), function() showOrHidePercentBar("skillId" .. i) end, "",
+      table.find(skillWidgetsOptions["invisibleProgressBars"], "skillId" .. i) == nil)
+  end
+
+  menu:addSeparator()
+  menu:addCheckBoxOption(tr('Offence Stats'), function()
+    local currentState = skillWidgetsOptions["offenceStatsVisible"]
+    manageOffenceStats(not currentState)
+    skillWidgetsOptions["offenceStatsVisible"] = not currentState
+  end, "", skillWidgetsOptions["offenceStatsVisible"])
+
+  menu:addCheckBoxOption(tr('Defence Stats'), function()
+    local currentState = skillWidgetsOptions["defenceStatsVisible"]
+    manageDefenceStats(not currentState)
+    skillWidgetsOptions["defenceStatsVisible"] = not currentState
+  end, "", skillWidgetsOptions["defenceStatsVisible"])
+
+  menu:addCheckBoxOption(tr('Misc. Stats'), function()
+    local currentState = skillWidgetsOptions["miscStatsVisible"]
+    manageMiscStats(not currentState)
+    skillWidgetsOptions["miscStatsVisible"] = not currentState
+  end, "", skillWidgetsOptions["miscStatsVisible"])
+
+  menu:addSeparator()
+  menu:addCheckBoxOption(tr('Show all Skill Bars'), function() showOrHidePercentBar(nil) end, "",
+    #skillWidgetsOptions["invisibleProgressBars"] == 0)
+
+  menu:display(mousePosition)
+end
+
+function setSkillBase(id, value, baseValue, loyalty)
+  if loyalty == nil then
+    loyalty = 0
+  end
+
+  local skill = skillsWindow:recursiveGetChildById(id)
+  if not skill then
+    return
+  end
+
+  local converId = id:gsub("%D", "")
+  local skillNumber = tonumber(converId)
+  if skillNumber and skillNumber >= 7 then
+    return
+  end
+
+  local widget = skill:getChildById('value')
+  local percentWidget = skill:getChildById('percent')
+
+  skill:removeTooltip()
+  widget:setColor('#bbbbbb')
+
+  local additionalTooltip = ''
+  if id == 'magiclevel' then
+    local player = g_game.getLocalPlayer()
+    if player and player.getMagicBoosts then
+      local magicBoost = player:getMagicBoosts()
+      if magicBoost and table.size(magicBoost) > 0 then
+        additionalTooltip = tr('\n\nAdditional magic level modifiers:')
+        for i, count in pairs(magicBoost) do
+          additionalTooltip = additionalTooltip .. string.format("\n%s magic level +%d", combatNames[i], count)
+        end
+      end
+    end
+  end
+
+  if baseValue <= 0 or value < 0 or (baseValue == value) then
+    if percentWidget then
+      local tooltip = ''
+      if loyalty > 0 then
+        tooltip = tr("%s = %s (+%s Loyalty)\n", (baseValue + loyalty), baseValue, loyalty)
+      end
+      local percent = tr('%sYou have %s percent to go%s', tooltip,
+        convertSkillPercent(10000 - (percentWidget:getPercent() * 100), false), additionalTooltip)
+      percentWidget:setTooltip(percent)
+      skill:setTooltip(percent)
+    end
+    return
+  end
+
+  local realBase = baseValue + loyalty
+  local realValue = value + loyalty
+
+  if value > baseValue or (realBase > baseValue) then
+    local tooltip = tr("%s = %s", realValue, baseValue)
+    if value > baseValue then
+      tooltip = tr("%s +%s", tooltip, (value - baseValue))
+      widget:setColor('#44ad25') -- green
+    end
+
+    if loyalty > 0 then
+      tooltip = tr("%s (+%s Loyalty)", tooltip, loyalty)
+    end
+
+    local percentWidget = skill:getChildById('percent')
+    if percentWidget then
+      local percent = tr('You have %s percent to go',
+        convertSkillPercent(10000 - (percentWidget:getPercent() * 100), false))
+      tooltip = tooltip .. '\n' .. percent
+      percentWidget:setTooltip(tooltip .. additionalTooltip)
+    end
+
+    tooltip = tooltip .. additionalTooltip
+    skill:setTooltip(tooltip)
+  elseif value < baseValue then
+    widget:setColor('#c00000') -- red
+    skill:setTooltip(baseValue .. ' ' .. (value - baseValue))
+  else
+    widget:setColor('#bbbbbb') -- default
+    skill:removeTooltip()
+  end
+end
+
+function setSkillValue(id, value)
+  local skill = skillsWindow:recursiveGetChildById(id)
+  if not skill then
+    return
+  end
+
+  local widget = skill:getChildById('value')
+  if value == 0 then
+    widget:setColor('#bbbbbb') -- reset
+  end
+
+  if id == 'capacity' then
+    local player = g_game.getLocalPlayer()
+    if value == 0 then
+      widget:setColor('$var-text-cip-store-red')
+    elseif player and player:getTotalCapacity() ~= player:getBaseCapacity() then
+      widget:setColor('#44ad25') -- green
+    else
+      widget:setColor('#bbbbbb') -- reset
+    end
+    value = math.floor(value)
+  end
+
+  if id == 'regenerationTime' then
+    local tooltip = "You are hungry.\nEat something to regenerate your and mana over time"
+    local hours, minutes, seconds = string.match(value, "(%d%d):(%d%d):(%d%d)")
+    if value ~= "00:00:00" then
+      if tonumber(hours) > 0 then
+        tooltip = tr("You are regenerating hit points and mana for %s hours and %s minutes", hours, minutes)
+      else
+        tooltip = tr("You are regenerating hit points and mana for %s minutes and %s seconds", minutes, seconds)
+      end
+    end
+
+    value = hours .. ":" .. minutes
+    skill:setTooltip(tooltip)
+  end
+
+  widget:setText(value)
+
+  local expLabel = skillsWindow:recursiveGetChildById('expLabel')
+  if id == "experience" then
+    if widget:getWidth() > 75 then
+      expLabel:setText("XP")
+    else
+      expLabel:setText("Experience")
+    end
+  end
+end
+
+function setSkillColor(id, value)
+  local skill = skillsWindow:recursiveGetChildById(id)
+  local widget = skill:getChildById('value')
+  widget:setColor(value)
+end
+
+function setSkillTooltip(id, value)
+  local skill = skillsWindow:recursiveGetChildById(id)
+  local widget = skill:getChildById('value')
+  widget:setTooltip(value)
+end
+
+function setSkillPercent(id, percent, tooltip, color)
+  local skill = skillsWindow:recursiveGetChildById(id)
+  if not skill then
+    return
+  end
+
+  local widget = skill:getChildById('percent')
+  if widget then
+    widget:setPercent(percent)
+    if table.contains({ 'offlineTraining', 'stamina' }, id) then
+      widget:setPercent(math.floor(percent))
+    end
+
+    if id == 'offlineTraining' then
+      widget:setBackgroundColor('#c00000') -- red
+    end
+
+    if color then
+      widget:setBackgroundColor(color)
+    end
+
+    if not table.empty(skillWidgetsOptions) and table.contains(skillWidgetsOptions["invisibleProgressBars"], id) then
+      widget:setVisible(false)
+    end
+  end
+end
+
+function update()
+  local offlineTraining = skillsWindow:recursiveGetChildById('offlineTraining')
+  if not g_game.getFeature(GameOfflineTrainingTime) then
+    offlineTraining:hide()
+  else
+    offlineTraining:show()
+  end
+
+  local regenerationTime = skillsWindow:recursiveGetChildById('regenerationTime')
+  if not g_game.getFeature(GamePlayerRegenerationTime) then
+    regenerationTime:hide()
+  else
+    regenerationTime:show()
+  end
+end
+
+function onGameStart()
+  local benchmark = g_clock.millis()
+  refresh()
+  consoleln("Skills loaded in " .. (g_clock.millis() - benchmark) / 1000 .. " seconds.")
+end
+
+function refresh()
+  local player = g_game.getLocalPlayer()
+  if not player then return end
+
+  skillWidgetsOptions = modules.game_sidebars.getSkillsWidgetConfig()
+  if table.empty(skillWidgetsOptions) then
+    skillWidgetsOptions = {
+      ["contentHeight"] = 0,
+      ["contentMaximized"] = true,
+      ["invisibleProgressBars"] = {},
+      ["defenceStatsVisible"] = true,
+      ["miscStatsVisible"] = true,
+      ["offenceStatsVisible"] = true
+    }
+  end
+
+  local missingOptions = { "defenceStatsVisible", "miscStatsVisible", "offenceStatsVisible" }
+  for _, option in pairs(missingOptions) do
+    if skillWidgetsOptions[option] == nil then
+      skillWidgetsOptions[option] = true
+    end
+  end
+
+  for i = Skill.Fist, Skill.Fishing do
+    updateVisblePercentBar()
+  end
+
+  manageOffenceStats(skillWidgetsOptions["offenceStatsVisible"])
+  manageDefenceStats(skillWidgetsOptions["defenceStatsVisible"])
+  manageMiscStats(skillWidgetsOptions["miscStatsVisible"])
+
+  if expSpeedEvent then removeEvent(expSpeedEvent) end
+  expSpeedEvent = cycleEvent(checkExpSpeed, 30 * 1000)
+
+  onExperienceChange(player, player:getExperience())
+  onLevelChange(player, player:getLevel(), player:getLevelPercent())
+  onHealthChange(player, player:getHealth(), player:getMaxHealth())
+  onManaChange(player, player:getMana(), player:getMaxMana())
+  onSoulChange(player, player:getSoul())
+  onFreeCapacityChange(player, player:getFreeCapacity())
+  onTotalCapacityChange(player, player:getFreeCapacity())
+  onBaseCapacityChange(player, player:getFreeCapacity())
+  onStaminaChange(player, player:getStamina())
+  onMagicLevelChange(player, player:getMagicLevel(), player:getMagicLevelPercent())
+  onOfflineTrainingChange(player, player:getOfflineTrainingTime())
+  onRegenerationChange(player, player:getRegenerationTime())
+  onSpeedChange(player, player:getSpeed())
+  onMagicBoostChange(player, player:getMagicBoosts())
+
+  local hasAdditionalSkills = g_game.getFeature(GameAdditionalSkills)
+  for i = Skill.Fist, Skill.Fishing do
+    onSkillChange(player, i, player:getSkillLevel(i), player:getSkillLevelPercent(i))
+    onBaseSkillChange(player, i, player:getSkillBaseLevel(i))
+  end
+
+  update()
+
+  skillsWindow:setContentMinimumHeight(44)
+  if hasAdditionalSkills then
+    skillsWindow:setContentMaximumHeight(680)
+  else
+    skillsWindow:setContentMaximumHeight(390)
+  end
+end
+
+function offline()
+  if healthUpdateEvent then
+    removeEvent(healthUpdateEvent)
+    healthUpdateEvent = nil
+  end
+
+  if manaUpdateEvent then
+    removeEvent(manaUpdateEvent)
+    manaUpdateEvent = nil
+  end
+
+  if expSpeedEvent then
+    expSpeedEvent:cancel()
+    expSpeedEvent = nil
+  end
+
+  if storeBoostTimerEvent then
+    removeEvent(storeBoostTimerEvent)
+    storeBoostTimerEvent = nil
+  end
+
+  resetXpBoosts()
+
+  rateHighlightEvent = nil
+  resetPercentVisibility()
+  skillsWindow:close()
+  skillsWindow:setParent(nil)
+end
+
+function toggle()
+  if modules.game_sidebuttons.isButtonVisible("skillsWidget") then
+    skillsWindow:close()
+    modules.game_sidebuttons.setButtonVisible("skillsWidget", false)
+  else
+    skillsWindow:open()
+    if m_interface.addToPanels(skillsWindow) then
+      skillsWindow:getParent():moveChildToIndex(skillsWindow, #skillsWindow:getParent():getChildren())
+      modules.game_sidebuttons.setButtonVisible("skillsWidget", true)
+
+      scheduleEvent(function()
+        skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+      end, 100)
+    end
+  end
+end
+
+function close()
+  skillsWindow:close()
+end
+
+function open()
+  skillsWindow:open()
+  if m_interface.addToPanels(skillsWindow) then
+    skillsWindow:getParent():moveChildToIndex(skillsWindow, #skillsWindow:getParent():getChildren())
+    modules.game_sidebuttons.setButtonVisible("skillsWidget", true)
+    scheduleEvent(function()
+      skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+    end, 100)
+  else
+    modules.game_sidebuttons.setButtonVisible("skillsWidget", false)
+  end
+end
+
+function checkExpSpeed()
+  local player = g_game.getLocalPlayer()
+  if not player then return end
+
+  local currentExp = player:getExperience()
+  local currentTime = g_clock.seconds()
+  if player.lastExps ~= nil then
+    player.expSpeed = (currentExp - player.lastExps[1][1]) / (currentTime - player.lastExps[1][2])
+    onLevelChange(player, player:getLevel(), player:getLevelPercent())
+  else
+    player.lastExps = {}
+  end
+  table.insert(player.lastExps, { currentExp, currentTime })
+  if #player.lastExps > 30 then
+    table.remove(player.lastExps, 1)
+  end
+end
+
+function onMiniWindowClose()
+  modules.game_sidebuttons.setButtonVisible("skillsWidget", false)
+end
+
+function onExperienceChange(localPlayer, value, oldValue)
+  if value >= 1 * (1000000000000000) then
+    setSkillValue('experience', "1kkkk+")
+  else
+    setSkillValue('experience', comma_value(value))
+  end
+end
+
+function onLevelChange(localPlayer, value, percent)
+  setSkillValue('level', comma_value(value))
+  local levelLabel = skillsWindow:recursiveGetChildById('level')
+  levelLabel:recursiveGetChildById('percent'):setTooltip(tr('You have %s percent to go', 100 - percent))
+
+  local text = tr("%s XP for next level", comma_value(expToAdvance(localPlayer:getLevel(), localPlayer:getExperience())))
+  if localPlayer.expSpeed ~= nil then
+    local expPerHour = math.floor(localPlayer.expSpeed * 3600)
+    if expPerHour > 0 then
+      local nextLevelExp = expForLevel(localPlayer:getLevel() + 1)
+      local hoursLeft = (nextLevelExp - localPlayer:getExperience()) / expPerHour
+      local minutesLeft = math.floor((hoursLeft - math.floor(hoursLeft)) * 60)
+      hoursLeft = math.floor(hoursLeft)
+      text = text ..
+      '\n' ..
+      tr('currently %s XP per hour, next level in %d hours and %d minutes', comma_value(expPerHour), hoursLeft,
+        minutesLeft)
+    end
+  end
+
+  local experienceLabel = skillsWindow:recursiveGetChildById('experience')
+  experienceLabel:setTooltip(text)
+  setSkillPercent('level', percent)
+  modules.game_topbar.updateLevelTooltip(text)
+end
+
+function onHealthChange(localPlayer, health, maxHealth)
+  lastHealthValue = health
+
+  if healthUpdateEvent then
+    removeEvent(healthUpdateEvent)
+  end
+
+  healthUpdateEvent = scheduleEvent(function()
+    setSkillValue('health', lastHealthValue)
+    healthUpdateEvent = nil
+  end, 50) -- 50ms debounce delay
+end
+
+function onManaChange(localPlayer, mana, maxMana)
+  lastManaValue = mana
+
+  if manaUpdateEvent then
+    removeEvent(manaUpdateEvent)
+  end
+
+  manaUpdateEvent = scheduleEvent(function()
+    setSkillValue('mana', lastManaValue)
+    manaUpdateEvent = nil
+  end, 50) -- 50ms debounce delay
+end
+
+function onSoulChange(localPlayer, soul)
+  setSkillValue('soul', soul)
+end
+
+function onFreeCapacityChange(localPlayer, freeCapacity)
+  setSkillValue('capacity', freeCapacity)
+end
+
+function onTotalCapacityChange(localPlayer, totalCapacity)
+  local player = g_game.getLocalPlayer()
+  setSkillValue('capacity', player and player:getFreeCapacity() or 0)
+end
+
+function onBaseCapacityChange(localPlayer, totalCapacity)
+  local player = g_game.getLocalPlayer()
+  setSkillValue('capacity', player and player:getFreeCapacity() or 0)
+end
+
+function onStaminaChange(localPlayer, stamina)
+  local hours = math.floor(stamina / 60)
+  local minutes = stamina % 60
+  if minutes < 10 then
+    minutes = '0' .. minutes
+  end
+  local percent = math.floor(100 * stamina / (42 * 60)) -- max is 42 hours --TODO not in all client versions
+
+  setSkillValue('stamina', hours .. ":" .. minutes)
+
+  --TODO not all client versions have premium time
+  local text = ""
+  if stamina > (39 * 60) and g_game.getClientVersion() >= 1038 then
+    text = tr("You have %s hours and %s minutes left and receive ", hours, minutes) ..
+    "50% more\nexperience (Premium Only)"
+    setSkillPercent('stamina', percent, text, 'green')
+  elseif stamina > (39 * 60) and g_game.getClientVersion() < 1038 then
+    text = tr("You have %s hours and %s minutes left", hours, minutes) .. '\n' ..
+        tr("If you are premium player, you will gain 50%% more experience")
+    setSkillPercent('stamina', percent, text, 'green')
+  elseif stamina <= (39 * 60) and stamina > 840 then
+    setSkillPercent('stamina', percent, tr("You have %s hours and %s minutes left", hours, minutes), 'orange')
+  elseif stamina <= 840 and stamina > 0 then
+    text = tr("You have %s hours and %s minutes left", hours, minutes) .. "\n" ..
+        tr("You gain only 50%% experience and you don't may gain loot from monsters")
+    setSkillPercent('stamina', percent, text, 'red')
+  elseif stamina == 0 then
+    text = tr("You have %s hours and %s minutes left", hours, minutes) .. "\n" ..
+        tr("You don't may receive experience and loot from monsters")
+    setSkillPercent('stamina', percent, text, 'black')
+  end
+end
+
+function onOfflineTrainingChange(localPlayer, offlineTrainingTime)
+  if not g_game.getFeature(GameOfflineTrainingTime) then
+    return
+  end
+  local hours = math.floor(offlineTrainingTime / 60)
+  local minutes = offlineTrainingTime % 60
+  if minutes < 10 then
+    minutes = '0' .. minutes
+  end
+  local percent = 100 * offlineTrainingTime / (12 * 60) -- max is 12 hours
+
+  setSkillValue('offlineTraining', hours .. ":" .. minutes)
+  setSkillPercent('offlineTraining', percent,
+    tr('You have %s hours and %s minutes of offline training time left', hours, tostring(tonumber(minutes))))
+end
+
+function onRegenerationChange(localPlayer, regenerationTime)
+  if not g_game.getFeature(GamePlayerRegenerationTime) or regenerationTime < 0 then
+    return
+  end
+
+  local hours = math.floor(regenerationTime / 3600)
+  local minutes = math.floor((regenerationTime % 3600) / 60)
+  local seconds = regenerationTime % 60
+
+  if hours < 10 then
+    hours = '0' .. hours
+  end
+  if minutes < 10 then
+    minutes = '0' .. minutes
+  end
+  if seconds < 10 then
+    seconds = '0' .. seconds
+  end
+
+  modules.client_settings.onHungryChange(localPlayer, regenerationTime > 0)
+  setSkillValue('regenerationTime', hours .. ":" .. minutes .. ":" .. seconds)
+end
+
+function onSpeedChange(localPlayer, speed)
+  setSkillValue('speed', speed)
+  onBaseSpeedChange(localPlayer, localPlayer:getBaseSpeed())
+end
+
+function onBaseSpeedChange(localPlayer, baseSpeed)
+  setSkillBase('speed', localPlayer:getSpeed(), baseSpeed)
+end
+
+function onMagicLevelChange(localPlayer, magiclevel, percent)
+  setSkillValue('magiclevel', magiclevel + localPlayer:getMagicLoyalty())
+  if percent ~= nil and type(percent) == 'number' then
+    setSkillPercent('magiclevel', (percent / 100))
+  end
+  onBaseMagicLevelChange(localPlayer, localPlayer:getBaseMagicLevel())
+end
+
+function onBaseMagicLevelChange(localPlayer, baseMagicLevel)
+  setSkillBase('magiclevel', localPlayer:getMagicLevel(), baseMagicLevel, localPlayer:getMagicLoyalty())
+end
+
+function onSkillChange(localPlayer, id, level, percent)
+  setSkillValue('skillId' .. id, (level + localPlayer:getSkillLoyalty(id)))
+  if percent ~= nil and type(percent) == 'number' then
+    setSkillPercent('skillId' .. id, (percent / 100))
+  end
+  onBaseSkillChange(localPlayer, id, localPlayer:getSkillBaseLevel(id))
+end
+
+function onBaseSkillChange(localPlayer, id, baseLevel)
+  setSkillBase('skillId' .. id, localPlayer:getSkillLevel(id), baseLevel, localPlayer:getSkillLoyalty(id))
+end
+
+function onExpBoostChange(localPlayer, time, canBuy)
+  -- Stash the availability flag so Player:canBuyExpBoost() (read by the cyclopedia
+  -- store button) can see it; the C++ event is the only source of `canBuy`.
+  localPlayer.m_canBuyExpBoost = canBuy
+  storeXPButton:setVisible(canBuy)
+  onUpdateGainRate(localPlayer, localPlayer:getBaseExpRate(), localPlayer:getLowLevelRate(),
+    localPlayer:getExpBoostRate(), localPlayer:getStaminaRate())
+
+  storeBoostTime = time
+  if storeBoostTimerEvent then
+    removeEvent(storeBoostTimerEvent)
+    storeBoostTimerEvent = nil
+  end
+
+  local storeBoostValue = skillsWindow:recursiveGetChildById('storeBoostValue')
+  if time > 0 then
+    -- Tick the countdown every second. This was a scheduleEvent (fires ONCE), so the
+    -- displayed time decremented a single second and then froze; cycleEvent keeps it
+    -- ticking. Update the label directly instead of re-running the heavy onUpdateGainRate.
+    storeBoostValue:setText(formatTimeBySeconds(storeBoostTime))
+    storeBoostValue:setColor(storeBoostTime <= 300 and "$var-text-cip-store-red" or "$var-text-cip-color-green")
+    storeBoostTimerEvent = cycleEvent(function()
+      storeBoostTime = storeBoostTime - 1
+      if storeBoostTime <= 0 then
+        storeBoostTime = 0
+        storeBoostValue:setText('00:00')
+        storeBoostValue:setColor("$var-text-cip-store-red")
+        if storeBoostTimerEvent then
+          removeEvent(storeBoostTimerEvent)
+          storeBoostTimerEvent = nil
+        end
+        return
+      end
+      storeBoostValue:setText(formatTimeBySeconds(storeBoostTime))
+      storeBoostValue:setColor(storeBoostTime <= 300 and "$var-text-cip-store-red" or "$var-text-cip-color-green")
+    end, 1000)
+  else
+    storeBoostValue:setText('00:00')
+    storeBoostValue:setColor("$var-text-cip-store-red")
+  end
+end
+
+function onBoostClick()
+  g_game.openStore()
+  g_game.requestStoreOffers(1, "", 1)
+end
+
+function onUpdateGainRate(localPlayer, baseRate, lowLevelBonus, expBoost, staminaMulti)
+  if not g_game.isOnline() then
+    return
+  end
+
+  local rate = skillsWindow:recursiveGetChildById('xpGainRate')
+  if not rate then
+    return
+  end
+
+  local totalGainRate = (baseRate + lowLevelBonus + expBoost) * staminaMulti / 100
+  local tooltip = tr("Your current XP gain rate amounts to %s%s.", totalGainRate, "%") ..
+  "\nYour XP gain rate is calculated as follows:\n" .. tr("- Base XP gain rate: %s%s", baseRate, "%")
+  if lowLevelBonus ~= 0 then
+    tooltip = tr("%s\n- Low level bonus: +%s%s ", tooltip, lowLevelBonus, "%") .. "(until level 50)"
+  end
+
+  local formattedTime = formatTimeBySeconds(storeBoostTime)
+
+  if expBoost ~= 0 then
+    tooltip = tr("%s\n- XP boost: +%s%s ", tooltip, expBoost, "%") .. tr("(%s remaining)", formattedTime)
+    local storeBoostValue = skillsWindow:recursiveGetChildById('storeBoostValue')
+    storeBoostValue:setText(formattedTime)
+
+    if storeBoostTime <= 300 then
+      storeBoostValue:setColor("$var-text-cip-store-red")
+    else
+      storeBoostValue:setColor("$var-text-cip-color-green")
+    end
+  end
+
+  local storeBoostWidget = skillsWindow:recursiveGetChildById('storeBoost')
+  storeBoostWidget:setTooltip(tr("XP boost remaining time: %s",
+    formattedTime .. "\n- Click here to increase your experience gain"))
+  storeBoostWidget.onClick = onBoostClick
+
+  if staminaMulti > 100 then
+    local staminaStr = tostring(staminaMulti)
+    formattedStr = staminaStr:sub(1, 1) .. "." .. staminaStr:sub(2)
+    finalStr = tostring(tonumber(formattedStr))
+    tooltip = tr("%s\n- Stamina bonus: x%s ", tooltip, finalStr) ..
+    tr("(%s h remaining)", formatTimeByMinutes(localPlayer:getStamina() - 2340))
+  end
+
+  local widget = rate:getChildById('value')
+  widget:setText(totalGainRate .. "%")
+  widget:setColor("$var-text-cip-color-green")
+  rate:setTooltip(tooltip)
+
+  if not rateHighlightEvent then
+    local endTime = g_clock.millis() + 6000
+    rateHighlightEvent = cycleEvent(function()
+      if not g_game.isOnline() or not doHighlight then
+        rateHighlightEvent = nil
+        return
+      end
+      doHighlight(endTime)
+    end, 200)
+  end
+end
+
+function instantlyBuyBoost()
+  local xpBoostOfferId = 65583
+  local xpBoostPrice = nil
+
+  local yesCallback = function()
+    if confirmBoostWindow then
+      g_game.buyStoreOffer(xpBoostOfferId, 1, "")
+      confirmBoostWindow:destroy()
+    end
+  end
+
+  local noCallback = function()
+    if confirmBoostWindow then
+      confirmBoostWindow:destroy()
+    end
+  end
+
+  local message = tr("Do you want to buy a XP boost for %s Nyxos Coins?", xpBoostPrice)
+  confirmBoostWindow = displayGeneralBox(tr('Warning'), tr(message), {
+    { text = tr('Yes'), callback = yesCallback },
+    { text = tr('No'), callback = noCallback },
+  }, yesCallback, noCallback)
+
+  onEnter = yesCallback
+  onEscape = noCallback
+end
+
+function doHighlight(endTime)
+  if not g_game.isOnline() or not skillsWindow then
+    removeEvent(rateHighlightEvent)
+    rateHighlightEvent = nil
+    return
+  end
+
+  local widget = skillsWindow:recursiveGetChildById('gainLabel')
+  if not widget then
+    removeEvent(rateHighlightEvent)
+    rateHighlightEvent = nil
+    return
+  end
+
+  if widget:getActionId() == 0 then
+    widget:setColor('#ebebeb')
+    widget:setActionId(1)
+  elseif widget:getActionId() == 1 then
+    widget:setColor('#dfdfdf')
+    widget:setActionId(2)
+  elseif widget:getActionId() == 2 then
+    widget:setColor('#d6d6d6')
+    widget:setActionId(3)
+  elseif widget:getActionId() == 3 then
+    widget:setColor('#cecece')
+    widget:setActionId(4)
+  else
+    widget:setColor('#c0c0c0')
+    widget:setActionId(0)
+  end
+
+  if g_clock.millis() >= endTime then
+    removeEvent(rateHighlightEvent)
+    rateHighlightEvent = nil
+    widget:setColor('#c0c0c0')
+  end
+end
+
+function move(panel, height, index, minimized)
+  skillsWindow:setParent(panel)
+  skillsWindow:open()
+
+  if minimized then
+    skillsWindow:setHeight(height)
+    skillsWindow:minimize()
+  else
+    skillsWindow:maximize()
+    skillsWindow:setHeight(height)
+  end
+
+  return skillsWindow
+end
+
+function getCombatName(combatId)
+  return combatNames[combatId] or "Unkown"
+end
+
+function manageOffenceStats(state)
+  local panel = skillsWindow:recursiveGetChildById("attackPanel")
+  local separator = skillsWindow:recursiveGetChildById("attackSeparator")
+  panel:setVisible(state)
+  separator:setVisible(state)
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+function manageDefenceStats(state)
+  local panel = skillsWindow:recursiveGetChildById("defencePanel")
+  local separator = skillsWindow:recursiveGetChildById("defenceSeparator")
+  panel:setVisible(state)
+  separator:setVisible(state)
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+function manageMiscStats(state)
+  local panel = skillsWindow:recursiveGetChildById("miscPanel")
+  local separator = skillsWindow:recursiveGetChildById("miscSeparator")
+  panel:setVisible(state)
+  separator:setVisible(state)
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+-- Combat stats arrive as doubles (e.g. 35.7, 63.07). Format with up to 2 decimals,
+-- trimming trailing zeros so whole values show clean ("54" not "54.00").
+local function fmtPct(v)
+  local s = string.format("%.2f", tonumber(v) or 0)
+  return (s:gsub("%.?0+$", ""))
+end
+
+function onUpdateOffenceStats(player, damageAndHealing, damageValue, damageElement, convertedValue, convertedElement)
+  -- Damage and Healing
+  local damageHealingWidget = skillsWindow:recursiveGetChildById('damageHealingLabel')
+  damageHealingWidget:setText(damageAndHealing)
+
+  -- Attack Value
+  local attackWidget = skillsWindow:recursiveGetChildById('attackValue')
+  attackWidget:recursiveGetChildById("value"):setText(damageValue)
+  attackWidget:recursiveGetChildById("combatIcon"):setImageSource("/game_cyclopedia/images/icons/stats/element_" ..
+  damageElement)
+
+  -- Converted Damage
+  local convertedWidget = skillsWindow:recursiveGetChildById('convertedDamage')
+  convertedWidget:recursiveGetChildById("value"):setText("+" .. fmtPct(convertedValue) .. "%")
+  convertedWidget:recursiveGetChildById("combatIcon"):setImageSource("/game_cyclopedia/images/icons/stats/element_" ..
+  convertedElement)
+  convertedWidget:setTooltip(tr(specialTooltips["convertedDamage"], convertedValue, getCombatName(convertedElement)))
+  convertedWidget:setVisible(convertedValue > 0)
+
+  if convertedValue > 10.0 then
+    convertedWidget:recursiveGetChildById("nameLabel"):setText("Convert...")
+  end
+
+  -- Life Leech
+  local lifeWidget = skillsWindow:recursiveGetChildById('lifeLeech')
+  local lifeLevel = player:getSpecialSkill(Skill.LifeLeechAmount)
+  lifeWidget:recursiveGetChildById("value"):setText("+" .. fmtPct(lifeLevel) .. "%")
+  lifeWidget:setTooltip(tr(specialTooltips["lifeLeech"], lifeLevel))
+  lifeWidget:setVisible(lifeLevel > 0)
+
+  -- Mana Leech
+  local manaWidget = skillsWindow:recursiveGetChildById('manaLeech')
+  local manaLevel = player:getSpecialSkill(Skill.ManaLeechAmount)
+  manaWidget:recursiveGetChildById("value"):setText("+" .. fmtPct(manaLevel) .. "%")
+  manaWidget:setTooltip(tr(specialTooltips["manaLeech"], manaLevel))
+  manaWidget:setVisible(manaLevel > 0)
+
+  -- Critical
+  local criticalWidget = skillsWindow:recursiveGetChildById('skillIdHitSeparator')
+  local chanceWidget = skillsWindow:recursiveGetChildById('criticalChance')
+  local extraDamageWidget = skillsWindow:recursiveGetChildById('criticalDamage')
+
+  local chanceLevel = player:getSpecialSkill(Skill.CriticalChance)
+  local damageLevel = player:getSpecialSkill(Skill.CriticalDamage)
+
+  chanceWidget:recursiveGetChildById("value"):setText("+" .. fmtPct(chanceLevel) .. "%")
+  chanceWidget:setTooltip(tr(specialTooltips["criticalChance"], chanceLevel, damageLevel))
+  extraDamageWidget:recursiveGetChildById("value"):setText("+" .. fmtPct(damageLevel) .. "%")
+  extraDamageWidget:setTooltip(tr(specialTooltips["criticalDamage"], chanceLevel, damageLevel))
+
+  criticalWidget:setVisible(chanceLevel > 0 or damageLevel > 0)
+  chanceWidget:setVisible(chanceLevel > 0)
+  extraDamageWidget:setVisible(damageLevel > 0)
+
+  -- Onslaught
+  local onslaughtWidget = skillsWindow:recursiveGetChildById('onslaught')
+  local onslaughtLevel = player:getSpecialSkill(Skill.OnslaughtChance)
+  onslaughtWidget:recursiveGetChildById('value'):setText("+" .. fmtPct(onslaughtLevel) .. "%")
+  onslaughtWidget:setTooltip(tr(specialTooltips["onslaught"], onslaughtLevel))
+  onslaughtWidget:setVisible(onslaughtLevel > 0)
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+function onUpdateDefenceStats(player, elementalProtections, defense, armor, mantra, mitigation, damageReflection)
+  -- Combat Defenses
+  for i = 0, 11 do
+    local value = elementalProtections[i + 1] or 0
+    local elementWidget = skillsWindow:recursiveGetChildById('elementalDefense_' .. i)
+    if elementWidget then
+      elementWidget:setVisible(value ~= 0)
+      elementWidget:recursiveGetChildById("value"):setText(value < 0 and (fmtPct(value) .. "%") or
+      ("+" .. fmtPct(value) .. "%"))
+      elementWidget:recursiveGetChildById("value"):setColor(value < 0 and "#ff9854" or "#44ad25")
+
+      local effectStr = value < 0 and "increased" or "reduced"
+      local noteStr = specialTooltips["protection_note"]
+      elementWidget:setTooltip(tr(specialTooltips["protection"], getCombatName(i), effectStr, value, noteStr))
+    end
+  end
+
+  -- Defense
+  local defenseWidget = skillsWindow:recursiveGetChildById('defenseValue')
+  defenseWidget:recursiveGetChildById('value'):setText(defense)
+
+  -- Armor
+  local armorWidget = skillsWindow:recursiveGetChildById('armorValue')
+  armorWidget:recursiveGetChildById('value'):setText(armor)
+
+  -- Mantra
+  local mantraWidget = skillsWindow:recursiveGetChildById('mantraValue')
+  mantraWidget:recursiveGetChildById('value'):setText(mantra)
+
+  -- Mitigation
+  local mitigationWidget = skillsWindow:recursiveGetChildById('mitigationValue')
+  mitigationWidget:recursiveGetChildById('value'):setText("+" .. fmtPct(mitigation) .. "%")
+
+  -- Dodge
+  local ruseWidget = skillsWindow:recursiveGetChildById('ruseValue')
+  local ruseLevel = player:getSpecialSkill(Skill.RuseChance)
+  ruseWidget:recursiveGetChildById('value'):setText("+" .. fmtPct(ruseLevel) .. "%")
+  ruseWidget:setTooltip(tr(specialTooltips["ruseValue"], ruseLevel))
+  ruseWidget:setVisible(ruseLevel > 0)
+
+  -- Damage Reflection
+  local reflectionWidget = skillsWindow:recursiveGetChildById('reflectionValue')
+  reflectionWidget:recursiveGetChildById('value'):setText(damageReflection)
+  reflectionWidget:setTooltip(tr(specialTooltips["reflectionValue"], damageReflection))
+  reflectionWidget:setVisible(damageReflection > 0)
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+function onUpdateMiscStats(player)
+  -- Momentum
+  local momentumWidget = skillsWindow:recursiveGetChildById('momentumValue')
+  local momentumLevel = player:getSpecialSkill(Skill.MomentumChance)
+  momentumWidget:recursiveGetChildById('value'):setText("+" .. fmtPct(momentumLevel) .. "%")
+  momentumWidget:setTooltip(tr(specialTooltips["momentumValue"], momentumLevel))
+  momentumWidget:setVisible(momentumLevel > 0)
+
+  -- Transcendence
+  local transcendenceWidget = skillsWindow:recursiveGetChildById('transcendenceValue')
+  local transcendenceLevel = player:getSpecialSkill(Skill.TranscendenceChance)
+  transcendenceWidget:recursiveGetChildById('value'):setText("+" .. fmtPct(transcendenceLevel) .. "%")
+  transcendenceWidget:setTooltip(tr(specialTooltips["transcendenceValue"], transcendenceLevel))
+  transcendenceWidget:setVisible(transcendenceLevel > 0)
+
+  -- Amplification
+  local amplificationWidget = skillsWindow:recursiveGetChildById('amplificationValue')
+  local amplificationLevel = player:getSpecialSkill(Skill.AmplificationChance)
+  amplificationWidget:recursiveGetChildById('value'):setText("+" .. fmtPct(amplificationLevel) .. "%")
+  amplificationWidget:setTooltip(tr(specialTooltips["amplificationValue"], amplificationLevel))
+  amplificationWidget:setVisible(amplificationLevel > 0)
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+-- Nyxos custom skills, fed by the C++ parser (parsePlayerSkillsModern) from the tail
+-- of the 0xA1 packet, so they auto-refresh with the rest of the Skills panel. Attack Speed
+-- is a real trainable skill (level + progress bar); Reflect and Mitigation Skill are flat
+-- KV levels whose in-game effect is spelled out in the tooltip (mirrors the "look" text).
+-- Atributos que nao existem no cliente oficial e dependem de o servidor
+-- envia-los. Ficam ocultos ate chegar valor; contra um servidor global esta
+-- funcao nunca e chamada e o painel fica igual ao oficial.
+--
+-- Mostra o widget quando o valor e util e devolve se ele ficou visivel, para
+-- que o separador do bloco acompanhe.
+local function setCustomSkillVisible(id, value)
+  local widget = skillsWindow:recursiveGetChildById(id)
+  if not widget then
+    return false
+  end
+  local visible = (tonumber(value) or 0) > 0
+  widget:setVisible(visible)
+  return visible
+end
+
+-- Attack Speed e Mining nao existem no Nyxos: nenhum dos dois aparece no cliente
+-- oficial (skillswidget.qml), eram herança do OT de origem. Os quatro parametros
+-- continuam na assinatura porque quem chama e o lado C++, com lista de
+-- argumentos fixa -- tira-los daqui faria reflect e mitigation chegarem
+-- deslocados. Sao recebidos e ignorados de proposito, com nome prefixado por _.
+--
+-- Restam reflect e mitigation, que sao status oficiais (damageReflection e
+-- mitigation no QML) e apenas viajam por este callback neste fork.
+function onUpdateCustomSkills(localPlayer, _attackSpeedLevel, _attackSpeedPercent, _miningLevel, _miningPercent, reflectSkill, mitigationSkill)
+  -- Reflect: reflects (skill / 2)% of the damage taken
+  setSkillValue('reflectSkill', reflectSkill)
+  local reflectWidget = skillsWindow:recursiveGetChildById('reflectSkill')
+  if reflectWidget then
+    reflectWidget:setTooltip(tr('Reflect skill: %s\nReflecting %s%s of the damage you take.',
+      reflectSkill, math.floor(reflectSkill / 2), "%"))
+  end
+
+  -- Mitigation Skill: +min(level, 100) * 0.2% damage mitigation
+  setSkillValue('mitigationSkill', mitigationSkill)
+  local mitigationBonus = math.min(mitigationSkill, 100) * 0.2
+  local mitigationWidget = skillsWindow:recursiveGetChildById('mitigationSkill')
+  if mitigationWidget then
+    mitigationWidget:setTooltip(tr('Mitigation skill: %s\n+%s%s damage mitigation.',
+      mitigationSkill, string.format('%.1f', mitigationBonus), "%"))
+  end
+
+  -- Cada um aparece por conta propria; o separador so fica se algum ficou.
+  local algumVisivel = false
+  algumVisivel = setCustomSkillVisible('reflectSkill', reflectSkill) or algumVisivel
+  algumVisivel = setCustomSkillVisible('mitigationSkill', mitigationSkill) or algumVisivel
+
+  local separador = skillsWindow:recursiveGetChildById('customSkillsSeparator')
+  if separador then
+    separador:setVisible(algumVisivel)
+  end
+
+  scheduleEvent(function()
+    skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+  end, 100)
+end
+
+local boostedBattlePassBonuses = {
+  [1] = "Double Experience",
+  [2] = "Double Skill",
+  [3] = "Double Regeneration",
+  [4] = "Exaltation Overload",
+  [5] = "Extra Skill"
+}
+
+function onBattlePassBonusChange(localPlayer, bonuses)
+  local battlePassBoostPanel = skillsWindow:recursiveGetChildById('battlePass')
+  if #bonuses == 0 then
+    battlePassBoostPanel:setVisible(false)
+    battlePassBoostPanel:removeTooltip()
+    return
+  end
+
+  battlePassBoostPanel:setVisible(true)
+  local tooltip = "Current Battle Pass Bonuses:"
+  for _, bonus in pairs(bonuses) do
+    local stringFormat = "\n%s is active for another %s."
+    local stringSkillFormat = "\n+%d extra skill %s fighting is active for another %s."
+    local bonusName = boostedBattlePassBonuses[bonus[1]] or "Unknown Bonus"
+    local timeLeft = bonus[2]
+    local hours = math.floor(timeLeft / 3600)
+    local minutes = math.floor((timeLeft % 3600) / 60)
+    local timeString = string.format("%d hours and %02d minutes", hours, minutes)
+    if hours == 0 then
+      timeString = string.format("%02d minutes", minutes)
+    end
+    if bonus[1] == 5 then
+      tooltip = tooltip .. stringSkillFormat:format(bonus[3], skillNames[bonus[4]]:lower(), timeString)
+    else
+      tooltip = tooltip .. stringFormat:format(bonusName, timeString)
+    end
+
+    if bonus[1] == 1 then
+      local xpBoostValue = skillsWindow:recursiveGetChildById('battlePassBoostValue')
+
+      xpBoostValue:setText(string.format("%02d:%02d", hours, minutes))
+      xpBoostValue:setColor("$var-text-cip-color-green")
+      xpBoostValue:setTooltip(tr("Double Experience Boost active for another %s", timeString))
+    end
+
+    battlePassBoostPanel:setTooltip(tooltip)
+  end
+end
+
+function onPlayerUnload()
+  if skillWidgetsOptions then
+    modules.game_sidebars.registerSkillWidgetsConfig(skillWidgetsOptions)
+  end
+end
+
+function onMagicBoostChange(localPlayer, magicBoosts)
+  setSkillBase('magiclevel', localPlayer:getMagicLevel(), localPlayer:getBaseMagicLevel(), localPlayer:getMagicLoyalty())
+end

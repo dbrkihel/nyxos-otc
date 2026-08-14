@@ -1,0 +1,141 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Artifacts here are the client binary only. Tibia assets are not distributed:
+# drop your own into data/things/1525 and data/sounds before running.
+
+jobs:
+  windows:
+    name: Windows (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      # vcpkg builds every dependency from source on a cold cache, which is slow.
+      # The GitHub Actions cache backend keeps the built packages between runs.
+      - name: Export vcpkg cache credentials
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Bootstrap vcpkg
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP\vcpkg"
+          & "$env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat" -disableMetrics
+          echo "VCPKG_ROOT=$env:RUNNER_TEMP\vcpkg" >> $env:GITHUB_ENV
+
+      - name: Configure
+        shell: pwsh
+        env:
+          VCPKG_BINARY_SOURCES: 'clear;x-gha,readwrite'
+        run: |
+          cmake -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Stage artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist | Out-Null
+          Copy-Item build\NyxosClient.exe dist\
+          Copy-Item build\*.dll dist\ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse data, modules, mods dist\
+          Copy-Item init.lua, config.example.lua, README.md, LICENSE, CREDITS.md dist\
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nyxos-otc-windows-x64
+          path: dist/
+
+  linux:
+    name: Linux (x64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Package set verified against Ubuntu 24.04. LuaJIT rather than plain
+      # Lua 5.1: FindLuaJIT.cmake is what the framework looks for here.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build \
+            libgl1-mesa-dev libglew-dev libx11-dev libopenal-dev \
+            libfreetype-dev libprotobuf-dev protobuf-compiler \
+            libphysfs-dev libogg-dev libvorbis-dev libzip-dev liblzma-dev \
+            libssl-dev zlib1g-dev libluajit-5.1-dev nlohmann-json3-dev \
+            libboost-filesystem-dev libboost-system-dev
+
+      # Shared libs: Ubuntu ships no static libopenal, so the default static
+      # link fails to resolve OPENAL_LIBRARY.
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DUSE_STATIC_LIBS=OFF
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Stage artifact
+        run: |
+          mkdir -p dist
+          cp build/NyxosClient dist/
+          cp -r data modules mods dist/
+          cp init.lua config.example.lua README.md LICENSE CREDITS.md dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nyxos-otc-linux-x64
+          path: dist/
+
+  release:
+    name: Release
+    needs: [windows, linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package
+        run: |
+          cd artifacts
+          for d in */; do
+            zip -qr "../${d%/}.zip" "$d"
+          done
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: '*.zip'
+          body: |
+            Client binaries for ${{ github.ref_name }}.
+
+            Tibia game assets are not included. Drop your own into
+            `data/things/1525` and `data/sounds` before running --
+            see the README.

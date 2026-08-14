@@ -1,0 +1,45 @@
+DragItem < UIItem
+  size: 32 32
+  virtual: true
+  phantom: true
+  border-color: alpha
+
+Item < UIItem
+  size: 34 34
+  padding: 1
+  image-source: /images/ui/item
+  font: count-badge
+  border-color: white
+  color: white
+
+  $disabled:
+    color: #646464
+
+  UIButton
+    id: quicklootflags
+    visible: false
+    size: 9 9
+    image-source: /images/game/container/icon-loot-container
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 1
+
+BigItem < UIItem
+  size: 66 66
+  padding: 1
+  image-source: /images/ui/item66
+  font: verdana-11px-rounded
+  border-color: white
+  color: white
+
+  $disabled:
+    color: #646464
+
+  UIButton
+    id: quicklootflags
+    visible: false
+    size: 9 9
+    image-source: /images/game/container/icon-loot-container
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 1

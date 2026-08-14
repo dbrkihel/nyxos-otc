@@ -1,0 +1,121 @@
+SettingsCheckBox < CheckBox
+  @onCheckChange: modules.client_settings.setTempOption(self:getId(), self:isChecked())
+
+SettingsHorizontalScrollBar < HorizontalScrollBar
+  @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+
+OptionButton < UIWidget
+  size: 115 22
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 7
+  margin-left: 7
+  $!first:
+    anchors.top: prev.bottom
+    margin-top: 11
+  UIButton
+    id: button
+    size: 115 22
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.left: parent.left
+    image-clip: 0 0 115 22
+    $on:
+      image-clip: 0 22 115 22
+    $pressed:
+      image-clip: 0 22 115 22
+    @onClick: onClickOptionButton(self:getParent())
+  Panel
+    id: extraButton
+    height: 0
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    visible: false
+
+NOptionButton < UIWidget
+  size: 115 21
+  anchors.top: parent.top
+  anchors.left: parent.left
+  $!first:
+    anchors.top: prev.bottom
+  UIButton
+    id: button
+    size: 115 20
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.left: parent.left
+    image-clip: 0 0 115 20
+    // Most tabs still carry their label baked into the image and leave this
+    // empty; the ones with a blank image set it so the text can be translated.
+    font: $var-cip-font
+    color: $var-text-cip-color
+    // Measured off the baked labels: the selected state shifts them 2 right, 1 down.
+    $on:
+      image-clip: 0 20 115 20
+      text-offset: 2 1
+    $pressed:
+      image-clip: 0 20 115 20
+      text-offset: 2 1
+
+NewMainWindow
+  !text: tr('Options')
+  size: 685 531
+  @onEscape: modules.client_settings:closeOptions()
+  @onEnter: modules.client_settings:setupOkButton()
+  FlatPanel
+    id: options
+    size: 129 442
+    image-source: /images/ui/2pixel-up-frame-borderimage-dark
+    image-border: 4
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 12
+    margin-left: 10
+  FlatPanel
+    id: option
+    size: 519 442
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 12
+    margin-left: 5
+
+  HorizontalSeparator
+    id: separator
+    anchors.top: options.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 11
+    margin-left: 12
+    margin-right: 12
+
+  Button
+    id: ok
+    anchors.top: separator.bottom
+    anchors.right: apply.left
+    margin-top: 12
+    margin-right: 6
+    size: 43 20
+    !text: tr('Ok')
+    @onClick: modules.client_settings:setupOkButton()
+
+  Button
+    id: apply
+    anchors.top: separator.bottom
+    anchors.right: close.left
+    margin-top: 12
+    margin-right: 6
+    size: 43 20
+    !text: tr('Apply')
+    @onClick: modules.client_settings:onApplyOptions()
+
+  Button
+    id: close
+    anchors.top: separator.bottom
+    anchors.right: parent.right
+    margin-top: 12
+    margin-right: 12
+    margin-left: 5
+    size: 43 20
+    !text: tr('Cancel')
+    @onClick: modules.client_settings:closeOptions()

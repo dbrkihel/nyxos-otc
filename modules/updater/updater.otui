@@ -1,0 +1,58 @@
+UpdaterMainWindow
+  id: updaterWindow
+  anchors.centerIn: parent
+
+  Button
+    id: startDownload
+    size: 98 40
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 6
+    margin-left: 17
+    image-source: /images/updater/start-download
+    image-clip: 0 0 98 40
+    $pressed:
+      image-clip: 0 80 98 40
+    $hover !pressed:
+      image-clip: 0 40 98 40
+
+  UIWidget
+    id: progressBg
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 6
+    margin-left: 17
+    image-source: /images/updater/progress-bg
+
+    ProgressBarSD
+      id: mainProgress
+      size: 93 35
+      anchors.top: parent.top
+      anchors.left: parent.left
+      image-source: /images/updater/progress
+      margin-top: 2
+      margin-left: 2
+
+    Label
+      id: downloadStatus
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 10
+      margin-left: 10
+      !text: tr('Loading...')
+      font: Verdana Bold-13px
+      color: $var-text-cip-color
+      text-auto-resize: true
+      text-wrap: false
+      visible: true
+
+  Label
+    id: version
+    !text: tr('Connecting...')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    font: Verdana Bold-13px
+    color: $var-text-cip-color
+    text-auto-resize: true
+    margin-top: 10
+    margin-left: 6

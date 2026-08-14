@@ -1,0 +1,9 @@
+Module
+  name: game_walking
+  description: Control walking and turns
+  author: Mateuzkl / Equipe Skyyzyy
+  website: https://github.com/Mateuzkl/NyxosClient
+  scripts: [ walking ]
+  dependencies: [ game_interface ]
+  @onLoad: init()
+  @onUnload: terminate()

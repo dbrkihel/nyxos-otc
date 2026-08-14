@@ -1,0 +1,8 @@
+Module
+  name: game_hints
+  description: Nyxos Hints
+  author: R!ck && ZLukSrT#8740 && Christianlb
+  sandboxed: true
+  scripts: [ hint ]
+  @onLoad: init()
+  @onUnload: terminate()

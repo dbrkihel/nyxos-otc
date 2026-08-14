@@ -1,0 +1,10 @@
+Module
+  name: game_npcdialog
+  description: Janela de dialogo com NPC (opcode 0x1C)
+  author: Nyxos
+  sandboxed: true
+  scripts: [ npcdialog ]
+  @onLoad: init()
+  @onUnload: terminate()
+  dependencies:
+    - game_interface

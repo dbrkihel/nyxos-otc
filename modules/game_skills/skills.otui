@@ -1,0 +1,941 @@
+SkillFirstWidget < UIWidget
+
+SkillButton < UIButton
+  height: 21
+  margin-bottom: 1
+
+SmallSkillButton < SkillButton
+  height: 14
+
+SkillNameLabel < GameLabel
+  id: nameLabel
+  font: $var-cip-font
+  color: $var-text-cip-color
+  margin-right: 3
+  anchors.left: parent.left
+  anchors.top: parent.top
+  anchors.bottom: parent.bottom
+
+SkillValueLabel < GameLabel
+  id: value
+  font: $var-cip-font
+  color: $var-text-cip-color
+  margin-top: 1
+  text-align: topright
+  text-auto-resize: true
+  anchors.right: parent.right
+  anchors.top: parent.top
+  anchors.bottom: parent.bottom
+  anchors.left: prev.left
+
+SkillImage < Label
+  id: skillIcon
+  margin-top: 15
+  size: 9 9
+  anchors.left: parent.left
+  anchors.top: parent.top
+CombatImage < UIWidget
+  id: combatIcon
+  size: 9 9
+  anchors.right: parent.right
+  anchors.top: parent.top
+  margin-top: 3
+
+SkillPercentPanel < ProgressBar
+  id: percent
+  background-color: #00c000
+  height: 5
+  margin-top: 17
+  anchors.left: parent.left
+  anchors.right: parent.right
+  anchors.top: parent.top
+  phantom: false
+
+BoostButton < UIButton
+  size: 78 14
+  image-size: 78 14
+  image-source: /images/game/skills/xp_boost
+  image-clip: 0 0 78 14
+  anchors.verticalCenter: parent.verticalCenter
+  anchors.horizontalCenter: parent.horizontalCenter
+  !tooltip: tr('Increase your experience gain with a temporary XP Boost!')
+  tooltip-delayed: true
+  @onClick: modules.game_skills.onBoostClick()
+  $on:
+    image-source: /images/game/skills/xp_boost
+    image-clip: 0 0 78 14
+  $pressed:
+    image-source: /images/game/skills/xp_boost
+    image-clip: 0 14 78 14
+
+MiniWindow
+  id: skillWindow
+  &type: 'skills'
+  !text: tr('Skills')
+  height: 150
+  icon: /images/icons/icon-skills-widget
+  @onClose: modules.game_skills.onMiniWindowClose()
+
+  MiniWindowContents
+    padding-left: 5
+    padding-right: 5
+    padding-bottom: 1
+    layout: verticalBox
+
+    SkillButton
+      id: level
+      SkillNameLabel
+        !text: tr('Level')
+      SkillValueLabel
+      SkillPercentPanel
+        background-color: #c00000
+
+    SkillButton
+      margin-top: 1
+      id: experience
+      height: 15
+      SkillNameLabel
+        id: expLabel
+        !text: tr('XP')
+      SkillValueLabel
+
+    SkillButton
+      margin-top: -3
+      id: xpGainRate
+      height: 15
+      SkillNameLabel
+        id: gainLabel
+        !text: tr('XP Gain Rate')
+      SkillValueLabel
+
+    HorizontalSeparator
+      id: separator
+      margin: 5 0 5 0
+
+    SkillButton
+      id: birth
+      margin-top: 2
+      height: 15
+      visible: false
+      SkillNameLabel
+        id: birthBoostLabel
+        !text: tr('Birthday')
+      SkillValueLabel
+        id: birthBoostValue
+        margin-top: 0
+        margin-right: 15
+      CombatImage
+        id: boostIcon
+        size: 13 13
+        image-source: /images/icons/xp_boost
+        margin-top: 0
+        tooltip-delayed: true
+
+    SkillButton
+      id: storeBoost
+      margin-top: 2
+      height: 15
+      tooltip-delayed: true
+      SkillNameLabel
+        id: storeBoostLabel
+        !text: tr('Store Boost')
+      SkillValueLabel
+        id: storeBoostValue
+        margin-top: 0
+        margin-right: 15
+      CombatImage
+        id: boostIcon
+        size: 13 13
+        image-source: /images/icons/xp_boost
+        margin-top: 0
+        tooltip-delayed: true
+
+    // XP boost slots (Exp Potion / VIP / Exp Elixir). Each row is hidden until the
+    // matching boost is active; the label shows the active sub-type and the value the
+    // remaining time (managed by game_skills.onUpdateXpBoosts).
+    SkillButton
+      id: expPotionBoost
+      margin-top: 2
+      height: 15
+      visible: false
+      tooltip-delayed: true
+      SkillNameLabel
+        id: expPotionBoostLabel
+        !text: tr('Exp Potion')
+      SkillValueLabel
+        id: expPotionBoostValue
+        margin-top: 0
+        margin-right: 15
+        !text: tr('00:00')
+        color: #44ad25
+      CombatImage
+        id: boostIcon
+        size: 13 13
+        image-source: /images/icons/xp_boost
+        margin-top: 0
+        tooltip-delayed: true
+
+    SkillButton
+      id: vipBoost
+      margin-top: 2
+      height: 15
+      visible: false
+      tooltip-delayed: true
+      SkillNameLabel
+        id: vipBoostLabel
+        !text: tr('VIP')
+      SkillValueLabel
+        id: vipBoostValue
+        margin-top: 0
+        margin-right: 15
+        !text: tr('00:00:00')
+        color: #44ad25
+      CombatImage
+        id: boostIcon
+        size: 13 13
+        image-source: /images/icons/xp_boost
+        margin-top: 0
+        tooltip-delayed: true
+
+    SkillButton
+      id: elixirBoost
+      margin-top: 2
+      height: 15
+      visible: false
+      tooltip-delayed: true
+      SkillNameLabel
+        id: elixirBoostLabel
+        !text: tr('Exp Elixir')
+      SkillValueLabel
+        id: elixirBoostValue
+        margin-top: 0
+        margin-right: 15
+        !text: tr('00:00:00')
+        color: #44ad25
+      CombatImage
+        id: boostIcon
+        size: 13 13
+        image-source: /images/icons/xp_boost
+        margin-top: 0
+        tooltip-delayed: true
+
+    SkillButton
+      id: battlePass
+      margin-top: 2
+      height: 15
+      visible: false
+      SkillNameLabel
+        id: battlePassBoostLabel
+        !text: tr('Battle Pass')
+      SkillValueLabel
+        id: battlePassBoostValue
+        margin-top: 0
+        margin-right: 15
+      CombatImage
+        id: boostIcon
+        size: 13 13
+        image-source: /images/icons/xp_boost
+        margin-top: 0
+        tooltip-delayed: true  
+
+    HorizontalSeparator
+      id: separator
+      margin: 7 0 5 0
+
+    UIWidget
+      size: 78 14
+      margin-top: -13
+      BoostButton
+        id: boostButton
+
+    SkillButton
+      margin-top: 2
+      id: health
+      height: 15
+      SkillNameLabel
+        !text: tr('Hit Points')
+      SkillValueLabel
+
+    SkillButton
+      margin-top: -3
+      id: mana
+      height: 15
+      SkillNameLabel
+        !text: tr('Mana')
+      SkillValueLabel
+
+    SkillButton
+      margin-top: -3
+      id: soul
+      height: 15
+      SkillNameLabel
+        !text: tr('Soul Points')
+      SkillValueLabel
+
+    SkillButton
+      margin-top: -3
+      id: capacity
+      height: 15
+      SkillNameLabel
+        !text: tr('Capacity')
+      SkillValueLabel
+
+    SkillButton
+      margin-top: -3
+      id: speed
+      height: 15
+      SkillNameLabel
+        !text: tr('Speed')
+      SkillValueLabel
+
+    SkillButton
+      margin-top: -3
+      id: regenerationTime
+      SkillNameLabel
+        !text: tr('Food')
+      SkillValueLabel
+
+    SkillButton
+      margin-top: -9
+      id: stamina
+      SkillNameLabel
+        !text: tr('Stamina')
+      SkillValueLabel
+      SkillPercentPanel
+        margin-top: 15
+
+    SkillButton
+      margin-top: -1
+      id: offlineTraining
+      SkillNameLabel
+        !text: tr('Offline Training')
+      SkillValueLabel
+      SkillPercentPanel
+        margin-top: 15
+
+    // Separador do bloco de atributos extras. Segue a visibilidade do bloco:
+    // sem nenhum deles em tela, sobraria uma linha solta.
+    //
+    // Id proprio de proposito -- ha outros widgets chamados "separator" neste
+    // painel, e recursiveGetChildById devolveria o primeiro deles.
+    HorizontalSeparator
+      id: customSkillsSeparator
+      margin: 5 0 5 0
+      visible: false
+
+    // Os quatro atributos abaixo nao existem no cliente oficial e dependem de o
+    // servidor envia-los. Nascem ocultos e so aparecem quando chega valor --
+    // e o mesmo criterio que o cliente oficial usa para os grupos de atributos
+    // (cada grupo tem sua condicao de exibicao) e que reflect, onslaught e
+    // converted damage ja seguiam aqui.
+    //
+    // Sem isso eles apareciam com a barra vazia contra um servidor global, que
+    // nunca dispara o callback, gastando espaco que o painel oficial nao gasta.
+    SkillButton
+      id: reflectSkill
+      height: 15
+      tooltip-delayed: true
+      visible: false
+      SkillNameLabel
+        !text: tr('Reflect')
+      SkillValueLabel
+
+    SkillButton
+      id: mitigationSkill
+      margin-top: 3
+      height: 15
+      tooltip-delayed: true
+      visible: false
+      SkillNameLabel
+        !text: tr('Mitigation')
+      SkillValueLabel
+
+    SkillButton
+      id: magiclevel
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Magic')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_magic
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+        background-color: #00c000
+
+    SkillButton
+      id: skillId0
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Fist')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_0
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+
+    SkillButton
+      id: skillId1
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Club')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_1
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+
+    SkillButton
+      id: skillId2
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Sword')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_2
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+
+    SkillButton
+      id: skillId3
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Axe')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_3
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+
+    SkillButton
+      id: skillId4
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Distance')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_4
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+
+    SkillButton
+      id: skillId5
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Shielding')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_5
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+
+    SkillButton
+      id: skillId6
+      margin-top: 5
+      tooltip-delayed: true
+      SkillNameLabel
+        !text: tr('Fishing')
+      SkillValueLabel
+      SkillImage
+        id: skillIcon
+        image-source: /images/game/skills/skill_6
+        margin-left: 2
+      SkillPercentPanel
+        anchors.left: skillIcon.right
+        margin-left: 5
+
+    HorizontalSeparator
+      id: attackSeparator
+      margin: 8 0 6 0
+
+    Panel
+      id: attackPanel
+      height: 14
+      layout:
+        type: verticalBox
+        fit-children: true
+
+      // Attack Area //
+      SmallSkillButton
+        id: damageHealing
+        tooltip-delayed: true
+        !tooltip: tr('The main source of your character\'s power is this flat bonus,\nwhich is added to the majority of all damage and healing values you cause.')
+        SkillNameLabel
+          !text: tr('Damage/Healing')
+        SkillValueLabel
+          id: damageHealingLabel
+          !text: tr('0')
+          margin-top: 0
+          margin-right: 9
+      
+      SmallSkillButton
+        id: attackValue
+        margin-top: -1
+        tooltip-delayed: true
+        !tooltip: tr('This is your character\'s basic attack power whenever you enter a\nfight with a weapon or your fists. It does not apply to any spells\nyou cast. The attack value is calculated from the weapon\'s attack\nvalue, the corresponding weapon skill, combat tactics, the bonus\nreceived from the Revelation Perks and the player\'s level. The\nvalue represents the average damage you would inflict on a\ncreature which had no kind of defence or protection.')
+        SkillNameLabel
+          !text: tr('Attack Value')
+        SkillValueLabel
+          !text: 0
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_0
+      
+      SmallSkillButton
+        id: convertedDamage
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Converted ...')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_0
+
+      SmallSkillButton
+        id: lifeLeech
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Life Leech')
+        SkillValueLabel
+          margin-top: 0
+          margin-right: 9
+          !text: tr("+0%s", "%")
+
+      SmallSkillButton
+        id: manaLeech
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Mana Leech')
+        SkillValueLabel
+          margin-top: 0
+          margin-right: 9
+          !text: tr("+0%s", "%")
+
+      SmallSkillButton
+        id: skillIdHitSeparator
+        margin-top: -1
+        visible: false
+        tooltip-delayed: true
+        !tooltip: tr('Critical Hits deal more damage than normal attacks. They have a chance to be triggered\nduring combat, inflicting additional damage beyond the standard amount.')
+        SkillNameLabel
+          !text: tr('Critical Hit:')
+
+      SmallSkillButton
+        id: criticalChance
+        tooltip-delayed: true
+        margin-top: -1
+        visible: false
+        SkillNameLabel
+          !text: tr('   Chance')
+        SkillValueLabel
+          margin-top: 0
+          margin-right: 9
+          !text: tr("+0%s", "%")
+
+      SmallSkillButton
+        id: criticalDamage
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('   Extra Dam...')
+        SkillValueLabel
+          margin-top: 0
+          margin-right: 9
+          !text: tr("+0%s", "%")
+
+      SmallSkillButton
+        id: onslaught
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Onslaught')
+        SkillValueLabel
+          margin-top: 0
+          margin-right: 9
+          !text: tr("+0%s", "%")
+
+    HorizontalSeparator
+      id: defenceSeparator
+      margin: 5 0 6 0
+
+    Panel
+      id: defencePanel
+      height: 14
+      layout:
+        type: verticalBox
+        fit-children: true
+
+      // Defense Area //
+      SmallSkillButton
+        id: elementalDefense_0
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Physical')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_0
+          tooltip-delayed: true
+          tooltip: Physical
+    
+      SmallSkillButton
+        id: elementalDefense_1
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Fire')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_1
+          tooltip-delayed: true
+          tooltip: Fire
+
+      SmallSkillButton
+        id: elementalDefense_2
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Earth')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_2
+          tooltip-delayed: true
+          tooltip: Earth
+
+      SmallSkillButton
+        id: elementalDefense_3
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Energy')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_3
+          tooltip-delayed: true
+          tooltip: Energy
+
+      SmallSkillButton
+        id: elementalDefense_4
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Ice')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_4
+          tooltip-delayed: true
+          tooltip: Ice
+
+      SmallSkillButton
+        id: elementalDefense_5
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Holy')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_5
+          tooltip-delayed: true
+          tooltip: Holy
+
+      SmallSkillButton
+        id: elementalDefense_6
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Death')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_6
+          tooltip-delayed: true
+          tooltip: Death
+
+      SmallSkillButton
+        id: elementalDefense_7
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Healing')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_7
+          tooltip-delayed: true
+          tooltip: Healing
+
+      SmallSkillButton
+        id: elementalDefense_8
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Drowning')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_8
+          tooltip-delayed: true
+          tooltip: Drowning
+
+      SmallSkillButton
+        id: elementalDefense_9
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Life Drain')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_9
+          tooltip-delayed: true
+          tooltip: Life Drain
+
+      SmallSkillButton
+        id: elementalDefense_10
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Mana Drain')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_10
+          tooltip-delayed: true
+          tooltip: Mana Drain
+
+      SmallSkillButton
+        id: elementalDefense_11
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Agony')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-right: 17
+          margin-top: 0
+        CombatImage
+          id: combatIcon
+          image-source: /game_cyclopedia/images/icons/stats/element_11
+          tooltip-delayed: true
+          tooltip: Agony
+
+      SmallSkillButton
+        id: defenseValue
+        margin-top: -1
+        tooltip-delayed: true
+        !tooltip: tr('This is your protection against all physical attacks in close combat\nas well as all distance physical attacks. The higher the defence\nvalue, the less damage you will take from melee physical hits. The\ndefence value is calculated from your shield and/or weapon\ndefence and the corresponding skill. Careful! Your defence value\nprotects you only from hits of two creatures in a single round.')
+        SkillNameLabel
+          !text: tr('Defence Value')
+        SkillValueLabel
+          !text: tr("0")
+          margin-top: 0
+          margin-right: 9
+    
+      SmallSkillButton
+        id: armorValue
+        margin-top: -1
+        tooltip-delayed: true
+        !tooltip: tr('This shows how well your armor protects you from all physical\nattacks.')
+        SkillNameLabel
+          !text: tr('Armor Value')
+        SkillValueLabel
+          !text: tr("0")
+          margin-top: 0
+          margin-right: 9
+      
+      SmallSkillButton
+        id: mantraValue
+        margin-top: -1
+        tooltip-delayed: true
+        !tooltip: tr('This shows how well your mantra protects you from all elemental\nattacks.')
+        SkillNameLabel
+          !text: tr('Mantra Value')
+        SkillValueLabel
+          !text: tr("0")
+          margin-top: 0
+          margin-right: 9
+
+      SmallSkillButton
+        id: mitigationValue
+        margin-top: -1
+        tooltip-delayed: true
+        !tooltip: tr('Mitigation reduces most of the damage you take and varies based\non your shielding skill, equipped weapon, chosen combat tactics\nand any mitigation multipliers acquired in your Wheel of Destiny.')
+        SkillNameLabel
+          !text: tr('Mitigation')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-top: 0
+          margin-right: 9
+
+      SmallSkillButton
+        id: ruseValue
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Dodge')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-top: 0
+          margin-right: 9
+
+      SmallSkillButton
+        id: reflectionValue
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Damage Reflecti...')
+        SkillValueLabel
+          !text: 0
+          margin-top: 0
+          margin-right: 9
+
+    HorizontalSeparator
+      id: miscSeparator
+      margin: 5 0 6 0
+
+    Panel
+      id: miscPanel
+      height: 14
+      margin-bottom: 8
+      layout:
+        type: verticalBox
+        fit-children: true
+
+      // Misc Stats //
+      SmallSkillButton
+        id: momentumValue
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Momentum')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-top: 0
+          margin-right: 9
+
+      SmallSkillButton
+        id: transcendenceValue
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Transcend...')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-top: 0
+          margin-right: 9
+
+      SmallSkillButton
+        id: amplificationValue
+        margin-top: -1
+        tooltip-delayed: true
+        visible: false
+        SkillNameLabel
+          !text: tr('Amplification')
+        SkillValueLabel
+          !text: tr("+0%s", "%")
+          margin-top: 0
+          margin-right: 9
+
+  UIWidget
+    id: miniborder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    image-source: /images/ui/miniborder
+    size: 14 14
+    margin-left: 2
+    margin-bottom: 2

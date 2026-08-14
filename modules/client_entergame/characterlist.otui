@@ -1,0 +1,668 @@
+CharacterWidgetOn < UIWidget
+  height: 66
+  background-color: alpha
+  @onFocusChange: modules.client_entergame.onUpdateOnStates(self)
+  @onSetup: modules.client_entergame.onUpdateOnStates(self)
+
+  UIButton
+    id: pin
+    size: 12 12
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 264
+    margin-top: 1
+    image-source: /images/ui/pin-button
+    image-clip: 0 0 12 12
+    tooltip: Pin this character to have it always shown at the top of the list.
+    visible: false
+    @onClick: onPinCharacter(self)
+    $checked:
+      image-clip: 0 12 12 12
+      tooltip: Remove pin from this character.
+
+  UICreature
+    id: outfit
+    size: 64 64
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-left: -4
+    margin-top: 2
+    idle-animate: true
+
+  Label
+    id: name
+    anchors.top: parent.top
+    anchors.left: prev.right
+    font: $var-cip-font
+    color: $var-text-cip-color
+    background-color: alpha
+    margin-left: 8
+    margin-top: -1
+    text-align: left
+    text-auto-resize: true
+
+    $on:
+      color: $var-text-cip-color
+
+  UIWidget
+    id: main
+    size: 9 8
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 4
+    margin-top: 3
+    image-source: /images/game/entergame/maincharacter
+    visible: false
+
+  UIWidget
+    id: separator1
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 277
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+  Label
+    id: statusDailyReward
+    size: 11 19
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 1
+    margin-left: 3
+    image-source: /images/game/entergame/dailyreward_collected
+    image-clip: 0 0 11 19
+
+  Label
+    id: statusHidden
+    size: 11 19
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 1
+    margin-left: 6
+    image-source: /images/game/entergame/hidden
+    image-clip: 0 0 11 19
+    visible: false
+
+  UIWidget
+    id: separator2
+    height: 68
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 332
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+  // level
+  Label
+    id: level
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 2
+    margin-top: -1
+    font: $var-cip-font
+    color: $var-text-cip-color
+    background-color: alpha
+    text-align: left
+    width: 44
+
+    $on:
+      color: $var-text-cip-color
+
+  UIWidget
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 382
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+
+  // vocation
+  Label
+    id: vocation
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 2
+    margin-top: -1
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-align: left
+    background-color: alpha
+    width: 108
+
+    $on:
+      color: $var-text-cip-color
+
+  UIWidget
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 497
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+  UIWidget
+    id: worldName
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 2
+    margin-top: -1
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-auto-resize: true
+    background-color: alpha
+    text-align: left
+    &baseText: '%s\n(%s)'
+
+    $on:
+      color: $var-text-cip-color
+
+CharacterWidgetOff < UIWidget
+  height: 29
+  background-color: alpha
+  @onFocusChange: modules.client_entergame.onUpdateOnStates(self)
+  @onSetup: modules.client_entergame.onUpdateOnStates(self)
+
+  UIButton
+    id: pin
+    size: 12 12
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 264
+    margin-top: 1
+    image-source: /images/ui/pin-button
+    image-clip: 0 0 12 12
+    tooltip: Pin this character to have it always shown at the top of the list.
+    visible: false
+    @onClick: onPinCharacter(self)
+    $checked:
+      image-clip: 0 12 12 12
+      tooltip: Remove pin from this character.
+
+  Label
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    font: $var-cip-font
+    color: $var-text-cip-color
+    background-color: alpha
+    margin-left: 1
+    margin-top: -1
+    text-align: left
+    text-auto-resize: true
+    text-align: left
+
+    $on:
+      color: $var-text-cip-color
+
+  UIWidget
+    id: main
+    size: 9 8
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 4
+    margin-top: 3
+    image-source: /images/game/entergame/maincharacter
+    visible: false
+
+  UIWidget
+    id: separator1
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 277
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+  Label
+    id: statusDailyReward
+    size: 11 19
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 1
+    margin-left: 3
+    image-source: /images/game/entergame/dailyreward_collected
+    image-clip: 0 0 11 19
+
+  Label
+    id: statusHidden
+    size: 11 19
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-top: 1
+    margin-left: 6
+    image-source: /images/game/entergame/hidden
+    image-clip: 0 0 11 19
+    visible: false
+
+  UIWidget
+    id: separator2
+    height: 68
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 332
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+  // level
+  Label
+    id: level
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 2
+    margin-top: -1
+    font: $var-cip-font
+    color: $var-text-cip-color
+    background-color: alpha
+    text-align: left
+    width: 44
+
+    $on:
+      color: $var-text-cip-color
+
+  UIWidget
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 382
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+
+  // vocation
+  Label
+    id: vocation
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 2
+    margin-top: -1
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-align: left
+    background-color: alpha
+    width: 108
+
+    $on:
+      color: $var-text-cip-color
+
+  UIWidget
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-left: 497
+    margin-top: -1
+    margin-bottom: -1
+    image-source: /images/ui/separator_vertical66
+
+  Label
+    id: worldName
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 2
+    margin-top: -1
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-auto-resize: true
+    background-color: alpha
+    text-align: left
+    &baseText: '%s\n(%s)'
+
+    $on:
+      color: $var-text-cip-color
+
+StaticMainWindow
+  id: charactersWindow
+  !text: tr('Select Character')
+  font: $var-cip-font
+  visible: false
+  size: 745 429
+  $mobile:
+    size: 745 429
+  @onEnter: CharacterList.doLogin()
+  @onEscape: CharacterList.hide(true)
+  @onSetup: |
+    g_keyboard.bindKeyPress('Up', function() self:getChildById('characters'):focusPreviousChild(KeyboardFocusReason) end, self)
+    g_keyboard.bindKeyPress('Down', function() self:getChildById('characters'):focusNextChild(KeyboardFocusReason) end, self)
+
+  TextList
+    id: characters
+    height: 278
+    background-color: #565656
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-top: 10
+    padding: 1
+    focusable: false
+    vertical-scrollbar: characterListScrollBar
+    auto-focus: first
+
+  UIWidget
+    id: characterTable
+    width: 713
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: -6
+    height: 17
+    border-width: 1
+    border-color-top: #1B1B1A
+    border-color-left: #1B1B1A
+    border-color-right: #6b6b6b
+    border-color-bottom: #6b6b6b
+    background-color: #363636
+    UIButton
+      id: characterSort
+      size: 277 14
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr('Character')
+      text-offset: -73 0
+      font: $var-cip-font
+      color: $var-text-cip-color
+      image-source: /images/game/entergame/sort-button
+      image-clip: 0 0 7 4
+      image-size: 7 4
+      image-offset: 269 5
+      @onClick: setupSortButton(self, "character", 1)
+      $pressed:
+        color: #9d9d9d
+        image-clip: 0 4 7 4
+      $checked:
+        image-clip: 0 4 7 4
+      $!on:
+        image-source:
+      $on:
+        image-source: /images/game/entergame/sort-button
+
+    UIWidget
+      height: 14
+      anchors.left: prev.right
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      margin-left: 2
+      margin-top: 1
+      image-source: /images/ui/separator_vertical
+    UIButton
+      id: statusSort
+      size: 53 14
+      anchors.top: parent.top
+      anchors.left: prev.right
+      !text: tr('Status')
+      text-offset: -6 0
+      font: $var-cip-font
+      color: $var-text-cip-color
+      image-source: /images/game/entergame/sort-button
+      image-clip: 0 0 7 4
+      image-size: 7 4
+      image-offset: 46 5
+      @onClick: setupSortButton(self, "status", 2)
+      $pressed:
+        color: #9d9d9d
+        image-clip: 0 4 7 4
+      $checked:
+        image-clip: 0 4 7 4
+      $!on:
+        image-source:
+      $on:
+        image-source: /images/game/entergame/sort-button
+    UIWidget
+      height: 14
+      anchors.left: prev.right
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      margin-left: 2
+      margin-top: 1
+      image-source: /images/ui/separator_vertical
+    UIButton
+      id: levelSort
+      size: 48 14
+      anchors.top: parent.top
+      anchors.left: prev.right
+      !text: tr('Level')
+      text-offset: -8 0
+      font: $var-cip-font
+      color: $var-text-cip-color
+      image-source: /images/game/entergame/sort-button
+      image-clip: 0 0 7 4
+      image-size: 7 4
+      image-offset: 40 5
+      @onClick: setupSortButton(self, "level", 3)
+      $pressed:
+        image-clip: 0 4 7 4
+      $checked:
+        image-clip: 0 4 7 4
+      $!on:
+        image-source:
+      $on:
+        color: #9d9d9d
+        image-source: /images/game/entergame/sort-button
+    UIWidget
+      height: 14
+      anchors.left: prev.right
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      margin-left: 2
+      margin-top: 1
+      image-source: /images/ui/separator_vertical
+    UIButton
+      id: vocationSort
+      size: 113 14
+      anchors.top: parent.top
+      anchors.left: prev.right
+      !text: tr('Vocation')
+      text-offset: 2 0
+      text-align: left
+      font: $var-cip-font
+      color: $var-text-cip-color
+      image-source: /images/game/entergame/sort-button
+      image-clip: 0 0 7 4
+      image-size: 7 4
+      image-offset: 105 5
+      @onClick: setupSortButton(self, "vocation", 4)
+      $pressed:
+        color: #9d9d9d
+        image-clip: 0 4 7 4
+      $checked:
+        image-clip: 0 4 7 4
+      $!on:
+        image-source:
+      $on:
+        image-source: /images/game/entergame/sort-button
+    UIWidget
+      height: 14
+      anchors.left: prev.right
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      margin-left: 2
+      margin-top: 1
+      image-source: /images/ui/separator_vertical
+    UIButton
+      id: worldSort
+      size: 211 14
+      anchors.top: parent.top
+      anchors.left: prev.right
+      !text: tr('World')
+      text-offset: 2 0
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-align: left
+      image-source: /images/game/entergame/sort-button
+      image-clip: 0 0 7 4
+      image-size: 7 4
+      image-offset: 192 5
+      @onClick: setupSortButton(self, "world", 5)
+      $pressed:
+        color: #9d9d9d
+        image-clip: 0 4 7 4
+      $checked:
+        image-clip: 0 4 7 4
+      $!on:
+        image-source:
+      $on:
+        image-source: /images/game/entergame/sort-button
+
+  UIWidget
+    size: 701 2
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 9
+    image-source: /images/ui/separator_horizontal
+
+  VerticalScrollBar
+    id: characterListScrollBar
+    height: 290
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-right: 1
+    margin-top: -5
+    step: 14
+    pixels-scroll: true
+
+  Label
+    id: accountStatusCaption
+    !text: tr('Account Status') .. ':'
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-auto-resize: true
+    anchors.left: parent.left
+    anchors.top: characterListScrollBar.bottom
+    margin-top: 13
+
+  Label
+    id: accountStatusIcon
+    size: 22 20
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    image-source: /images/game/entergame/premium
+    image-clip: 0 0 22 20
+    margin-top: 7
+    margin-left: 1
+
+  Label
+    id: accountStatusLabel
+    !text: tr('Free Account')
+    anchors.left: prev.right
+    anchors.top: accountStatusCaption.bottom
+    text-auto-resize: true
+    font: $var-cip-font
+    color: $var-text-cip-color
+    margin-top: 9
+    margin-left: 6
+
+    $on:
+      color: #FF0000
+
+  HorizontalSeparator
+    id: separator
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: next.top
+    margin-bottom: 15
+
+  Button
+    id: buttonOk
+    !text: tr('Ok')
+    size: 43 20
+    anchors.right: next.left
+    anchors.bottom: parent.bottom
+    margin-right: 10
+    margin-bottom: 6
+    @onClick: CharacterList.doLogin()
+
+  Button
+    id: buttonCancel
+    !text: tr('Cancel')
+    size: 43 20
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-bottom: 6
+    @onClick: CharacterList.hide(true)
+
+  FlatLabel
+    id: buttonHidden
+    anchors.top: separator.bottom
+    anchors.left: parent.left
+    margin-top: 12
+    size: 185 22
+    CheckBox
+      id: checkBoxHidden
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      checked: true
+      enabled: false
+      @onCheckChange:
+    Label
+      !text: tr('Show Hidden Characters')
+      text-auto-resize: true
+      font: $var-cip-font
+      color: $var-text-cip-color
+      anchors.left: checkBoxHidden.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+
+  FlatLabel
+    id: buttonOutfit
+    anchors.top: separator.bottom
+    anchors.left: prev.right
+    margin-top: 12
+    margin-left: 10
+    size: 107 22
+    CheckBox
+      id: checkBoxOutfit
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      @onCheckChange: onShowOutfits(self, self:isChecked())
+    UIWidget
+      !text: tr('Show Outfit')
+      text-auto-resize: true
+      font: $var-cip-font
+      color: $var-text-cip-color
+      anchors.left: checkBoxOutfit.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      @onClick: |
+        local checkBox = self:getParent():getChildById('checkBoxOutfit')
+        checkBox:setChecked(not checkBox:isChecked())
+
+  FlatLabel
+    id: recordPanel
+    anchors.top: separator.bottom
+    anchors.left: prev.right
+    margin-top: 12
+    margin-left: 10
+    size: 127 22
+    // Session recording isn't implemented on this client yet; hidden for now.
+    visible: false
+    CheckBox
+      id: recordSession
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      @onCheckChange: onRecordSession(self, self:isChecked())
+      $checked:
+        !tooltip: tr('Will record your gameplay')
+      $!checked:
+        !tooltip: tr('Enable to record your gameplay')
+    UIWidget
+      !text: tr('Record Session')
+      text-auto-resize: true
+      font: $var-cip-font
+      color: $var-text-cip-color
+      anchors.left: recordSession.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      @onClick: |
+        local checkBox = self:getParent():getChildById('recordSession')
+        checkBox:setChecked(not checkBox:isChecked())

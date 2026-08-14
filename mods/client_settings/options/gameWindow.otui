@@ -1,0 +1,584 @@
+GameWindow < Panel
+  id: game
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  FlatPanel
+    size: 505 22
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: textualEffect
+      size: 12 12
+      !text: tr('Show Textual Effects')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever creatures or character\'s lose hit points or gain \nexperience small numbers appear over their heads in the game\nwindow. If you prefer not to see this effect, you can turn it off by\ndisabling this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showMessages
+      size: 12 12
+      !text: tr('Show Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('By deselecting this option it is possible to deactivate all kind of \nmessages in the game window. You can still see these messages in\nthe console unless you have turned them off.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showPrivateMessagesOnScreen
+      size: 12 12
+      !text: tr('Show Private Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('showMessages')
+        self:setEnabled(value)
+        self:setColor(value and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('By default, private messages will be displayed in blue font in the \ngame window and in the console. If this option is disabled, you will\nsee no private messages in the game window. However, they will \nbe displayed in the console normally.')
+
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: potionSoundEffect
+      size: 12 12
+      !text: tr('Show Potion Sound Effects')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever you use a potion, a fitting sound effect appears next to the character in the game window.\nIf this option is disabled, such sound effects will no longer be displayed.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showSpells
+      size: 12 12
+      !text: tr('Show Spells')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever you cast a spell, you will see the magic words in your \ngame window. You can deactivate the display of your spells in the \ngame window by removing the tick in this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: spellsOthers
+      size: 12 12
+      !text: tr('Show Spells of Others')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever another character casts a spell, you will see the magic \nwords in your game window. You can deactivate the display of \nother character\'s spells in the game window by removing the tick \nin this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: emoteSpells
+      size: 12 12
+      !text: tr('Show Emote Spells')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Show other players and your own spells as orange emotes above the\ncharacter instead of yellow spoken words. Purely visual - the Show Spells\noptions above still control whether spells appear at all.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showHotkeyMessagesInConsole
+      size: 12 12
+      !text: tr('Show Hotkey Usage Notifications')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever you use an item via an action button or a hotkey, you\nget a message in the game window that informs you about the\nremaining amount of this item.\nYou can deactivate the display of\nthese messages in the game window by removing the tick in this\noption.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showLootMessagesInConsole
+      size: 12 12
+      !text: tr('Show Loot Messages')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever you kill a creature or loot its items, you get a message\nin the game window that informs you about the loot. You can deactivate \nthe display of these messages in the game window by \nremoving the tick in this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: lootHighlight
+      size: 12 12
+      !text: tr('Show Loot Highlighting')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('When this option is ticked, dead creatures that contain loot will be\nvisually highlighted in the game window.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showBoostedMessagesInConsole
+      size: 12 12
+      !text: tr('Show Boosted Creature')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Whenever you log in the game, the current boosted creature will be displayed in your game window.\nIf you are not interested in this information, remove the tick in this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: trainingProgress
+      size: 12 12
+      !text: tr('Show Offline Training Progress')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you activated offline training for your character, the training \nprogress will be shown in the game window every time you log in\nthe game. You can deactivate the display of this message by \nremoving the tick in this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: storeNotification
+      size: 12 12
+      !text: tr('Show Store Notifications in Combat')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local option = modules.client_settings.getOption('showMessages')
+        self:setEnabled(option)
+        self:setColor(option and '$var-text-cip-color' or '$var-cip-inactive-color')
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If your character is involved in some fight while a delayed Store \npurchase is completed, the purchase confirmation will be displayed\nin the game window. You can deactivate the display of this \nmessage by removing the tick in this option.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: combatFrames
+      size: 12 12
+      !text: tr('Show Combat Frames')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Select here whether you like to see frames in fights against\ncreatures.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: pvpFrames
+      size: 12 12
+      !text: tr('Show PvP Frames')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Frames of different colours are indicators for various PvP \nsituations. Deselect this option if you do not want to see these PvP \nframes around character\'s and creatures.')
+
+  Label
+    size: 125 12
+    !text: tr('Mark Target Visually:')
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 10
+    margin-left: 4
+    color: $var-text-cip-color
+    text-auto-resize: true
+  ComboBox
+    id: markTargetVisually
+    size: 150 20
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 5
+    margin-top: -3
+    color: $var-text-cip-color
+    @onSetup: |
+      self:addOption("Frame & Highlight")
+      self:addOption("Frame Only")
+      self:addOption("Highlight Only")
+      self:addOption("None")
+      self:setCurrentOption("Frame & Highlight")
+    @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+
+  UIWidget
+    size: 12 12
+    anchors.top: prev.top
+    anchors.right: parent.right
+    margin-right: 8
+    margin-top: 1
+    image-source: /images/skin/show-gui-help-grey
+    !tooltip: tr('Here you can select how you want your target to be visually \nmarked. Your target can either be highlighted in colour or have a\nframe around it, or even both. You choose!')
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings.resetGameWindow()

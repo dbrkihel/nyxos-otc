@@ -1,0 +1,21 @@
+title: nyxos-otc
+description: A Tibia 15.25 client built on OTClient
+remote_theme: just-the-docs/just-the-docs
+
+# Pages is served from /docs on the default branch.
+plugins:
+  - jekyll-remote-theme
+
+aux_links:
+  GitHub: https://github.com/dbrkihel/nyxos-otc
+
+# These live alongside the site but are notes, not pages.
+exclude:
+  - exampleHTML_flex/
+  - todo-client.md
+  - OTIMIZACOES_FPS.md
+  - SKILLS_COMBAT_STATS.md
+
+color_scheme: dark
+search_enabled: true
+heading_anchors: true

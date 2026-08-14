@@ -1,0 +1,9 @@
+Module
+  name: client_textedit
+  description: Shows window which allows to edit text
+  author: NyxosClient
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  scripts: [ textedit ]
+  @onLoad: init()
+  @onUnload: terminate()

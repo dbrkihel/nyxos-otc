@@ -1,0 +1,8 @@
+Module
+  name: game_memorial
+  description: Memorial Display
+  author: ZLukSrT#8740 && Christianlb
+  sandboxed: false
+  scripts: [ memorial ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,0 +1,215 @@
+MainWindow
+  id: storeWindow
+  !text: tr('Store')
+  size: 780 630
+  margin-top: -50
+  margin-left: -30
+  @onEscape: modules.game_store.closeStore()
+  @onEnter: modules.game_store.onEnterSearch()
+
+  Panel
+    id: categories
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 180 545
+    image-source: /images/ui/2pixel-up-frame-borderimage-dark
+    image-border: 4
+    image-border-top: 17
+    margin-top: -6
+  TextEdit
+    id: searchText
+    size: 166 22
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-left: 7
+    margin-bottom: 55
+    font: $var-cip-font
+    color: $var-text-cip-color
+    padding-left: 4
+    padding-top: 3
+    !placeholder: tr('Type to search')
+    box-text-padding: 27
+    @onTextChange: modules.game_store.onSearchEdit(self)
+    focusable: true
+    Button
+      id: searchIcon
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      size: 20 20
+      margin-top: -2
+      margin-right: 1
+      image-source: /images/store/search-up
+      image-clip: 0 0 20 20
+      enabled: false
+      $hover !disabled:
+        image-clip: 0 0 20 20
+      $pressed:
+        image-clip: 0 20 20 20
+      $disabled:
+        image-clip: 0 40 20 20
+      @onClick: modules.game_store.onEnterSearch(self:getParent())
+  Panel
+    id: contentPanel
+    size: 563 545
+    anchors.top: parent.top
+    anchors.right: parent.right
+  HorizontalSeparator
+    id: separator
+    anchors.top: categories.bottom
+    margin-top: 7
+    anchors.left: parent.left
+    anchors.right: parent.right
+  Panel
+    id: coinsStatus
+    size: 260 20
+    anchors.top: separator.bottom
+    anchors.left: parent.left
+    margin-top: 13
+    image-source: /images/store/coinsPanel
+    Panel
+      image-source: /images/store/icon-tibiacoin
+      anchors.right: tibiacointransferable.left
+      anchors.top: parent.top
+      margin-top: 3
+      margin-right: 5
+    Label
+      id: tibiacoin
+      !text: tr('0')
+      anchors.top: parent.top
+      anchors.right: prev.left
+      font: $var-cip-font
+      color: $var-text-cip-color
+      margin-right: 5
+      margin-top: 1
+      text-auto-resize: true
+      opacity: 0.8
+    Label
+      id: tibiacointransferable
+      !text: tr('(Including: 0')
+      font: $var-cip-font
+      color: $var-text-cip-color
+      anchors.top: parent.top
+      anchors.right: panelImagemItem.left
+      margin-right: 3
+      margin-top: 1
+      text-auto-resize: true
+      opacity: 0.8
+    Panel
+      id: panelImagemItem
+      image-source: /images/store/icon-tibiacointransferable
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-top: 3
+      margin-right: 7
+    Label
+      !text: tr(")")
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-right: 3
+      margin-top: 1
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-auto-resize: true
+      opacity: 0.8
+
+  UIButton
+    id: getCoins
+    size: 64 20
+    anchors.top: separator.bottom
+    anchors.left: coinsStatus.right
+    image-source: /images/store/get
+    image-clip: 0 0 64 20
+    margin-top: 13
+    margin-left: 5
+    !tooltip: tr('Get Nyxos Coins')
+    $hover:
+      image-clip: 0 0 64 20
+    $pressed:
+      image-clip: 0 20 64 20
+    @onClick: choseBuyCoins(self)
+
+  Button
+    id: transferTibiaCoins
+    size: 64 20
+    anchors.top: separator.bottom
+    anchors.left: getCoins.right
+    margin-top: 13
+    margin-left: 5
+    image-source: /images/store/transfer-coin
+    image-clip: 0 0 64 20
+    !tooltip: tr('Gift Nyxos Coins to another character.')
+    $hover !pressed:
+      image-clip: 0 0 64 20
+    $pressed:
+      image-clip: 0 20 64 20
+    @onClick: modules.game_store.onGiftWindow()
+
+  // Character auction (Bazaar) isn't implemented via the client yet, so hide the button.
+  // It keeps its rect, so tournamentStatus (anchored to auctionCharacter.right) is fine.
+  Button
+    id: auctionCharacter
+    visible: false
+    anchors.top: separator.bottom
+    anchors.left: transferTibiaCoins.right
+    margin-top: 13
+    margin-left: 5
+    image-source: /images/store/baazar
+    image-clip: 0 0 64 20
+    size: 64 20
+    !tooltip: tr('Set up an auction to sell your current character')
+    $hover:
+      image-clip: 0 0 64 20
+    $pressed:
+      image-source: /images/store/baazar-down
+      image-clip: 0 0 64 20
+    @onClick: function() modules.game_store.closeStore() modules.game_store.openBaazarWindow() end
+
+  Panel
+    id: tournamentStatus
+    size: 100 20
+    anchors.top: separator.bottom
+    anchors.left: auctionCharacter.right
+    margin-top: 13
+    margin-left: 5
+    border-width: 1
+    image-source: /images/store/baazar-down
+    visible: false
+    Panel
+      id: coinAmountPanel
+      size: 100 20
+      anchors.top: parent.top
+      anchors.left: parent.left
+      Panel
+        id: panelImagemItem
+        image-source: /images/store/icon-currency-tournamentcoin
+        anchors.right: parent.right
+        anchors.top: parent.top
+        margin-top: 5
+        margin-right: 2
+      Label
+        id: tournamentcoin
+        !text: tr('0')
+        anchors.top: parent.top
+        anchors.right: panelImagemItem.left
+        margin-right: 5
+        margin-top: 3
+        text-auto-resize: true
+  Button
+    id: history
+    anchors.top: separator.bottom
+    anchors.right: close.left
+    margin-top: 13
+    margin-right: 5
+    size: 43 20
+    !text: tr('History')
+    @onClick: modules.game_store.requestHistory()
+
+  Button
+    id: close
+    anchors.top: separator.bottom
+    anchors.right: parent.right
+    margin-top: 13
+    margin-left: 5
+    size: 43 20
+    !text: tr('Close')
+    @onClick: modules.game_store.closeStore()

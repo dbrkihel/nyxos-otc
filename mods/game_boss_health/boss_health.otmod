@@ -1,0 +1,7 @@
+Module
+  name: game_boss_health
+  author: Christianlb
+  sandboxed: true
+  scripts: [ boss_health ]
+  @onLoad: init()
+  @onUnload: terminate()

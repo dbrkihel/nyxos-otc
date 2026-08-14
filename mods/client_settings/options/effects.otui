@@ -1,0 +1,383 @@
+EffectsWindow < Panel
+  id: effects
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  FlatPanel
+    size: 505 80
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: enableLights
+      size: 12 12
+      !text: tr('Show Light Effects')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    Label
+      id: ambientLabel
+      !text: tr('Ambient Light: 25 %%')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-cip-inactive-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      @onSetup: |
+        local value = modules.client_settings.getOption('enableLights')
+        self:setColor(value and '$var-cip-inactive-color' or '$var-text-cip-color')
+        self:setText(tr('Ambient Light: %d %%', modules.client_settings.getOption('ambientLight')))
+
+    HorizontalScrollBar
+      id: ambientLight
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 14
+      margin-right: 20
+      margin-top: 1
+      pixels-scroll: true
+      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+      value: 25
+      minimum: 0
+      maximum: 100
+      default-scroll: true
+      $!on:
+        width: 0
+
+    Label
+      id: levelLabel
+      !text: tr('Level Separator: 25 %%')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-cip-inactive-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 6
+      margin-left: 20
+
+    HorizontalScrollBar
+      id: levelScrollBar
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 14
+      margin-right: 20
+      margin-top: 1
+      pixels-scroll: true
+      enabled: false
+      default-scroll: true
+
+      $!on:
+        width: 0
+
+    Label
+      id: cloudsLabel
+      !text: tr('Clouds & Indoor Effect: 50 %%')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-cip-inactive-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+
+    HorizontalScrollBar
+      id: cloudsScrollBar
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 14
+      margin-right: 20
+      margin-top: 1
+      pixels-scroll: true
+      enabled: false
+      default-scroll: true
+      $!on:
+        width: 0
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Nyxos to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
+
+  FlatPanel
+    size: 505 161
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: showOwnEffects
+      size: 12 12
+      !text: tr('Only Show Own Effects')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: ignoreSpecialEffects
+      size: 12 12
+      !text: tr('Ignore opacity on Special Effects')
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-auto-resize: true
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: stackEffects
+      size: 12 12
+      !text: tr('Stack Effects')
+      font: $var-cip-font
+      color: $var-text-cip-color
+      text-auto-resize: true
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    SettingsCheckBox
+      id: maxEffects
+      size: 12 12
+      !text: tr('Unlimit Effects')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+
+    Label
+      id: effectLimitLabel
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      @onSetup: |
+        local value = g_map.getLimitEffects()
+        self:setText(tr('Effects Limits: %d', value))
+
+    HorizontalScrollBar
+      id: limitEffects
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 14
+      margin-right: 20
+      margin-top: 1
+      pixels-scroll: true
+      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+      minimum: 10
+      maximum: 1000
+      default-scroll: true
+      $!on:
+        width: 0
+
+    Label
+      id: opacityEffectLimitLabel
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      @onSetup: |
+        self:setText(tr('Opacity Effects: 100%%'))
+
+    HorizontalScrollBar
+      id: opacityEffects
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 5
+      margin-right: 20
+      margin-top: 1
+      pixels-scroll: true
+      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+      minimum: 0
+      maximum: 100
+      default-scroll: true
+      $!on:
+        width: 0
+
+    Label
+      id: opacityMissileLimitLabel
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      @onSetup: |
+        self:setText(tr('Opacity Missiles: 100%%'))
+
+    HorizontalScrollBar
+      id: opacityMissile
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 5
+      margin-right: 20
+      margin-top: 1
+      pixels-scroll: true
+      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+      minimum: 0
+      maximum: 100
+      default-scroll: true
+      $!on:
+        width: 0
+
+    Label
+      id: opacityAnimatedTextLabel
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.left: parent.left
+      anchors.top: prev.bottom
+      margin-top: 5
+      margin-left: 20
+      @onSetup: |
+        self:setText(tr('Opacity Damage Text: 100%%'))
+
+    HorizontalScrollBar
+      id: opacityAnimatedText
+      width: 175
+      anchors.top: prev.top
+      anchors.right: parent.right
+      step: 5
+      margin-right: 20
+      margin-top: 1
+      pixels-scroll: true
+      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+      minimum: 0
+      maximum: 100
+      default-scroll: true
+      $!on:
+        width: 0
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Enable this option to display only the effects originating from your own character.\nIdeal for focusing on your gameplay without the distraction of external visual effects. ')
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.bottom
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('When this option is enabled, opacity settings will be ignored for special effects, displaying them at 100%% opacity.\n - The following effects will be affected:\n   - Critical\n   - Fatal\n   - Ruse\n   - Momentum\n   - Transcendence.')
+    
+    UIWidget
+      size: 12 12
+      anchors.top: prev.bottom
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you tick this option your equal animated texts will stack with each other and will be moved to right.')
+
+    UIWidget
+      size: 12 12
+      anchors.top: prev.bottom
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Activate this to experience all in-game effects with no limitations.\nOffering a complete and immersive gaming experience')
+
+  FlatPanel
+    size: 505 26
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: enableShaders
+      size: 12 12
+      !text: tr('Show Shader Effects')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 7
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      enabled: true
+      $disabled:
+        color: $var-cip-inactive-color
+      $!checked:
+        color: $var-cip-inactive-color
+    UIWidget
+      size: 12 12
+      anchors.top: prev.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 1
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Activate this to experience all in-game effects with no limitations.\nOffering a complete and immersive gaming experience')
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4
+    @onClick: modules.client_settings.resetEffects()

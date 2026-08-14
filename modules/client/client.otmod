@@ -1,0 +1,27 @@
+Module
+  name: client
+  description: Initialize the client and setups its main window
+  author: edubart
+  website: https://github.com/Mateuzkl/NyxosClient
+  reloadable: false
+  sandboxed: true
+  scripts: [ client ]
+  @onLoad: init()
+  @onUnload: terminate()
+
+  load-later:
+    - client_styles
+    - client_init
+    - client_locales
+    - client_topmenu
+    - client_background
+    - client_textedit
+    - client_options
+    - client_settings
+    - client_terminal
+    - client_autoreloadmodule
+    - client_feedback
+    - game_schedule
+    - client_ui_debug
+    - client_stats
+    - client_videoplayer

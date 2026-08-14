@@ -1,0 +1,210 @@
+SkillPanel < Panel
+  width: 14
+  margin-left: 4
+  UIWidget
+    id: shop
+    anchors.top: parent.top
+    image-source: /images/game/topbar/boost-vertical
+    size: 14 76
+    margin-top: 4
+    @onClick: modules.game_skills.onBoostClick()
+    image-clip: 0 0 14 76
+    $pressed:
+      image-clip: 14 0 14 76
+
+  VerticalBar
+    id: progress
+    anchors.top: prev.bottom
+    anchors.bottom: icon.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 4
+    margin-bottom: 8
+    background-color: #c00000
+    width: 5
+    border: 1 black
+
+  VerticalSeparator
+    id: left
+    anchors.top: progress.top
+    image-source: /images/game/topbar/marker_left
+    size: 11 7
+
+  VerticalSeparator
+    id: middle
+    anchors.top: progress.top
+    anchors.verticalCenter: progress.verticalCenter
+    image-source: /images/game/topbar/marker_left
+    size: 11 7
+
+  VerticalSeparator
+    id: right
+    anchors.bottom: progress.bottom
+    image-source: /images/game/topbar/marker_left
+    size: 11 7
+
+  UIWidget
+    id: icon
+    anchors.bottom: parent.bottom
+    image-source: /images/game/topbar/icons
+    size: 9 9
+    image-clip: 0 0 9 7
+    margin-bottom: 4
+
+Panel
+  id: topbar
+  focusable: false
+  image-source: /images/game/topbar/left-bg
+  layout:
+    type: horizontalBox
+    fit-children: true
+  Panel
+    id: topbarBackground
+    width: 25
+    Panel
+      id: healthContainer
+      width: 14
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.bottom: harmony.top
+      margin-left: 11
+      margin-top: 4
+      margin-bottom: 5
+      image-source: /images/game/topbar/compact/large-container-vertical
+      @onGeometryChange: |
+        local healthLabel = self.healthBar.statusHealth
+        healthLabel:setVisible(self:getHeight() > 110)
+      InvVerticalBar
+        id: healthBar
+        anchors.fill: parent
+        margin: 1 1 1 1
+        background-color: alpha
+        Label
+          id: statusHealth
+          anchors.horizontalCenter: parent.horizontalCenter
+          anchors.verticalCenter: parent.verticalCenter
+          text-auto-resize: true
+          margin-bottom: 1
+          !text: tr('0 / 0')
+          @onSetup: |
+            self:rotate(270)
+    
+    Panel
+      id: stats
+      size: 14 103
+      margin-left: 11
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      image-source: /images/game/topbar/compact/small-container-vertical
+      UIWidget
+        id: box
+        anchors.fill: parent
+        margin: 2 2 2 2
+        layout:
+          type: verticalBox
+          cell-size: 7
+          cell-spacing: 2
+
+    Panel
+      id: harmony
+      size: 13 96
+      anchors.bottom: prev.top
+      anchors.left: prev.left
+      margin-bottom: 6
+      layout:
+        type: verticalBox
+        cell-size: 13 13
+      UIWidget
+        id: serenity
+        image-source: /images/game/topbar/icon-serene-off
+        size: 13 13
+        margin-bottom: 4
+      HorizontalSeparator
+        id: separatorSerene
+        width: 13
+        margin-bottom: 4
+      UIWidget
+        id: harmony4
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-bottom: 2
+      UIWidget
+        id: harmony3
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-bottom: 2
+      UIWidget
+        id: harmony2
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-bottom: 2
+      UIWidget
+        id: harmony1
+        image-source: /images/game/topbar/icon-combopoint-empty
+        margin-bottom: 2
+      UIWidget
+        id: harmony0
+        image-source: /images/game/topbar/icon-combopoint-empty
+
+    Panel
+      id: manaContainer
+      width: 14
+      anchors.top: stats.bottom
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-left: 11
+      margin-top: 5
+      margin-bottom: 4
+      image-source: /images/game/topbar/compact/large-container-vertical
+      @onGeometryChange: |
+        local manaLabel = self.statusMana
+        manaLabel:setVisible(self:getHeight() > 110)
+
+      VerticalBar
+        id: manaBar
+        anchors.fill: parent
+        margin: 1 1 1 1
+        background-color: alpha
+
+      VerticalBar
+        id: manaBarSecond
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        background-color: alpha
+        margin: 1 1 1 1
+        width: 6
+        visible: false
+
+      VerticalBar
+        id: manaShield
+        width: 6
+        anchors.top: parent.top
+        anchors.left: prev.right
+        anchors.bottom: parent.bottom
+        margin: 1 1 1 1
+        background-color: alpha
+        visible: false
+
+      Label
+        id: statusMana
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        text-auto-resize: true
+        margin-bottom: 1
+        !text: tr('0 / 0')
+        @onSetup: |
+          self:rotate(270)
+      Label
+        id: statusManaShield
+        anchors.top: prev.top
+        anchors.left: prev.right
+        margin-left: 5
+        text-auto-resize: true
+        !text: tr('(0 / 0)')
+        @onSetup: |
+          self:rotate(270)
+
+  Panel
+    id: skills
+    width: 14
+    margin-right: 5
+    layout:
+      type: horizontalBox
+      fit-children: true

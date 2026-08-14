@@ -1,0 +1,43 @@
+Cursors
+  native:
+    image: cip-default
+    hot-spot: 0 0
+  text:
+    image: textcursor
+    hot-spot: 4 9
+  target:
+    image: cip-targetcursor
+    hot-spot: 9 9
+  horizontal:
+    image: cip-horizontalcursor
+    hot-spot: 9 4
+  vertical:
+    image: cip-verticalcursor
+    hot-spot: 4 9
+  diagonal:
+    image: cursor-resize-diagonal
+    hot-spot: 15 15
+  pointer:
+    image: cip-pointing
+    hot-spot: 0 0
+  attacker:
+    image: cursor-attack
+    hot-spot: 0 0
+  look:
+    image: cursor-look
+    hot-spot: 0 0
+  open:
+    image: cursor-open
+    hot-spot: 0 0
+  quickloot:
+    image: cursor-quick-loot
+    hot-spot: 0 0
+  talk:
+    image: cursor-talk
+    hot-spot: 0 0
+  walk:
+    image: cursor-walk
+    hot-spot: 0 0
+  use:
+    image: cursor-use
+    hot-spot: 0 0

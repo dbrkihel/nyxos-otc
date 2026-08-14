@@ -1,0 +1,9 @@
+Module
+  name: game_battle
+  description: Manage battle window (new)
+  author: Mateuzkl / Equipe Skyyzyy
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  scripts: [ battle, BattleClass ]
+  @onLoad: init()
+  @onUnload: terminate()

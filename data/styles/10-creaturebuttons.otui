@@ -1,0 +1,116 @@
+CreatureButton < UICreatureButton
+  height: 22
+  $first:
+    margin-top: 1
+
+  $!first:
+    margin-top: 0
+
+  UICreature
+    id: creature
+    size: 17 18
+    margin-top: 2
+    margin-left: 4
+    anchors.left: parent.left
+    anchors.top: parent.top
+    phantom: true
+    old-scaling: true
+
+  UIWidget
+    id: spacer
+    width: 3
+    anchors.left: creature.right
+    anchors.top: creature.top
+    phantom: true
+
+  UIWidget
+    id: skull
+    width: 11
+    height: 11
+    anchors.right: lifeBar.right
+    anchors.top: label.top
+    margin-top: 2
+    phantom: true
+
+  UIWidget
+    id: shield
+    width: 11
+    height: 11
+    anchors.right: prev.left
+    anchors.top: label.top
+    margin-right: 4
+    margin-top: 2
+    phantom: true
+
+  UIWidget
+    id: emblem
+    width: 11
+    height: 11
+    anchors.right: prev.left
+    anchors.top: label.top
+    margin-right: 0
+    margin-top: 2
+    phantom: true
+  UIWidget
+    id: monster1
+    height: 11
+    anchors.right: prev.left
+    anchors.top: label.top
+    margin-right: 4
+    margin-top: 2
+    phantom: true
+  UIWidget
+    id: monster2
+    height: 11
+    anchors.right: prev.left
+    anchors.top: label.top
+    margin-right: 4
+    margin-top: 2
+    phantom: true
+  UIWidget
+    id: monster3
+    height: 11
+    anchors.right: prev.left
+    anchors.top: label.top
+    margin-right: 4
+    margin-top: 2
+    phantom: true
+  UIWidget
+    id: monster4
+    height: 11
+    anchors.right: prev.left
+    anchors.top: label.top
+    margin-right: 4
+    margin-top: 2
+    phantom: true
+
+  Label
+    id: label
+    anchors.left: spacer.right
+    anchors.right: parent.right
+    anchors.top: creature.top
+    font: $var-cip-font
+    color: $var-text-cip-color
+    margin-top: -2
+    margin-left: 2
+    phantom: true
+
+  LifeProgressBar
+    id: lifeBar
+    height: 5
+    width: 132
+    anchors.left: spacer.right
+    anchors.top: label.bottom
+    margin-top: 2
+    phantom: true
+
+  LifeProgressBar
+    id: manaBar
+    height: 5
+    width: 132
+    background-color: blue
+    anchors.left: spacer.right
+    anchors.top: lifeBar.bottom
+    margin-top: 1
+    phantom: true
+    visible: false

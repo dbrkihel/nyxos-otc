@@ -1,0 +1,1951 @@
+-- Every volume slider behaves the same: retitle its label and let game_sounds
+-- recompute all channel gains, since the master volume scales each of them.
+local function volumeOption(windowId, labelId, caption, isMaster, default)
+    local function paint(value)
+        local panel = GameOptions:getLoadedWindow(windowId)
+        local label = panel and panel:recursiveGetChildById(labelId)
+        if label then
+            label:setText(tr(caption, value) .. (isMaster and value == 0 and tr(' (off)') or ''))
+        end
+        -- Muting the device greys every other sound control and raises the warning.
+        if isMaster then
+            m_settings.updateSoundPages(value)
+        end
+        return true
+    end
+
+    return {
+        value = default or 100,
+        apply = function(value)
+            if modules.game_sounds then
+                modules.game_sounds.applyVolumes()
+            end
+            return paint(value)
+        end,
+        tempApply = paint,
+    }
+end
+
+return {
+    layout = {
+        value = DEFAULT_LAYOUT,
+    },
+
+	graphicalCooldown = {
+		value = true,
+		apply = function(value)
+            modules.game_actionbar.toggleCooldownOption()
+            return true
+        end,
+	},
+
+	showSecondTimestampsInConsole = {
+		value = true,
+		apply = function(value)
+            modules.game_console.updateCurrentTab()
+            return true
+        end,
+	},
+
+	displayText = {
+		value = true,
+		apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawTexts(value)
+            return true
+        end,
+	},
+
+	allActionBar46 = {
+		value = false,
+		apply = function(value)
+            -- Hotkey path (setOption): toggle the whole group. In the Options
+            -- window the box is translated into its rows by setTempOption, so this
+            -- runs only for the "Show/hide Left Action Bars" hotkey.
+            return applyActionBarAll('allActionBar46', value)
+        end,
+        tempApply = function(value)
+            previewActionBarRows('allActionBar46', value)
+            return true
+        end,
+	},
+
+	timeInventory = {
+		value = true,
+		apply = function(value) g_game.enableTimerInvetory(value) return true end,
+	},
+
+	showOwnHealth = {
+		value = true,
+		apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawOwnHealth(value)
+            return true
+        end,
+	},
+
+	storeAskBeforeBuyingProducts = {
+		value = true,
+	},
+
+	openPrivateMessageInNewTab = {
+		value = true,
+	},
+
+	showOthersMarks = {
+		value = false,
+	},
+
+	showNPC = {
+		value = true,
+		apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawNpcIcon(value)
+            return true
+        end,
+	},
+
+	actionBarShowBottom1 = {
+		value = true,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowBottom1', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowBottom1')
+            return true
+        end
+	},
+
+	actionBarShowBottom2 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowBottom2', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowBottom2')
+            return true
+        end
+	},
+
+	actionBarShowBottom3 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowBottom3', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowBottom3')
+            return true
+        end
+	},
+
+  actionBarShowLeft1 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowLeft1', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowLeft1')
+            return true
+        end
+	},
+
+  actionBarShowLeft2 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowLeft2', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowLeft2')
+            return true
+        end
+	},
+
+  actionBarShowLeft3 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowLeft3', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowLeft3')
+            return true
+        end
+	},
+
+  actionBarShowRight1 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowRight1', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowRight1')
+            return true
+        end
+	},
+
+	actionBarShowRight2 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowRight2', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowRight2')
+            return true
+        end
+	},
+
+	actionBarShowRight3 = {
+		value = false,
+        apply = function(value)
+            return applyActionBarShow('actionBarShowRight3', value)
+        end,
+        tempApply = function(value)
+            previewActionBarAll('actionBarShowRight3')
+            return true
+        end
+	},
+
+	profile = {
+		value = "1",
+	},
+
+	ambientLight = {
+		value = 100,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setMinimumAmbientLight(value/100)
+            gameMapPanel:setDrawLights(GameOptions:getOption('enableLights') and value < 100)
+            return true
+        end,
+        tempApply = function(value)
+            local graphics = GameOptions:getLoadedWindow('effects')
+            local wid = graphics:recursiveGetChildById('enableLights')
+            if wid and not wid:isChecked() then
+              return true
+            end
+
+            local wid = graphics:recursiveGetChildById('ambientLabel')
+            if wid then
+              wid:setText(tr('Ambient Light: %d %%', value))
+            end
+            return true
+        end,
+	},
+
+	hidePlayerBars = {
+		value = false,
+        apply = function(value)
+            -- `value` is "hide", but the C++ flag is "draw", so negate it.
+            -- Default hidePlayerBars=false => draw the local player's hp/mana bars.
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawPlayerBars(not value)
+            return true
+        end,
+	},
+
+	storeNotification = {
+		value = true,
+	},
+
+	containerPanel = {
+		value = 8,
+	},
+
+	containerMoveToManagedContainerRecursive = {
+		value = false,
+	},
+
+	showStatusOthersMessagesInConsole = {
+		value = true,
+	},
+
+	walkTeleportDelay = {
+		value = 200,
+        apply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            local label = controls and controls:recursiveGetChildById('walkTeleportDelayLabel')
+            if label then
+              label:setText(tr('Walk delay after teleport: %d ms', value))
+            end
+            if modules.game_walking and modules.game_walking.setWalkDelayOption then
+              modules.game_walking.setWalkDelayOption('walkTeleportDelay', value)
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            local label = controls and controls:recursiveGetChildById('walkTeleportDelayLabel')
+            if label then
+              label:setText(tr('Walk delay after teleport: %d ms', value))
+            end
+            return true
+        end,
+	},
+
+	optimizationLevel = {
+		value = 1,
+        apply = function(value)
+            g_adaptiveRenderer.setLevel(value - 2)
+            return true
+        end,
+	},
+
+	musicSoundVolume = {
+		value = 100,
+        apply = function(value)
+            if g_sounds ~= nil then
+                g_sounds.getChannel(SoundChannels.Music):setGain(value/100)
+            end
+            return true
+        end,
+	},
+
+	hotkeyDelay = {
+		value = 120,
+        apply = function(value)
+            local delayLabel =  GameOptions:getLoadedWindow('controls'):recursiveGetChildById('delayLabel')
+            if delayLabel then
+              delayLabel:setText(tr('Keyboard Delay: %d ms', value))
+              if value < 50 then
+                delayLabel:setColor("$var-text-cip-store-red")
+              elseif value < 250 then
+                delayLabel:setColor("$var-text-cip-color-orange")
+              else
+                delayLabel:setColor("$var-text-cip-color")
+              end
+
+              if not m_settings.getOption('hotkeyDelayNative') then
+                rootWidget:getChildById("gameRootPanel"):setAutoRepeatDelay(math.max(0, tonumber(value)))
+              end
+            end
+
+            if m_settings.getOption('hotkeyDelayNative') then
+              delayLabel:setColor("$var-cip-inactive-color")
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local delayLabel =  GameOptions:getLoadedWindow('controls'):recursiveGetChildById('delayLabel')
+            if delayLabel then
+              delayLabel:setText(tr('Keyboard Delay: %d ms', value))
+              if value < 50 then
+                delayLabel:setColor("$var-text-cip-store-red")
+              elseif value < 250 then
+                delayLabel:setColor("$var-text-cip-color-orange")
+              else
+                delayLabel:setColor("$var-text-cip-color")
+              end
+
+              if not m_settings.getOption('hotkeyDelayNative') then
+                rootWidget:getChildById("gameRootPanel"):setAutoRepeatDelay(math.max(0, tonumber(value)))
+              end
+            end
+            return true
+        end,
+	},
+
+	walkTurnDelay = {
+		value = 100,
+        apply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            local label = controls and controls:recursiveGetChildById('walkTurnDelayLabel')
+            if label then
+              label:setText(tr('Walk delay after turn: %d ms', value))
+            end
+            if modules.game_walking and modules.game_walking.setWalkDelayOption then
+              modules.game_walking.setWalkDelayOption('walkTurnDelay', value)
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            local label = controls and controls:recursiveGetChildById('walkTurnDelayLabel')
+            if label then
+              label:setText(tr('Walk delay after turn: %d ms', value))
+            end
+            return true
+        end,
+	},
+
+	showLevelsInConsole = {
+		value = true,
+        apply = function(value)
+            modules.game_console.updateCurrentTab()
+            return true
+        end,
+	},
+
+	allActionBar13 = {
+		value = false,
+        apply = function(value)
+            -- Hotkey path (setOption): toggle the whole group. In the Options
+            -- window the box is translated into its rows by setTempOption, so this
+            -- runs only for the "Show/hide Bottom Action Bars" hotkey.
+            return applyActionBarAll('allActionBar13', value)
+        end,
+        tempApply = function(value)
+            previewActionBarRows('allActionBar13', value)
+            return true
+        end,
+	},
+
+	cacheMap = {
+		value = false,
+        apply = function(value)
+            m_interface.refreshViewMode()
+            return true
+        end,
+	},
+
+	showRightHorizontalPanel = {
+		value = false,
+        apply = function(value)
+            m_interface.showRightHorizontalPanel(value)
+            return true
+        end,
+	},
+
+	nativeMouseCursor = {
+		value = false,
+        apply = function(value)
+            -- Keep the OS native cursor and suppress the custom cursor graphics
+            -- (the old g_window.setUseNativeCursor was a no-op stub that did nothing,
+            -- so the cursor still turned into the 'target' image on item hover).
+            g_mouse.setNativeCursor(value)
+            return true
+        end,
+	},
+
+	autoChaseOverride = {
+		value = true,
+	},
+
+	talkOnRightClick = {
+		value = false,
+	},
+
+	stayLoggedInforSession = {
+		value = false,
+	},
+
+	chatModeOn = {
+		value = true,
+	},
+
+	ctrlDragCheckBox = {
+		value = false,
+	},
+
+	alwaysTurnTowardsMoveDirection = {
+		value = true,
+	},
+
+	actionbarLock = {
+		value = false,
+	},
+
+	classicView = {
+		value = true,
+        apply = function(value)
+            m_interface.refreshViewMode()
+            return true
+        end,
+	},
+
+	cooldownSecond = {
+		value = true,
+        apply = function(value)
+            modules.game_actionbar.toggleCooldownOption()
+            return true
+        end,
+	},
+
+	hotkeyDelayNative = {
+		value = true,
+        apply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            local delayLabel = controls:recursiveGetChildById('hotkeyDelay')
+            if delayLabel then
+              delayLabel:setEnabled(not value)
+              delayLabel:setColor(not value and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            local delayLabel = controls:recursiveGetChildById('delayLabel')
+            if delayLabel then
+              delayLabel:setText(tr('Keyboard Delay: %d ms', getOption('hotkeyDelay')))
+              delayLabel:setColor(not value and '$var-text-cip-color' or '$var-cip-inactive-color')
+              if not value then
+                if getOption('hotkeyDelay') < 50 then
+                  delayLabel:setColor("$var-text-cip-store-red")
+                elseif getOption('hotkeyDelay') < 250 then
+                  delayLabel:setColor("$var-text-cip-color-orange")
+                else
+                  delayLabel:setColor("$var-text-cip-color")
+                end
+              end
+              rootWidget:getChildById("gameRootPanel"):setAutoRepeatDelay(value and 250 or math.max(0, tonumber(getOption('hotkeyDelay'))))
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            if not controls then return true end
+            local delayLabel = controls:recursiveGetChildById('hotkeyDelay')
+            if delayLabel then
+                delayLabel:setEnabled(not value)
+                delayLabel:setColor(not value and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            local delayLabel = controls:recursiveGetChildById('delayLabel')
+            if delayLabel then
+                local controls = GameOptions:getLoadedWindow('controls')
+                local delay = controls:recursiveGetChildById('hotkeyDelay')
+                delayLabel:setText(tr('Keyboard Delay: %d ms', delay:getValue()))
+                delayLabel:setColor(not value and '$var-text-cip-color' or '$var-cip-inactive-color')
+                if not value then
+                    local hotkeyDelayValue = GameOptions:getOption('hotkeyDelay')
+                    if hotkeyDelayValue < 50 then
+                        delayLabel:setColor("$var-text-cip-store-red")
+                    elseif hotkeyDelayValue < 250 then
+                        delayLabel:setColor("$var-text-cip-color-orange")
+                    else
+                        delayLabel:setColor("$var-text-cip-color")
+                    end
+                end
+            end
+            return true
+        end
+	},
+
+	showBoostedMessagesInConsole = {
+		value = true,
+	},
+
+	opacityArc = {
+		value = 70,
+        apply = function(value)
+            g_map.setArcOpacity(value / 100)
+            local wid = GameOptions:getLoadedWindow('hud'):recursiveGetChildById('opacityLabel')
+            if wid then
+              wid:setText(tr('Opacity: %d%%', value))
+            end
+            return true
+        end,
+        tempApply = function(value)
+            g_map.setArcOpacity(value / 100)
+            local wid = GameOptions:getLoadedWindow('hud'):recursiveGetChildById('opacityLabel')
+            if wid then
+              wid:setText(tr('Opacity: %d%%', value))
+            end
+            return true
+        end
+	},
+
+	displayNames = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawNames(value)
+            return true
+        end,
+	},
+
+	topHealtManaBar = {
+		value = true,
+        apply = function(value)
+            if not g_app.isMobile() then return true end
+
+            modules.game_healthinfo.topHealthBar:setVisible(value)
+            modules.game_healthinfo.topManaBar:setVisible(value)
+            return true
+        end,
+	},
+
+	showTimestampsInConsole = {
+		value = true,
+        apply = function(value)
+            modules.game_console.updateCurrentTab()
+            return true
+        end,
+	},
+
+	leftPanels = {
+		value = 0,
+        apply = function(value)
+            m_interface.refreshViewMode()
+            return true
+        end,
+	},
+
+	altCheckBox = {
+		value = false,
+        apply = function(value)
+            local chatEnabled = Options.isChatOnEnabled
+            KeyBinds:setupAndReset(Options.currentHotkeySetName, chatEnabled and "chatOn" or "chatOff")
+            modules.game_walking.configureRotateKeys('altCheckBox', value)
+            return true
+        end,
+	},
+
+	-- Nasce desligado: o cliente oficial nao poe nada sobre a area de jogo. O
+	-- overlay continua existindo, com esta opcao e o atalho de teclado, para
+	-- quem quiser acompanhar latencia.
+	showPing = {
+		value = false,
+        apply = function(value)
+            modules.client_topmenu.setPingVisible(value)
+            if modules.game_stats and modules.game_stats.updateVisibility then
+              modules.game_stats.updateVisibility()
+            end
+            return true
+        end,
+	},
+
+	textualEffect = {
+		value = true,
+        apply = function(value)
+            g_map.setTextureTextEnabled(value)
+            return true
+        end,
+	},
+
+	containerMoveToManagedContainerRecursiveWarning = {
+		value = false,
+	},
+
+	containerSortRecursive = {
+		value = false,
+	},
+
+	timeUnnused = {
+		value = true,
+        apply = function(value) g_game.enableTimerUnnused(value) return true end,
+	},
+
+	showPrivateMessagesInConsole = {
+		value = true,
+	},
+
+	quickLogin = {
+		value = false,
+	},
+
+	dontStretchShrink = {
+		value = false,
+        apply = function(value)
+            addEvent(function()
+                m_interface.updateStretchShrink()
+            end)
+            return true
+        end,
+	},
+
+	showInfoMessagesInConsole = {
+		value = true,
+	},
+
+	rightPanels = {
+		value = 1,
+        apply = function(value)
+            m_interface.refreshViewMode()
+            return true
+        end,
+	},
+
+	-- Ver o comentario de showPing: a area de jogo nasce limpa, como no oficial.
+	showFps = {
+		value = false,
+        apply = function(value)
+            modules.client_topmenu.setFpsVisible(value)
+            if modules.game_stats and modules.game_stats.updateVisibility then
+              modules.game_stats.updateVisibility()
+            end
+            return true
+        end,
+	},
+
+	stackEffects = {
+		value = false,
+        apply = function(value)
+            g_map.enableStackEffects(value)
+            return true
+        end,
+	},
+
+	containerSortBackpacksFirst = {
+		value = false,
+	},
+
+	lootControl = {
+		value = 1,
+	},
+
+	showHealthManaCircle = {
+    value = false,
+    apply = function(value)
+        local gameMapPanel = m_interface.getMapPanel()
+        g_map.setShowArcs(value)
+        return true
+    end,
+    tempApply = function(value)
+        local window = GameOptions:getLoadedWindow("hud")
+        if window then
+            window:recursiveGetChildById("sizeBox"):setEnabled(value)
+            window:recursiveGetChildById("distanceLabel"):setEnabled(value)
+            window:recursiveGetChildById("distanceArc"):setEnabled(value)
+            window:recursiveGetChildById("opacityLabel"):setEnabled(value)
+            window:recursiveGetChildById("opacityArc"):setEnabled(value)
+
+            local healthCheck = window:recursiveGetChildById("harmonyHealth")
+            local manaCheck = window:recursiveGetChildById("harmonyMana")
+            if healthCheck and manaCheck then
+                healthCheck:setEnabled(value)
+                manaCheck:setEnabled(value)
+                if value then
+                    local arcSide = getTmpOption("harmonyArcSide") or getOption("harmonyArcSide")
+                    healthCheck:setChecked(arcSide)
+                    manaCheck:setChecked(not arcSide)
+                    local gameMapPanel = m_interface.getMapPanel()
+                    g_map.setHarmonyLeftDraw(arcSide)
+                end
+            end
+        end
+        local gameMapPanel = m_interface.getMapPanel()
+        g_map.setShowArcs(value)
+        return true
+    end
+  },
+
+  sizeBox = {
+		value = 1,
+        apply = function(value)
+            g_map.setArcStyle(value - 1)
+            return true
+        end,
+        tempApply = function(value)
+            g_map.setArcStyle(value - 1)
+            return true
+        end,
+	},
+
+	trainingProgress = {
+		value = true,
+	},
+
+	topBar = {
+		value = false,
+	},
+
+	classicControl = {
+		value = 1,
+        apply = function(value)
+            local window = GameOptions:getLoadedWindow("controls")
+            if window then
+              window:recursiveGetChildById("lootControl"):setVisible(value == 1)
+            end
+            return true
+        end,
+        TempApply = function(value)
+            local window = GameOptions:getLoadedWindow("controls")
+            if window then
+              window:recursiveGetChildById("lootControl"):setVisible(value == 1)
+            end
+            return true
+        end,
+	},
+
+	backgroundFrameRate = {
+		value = 500,
+        apply = function(value)
+            if GameOptions:getOption('noFrameCheckBox') then
+                g_app.setMaxFps(0)
+            else
+                local text, v = value, value
+                if value <= 0 or value >= 501 then text = 'max' v = 0 end
+                g_app.setMaxFps(v)
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local graphics = GameOptions:getLoadedWindow('graphics')
+            local wid = graphics:recursiveGetChildById('noFrameCheckBox')
+            -- Prefer the staged TempOptions value over the live widget so the
+            -- graphics preset-reset path (which stages noFrameCheckBox=false
+            -- before backgroundFrameRate=200 in the same pass) applies the fps
+            -- update instead of reading the still-checked live widget.
+            local staged = TempOptions:getOption('noFrameCheckBox')
+            local noFrame = staged
+            if noFrame == nil then
+              noFrame = wid and wid:isChecked()
+            end
+            if noFrame then
+              -- "No frame limit" is active so the fps cap isn't shown/applied now; this
+              -- is not a failure. Returning false made TempOptions log a misleading
+              -- "Failed to apply tmp option" every boot. Return true (apply() re-checks
+              -- noFrameCheckBox before using the value, so nothing wrong gets applied).
+              return true
+            end
+
+            local wid = graphics:recursiveGetChildById('frameRateLabel')
+            if wid then
+              wid:setText(tr('Frame Rate Limit: %d', value))
+            end
+            return true
+        end,
+	},
+
+	showStatusMessagesInConsole = {
+		value = true,
+	},
+
+	potionSoundEffect = {
+		value = true,
+	},
+
+	showLootMessagesInConsole = {
+		value = true,
+        apply = function(value)
+            local gameWindow = GameOptions:getLoadedWindow('gameWindow')
+            local wid = gameWindow:recursiveGetChildById('showLootMessagesInConsole')
+            if wid then
+              local v = GameOptions:getOption('showMessages')
+              wid:setEnabled(v)
+              wid:setColor(v and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local gameWindow = GameOptions:getLoadedWindow('gameWindow')
+            local wid = gameWindow:recursiveGetChildById('showLootMessagesInConsole')
+            if wid then
+              local v = GameOptions:getOption('showMessages')
+              wid:setEnabled(v)
+              wid:setColor(v and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            return true
+        end,
+	},
+
+	displayHealthOnTop = {
+		value = false,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawHealthBarsOnTop(value)
+            return true
+        end,
+	},
+
+	floorFading = {
+		value = 0,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setFloorFading(value)
+            return true
+        end,
+	},
+
+	showOwnName = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawOwnName(value)
+            return true
+        end,
+	},
+
+	optimiseConnectionStability = {
+		value = false,
+	},
+
+	displayHealth = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawHealthBars(value)
+            return true
+        end,
+	},
+
+  engine = {
+		-- Default to DirectX 11 (combo index 2) so a fresh install shows and runs the
+		-- same backend instead of displaying "Vulkan" (index 1) while auto-selecting
+		-- D3D11. The player opts into Vulkan/others from the Graphics Engine combo.
+		value = 2,
+        apply = function(value)
+            -- value is the combo index from graphics.otui (1=Vulkan .. 5=OpenGL);
+            -- win32window.cpp::getPreferredGraphicsBackend reads it from config.otml
+            -- at boot to pick the ANGLE backend. Only react to a real in-session
+            -- change by the player: stay silent while settings are still loading at
+            -- boot (loadSettings calls apply() with the stored value), and when the
+            -- value did not actually change. This also makes the player's FIRST
+            -- choice (from the -1 "auto" default) prompt for a restart.
+            if not isEngineSelectorReady() or value == getOption("engine") then
+                return true
+            end
+
+            -- Persist now: g_app.restart() uses quick_exit and skips the normal
+            -- save-on-terminate, so the new value must reach config.otml up front.
+            g_settings.set("engine", value)
+            g_settings.save()
+
+            local restartBox
+            local function doRestart()
+                if restartBox then restartBox:destroy() restartBox = nil end
+                g_app.restart()
+            end
+            local function dismiss()
+                if restartBox then restartBox:destroy() restartBox = nil end
+            end
+            restartBox = displayGeneralBox(tr("Graphics Engine"),
+                tr("The graphics engine will change the next time the client starts.\nDo you want to restart now?"),
+                {
+                    { text = tr("Restart Now"), callback = doRestart },
+                    { text = tr("Later"), callback = dismiss },
+                }, doRestart, dismiss)
+            return true
+        end,
+	},
+
+
+	antialiasing = {
+		value = 1,
+        apply = function(value)
+            if value == 2 then
+                g_app.setSmooth(true)
+            else
+                g_app.setSmooth(false)
+            end
+            return true
+        end,
+	},
+
+	showSpells = {
+		value = true,
+        apply = function(value)
+            local gameWindow = GameOptions:getLoadedWindow('gameWindow')
+            local wid = gameWindow:recursiveGetChildById('showSpells')
+            if wid then
+              local v = getOption('showMessages')
+              wid:setEnabled(v)
+              wid:setColor(v and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local gameWindow = GameOptions:getLoadedWindow('gameWindow')
+            local wid = gameWindow:recursiveGetChildById('showSpells')
+            if wid then
+              local v = getOption('showMessages')
+              wid:setEnabled(v)
+              wid:setColor(v and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            return true
+        end,
+	},
+
+	containerMoveToManagedContainerRecursiveShowWarningAgain = {
+		value = false,
+	},
+
+	timeContainers = {
+		value = true,
+        apply = function(value)
+            g_game.enableTimerContainer(value)
+            GameOptions:getLoadedWindow("interface"):recursiveGetChildById("timeUnnused"):setEnabled(true)
+            return true
+        end,
+        tempApply = function(value)
+            local interface = GameOptions:getLoadedWindow("interface")
+            local unnusedWidget = interface:recursiveGetChildById("timeUnnused")
+            unnusedWidget:setEnabled(true)
+            unnusedWidget:setColor('$var-text-cip-color')
+            if not value and not interface:recursiveGetChildById("timeInventory"):isChecked() then
+              unnusedWidget:setEnabled(false)
+              unnusedWidget:setColor('$var-cip-inactive-color')
+            end
+            return true
+        end,
+	},
+
+	displayMana = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawManaBar(value)
+            return true
+        end,
+	},
+
+	ctrlCheckBox = {
+		value = true,
+        apply = function(value)
+            local chatEnabled = Options.isChatOnEnabled
+            KeyBinds:setupAndReset(Options.currentHotkeySetName, chatEnabled and "chatOn" or "chatOff")
+            modules.game_walking.configureRotateKeys('ctrlCheckBox', value)
+            return true
+        end,
+	},
+
+	highlightThingsUnderCursor = {
+		value = true,
+        -- Render the blue tile marker on the tile under the mouse (mehah-style
+        -- "Highlight Mouse Target"). The C++ MapView draws m_crosshair on the hovered
+        -- tile. m_interface.getMapPanel is nil while the options window is built at
+        -- boot (game_interface not loaded yet), so guard it; the in-game apply sets it.
+        apply = function(value)
+            local getPanel = m_interface and m_interface.getMapPanel
+            local gameMapPanel = getPanel and getPanel()
+            if gameMapPanel then
+                gameMapPanel:setCrosshair(value and '/images/crosshair/cip-default' or '')
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local getPanel = m_interface and m_interface.getMapPanel
+            local gameMapPanel = getPanel and getPanel()
+            if gameMapPanel then
+                gameMapPanel:setCrosshair(value and '/images/crosshair/cip-default' or '')
+            end
+            return true
+        end,
+	},
+
+	vsync = {
+		value = true,
+        apply = function(value)
+            local graphics = GameOptions:getLoadedWindow('graphics')
+            local color = value and '$var-cip-inactive-color' or '$var-text-cip-color'
+            graphics:recursiveGetChildById("noFrameCheckBox"):setEnabled(not value)
+            graphics:recursiveGetChildById("backgroundFrameRate"):setEnabled(not value)
+            graphics:recursiveGetChildById("frameRateLabel"):setColor(color)
+            graphics:recursiveGetChildById("noFrameCheckBox"):setColor(color)
+            g_window.setVerticalSync(value)
+            if value then
+              g_app.setMaxFps(200) -- allow 240hz monitors
+            else
+              local maxFps = graphics:recursiveGetChildById("backgroundFrameRate"):getValue() or 200
+              local noFrameLimit = graphics:recursiveGetChildById("noFrameCheckBox")
+              if noFrameLimit and noFrameLimit:isChecked() then
+                maxFps = 0
+              end
+              g_app.setMaxFps(maxFps)
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local graphics = GameOptions:getLoadedWindow('graphics')
+            local color = value and '$var-cip-inactive-color' or '$var-text-cip-color'
+            graphics:recursiveGetChildById("noFrameCheckBox"):setEnabled(not value)
+            graphics:recursiveGetChildById("backgroundFrameRate"):setEnabled(not value)
+            graphics:recursiveGetChildById("frameRateLabel"):setColor(color)
+            graphics:recursiveGetChildById("noFrameCheckBox"):setColor(color)
+            return true
+        end,
+	},
+
+	-- enableMusicSound was removed: no page exposed it, it defaulted to false, and
+	-- loadSettings applied it on boot -- disabling the Music channel outright, which
+	-- also stops whatever it is playing. Music volume is the slider plus the master.
+
+	opacityMissile = {
+		value = 100,
+        apply = function(value)
+            g_client.setMissileAlpha(value/100)
+            local effects = GameOptions:getLoadedWindow("effects")
+            effects:recursiveGetChildById('opacityMissileLimitLabel'):setText(tr('Opacity Missiles: %s%%', value))
+            return true
+        end,
+        tempApply = function(value)
+            local effects = GameOptions:getLoadedWindow("effects")
+            effects:recursiveGetChildById('opacityMissileLimitLabel'):setText(tr('Opacity Missiles: %s%%', value))
+            return true
+        end,
+	},
+
+	opacityEffects = {
+		value = 100,
+        apply = function(value)
+            g_client.setEffectAlpha(value/100)
+            local effects = GameOptions:getLoadedWindow("effects")
+            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Opacity Effect: %s%%', value))
+            return true
+        end,
+        tempApply = function(value)
+            local effects = GameOptions:getLoadedWindow("effects")
+            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Opacity Effect: %s%%', value))
+            return true
+        end,
+	},
+
+	opacityAnimatedText = {
+		value = 100,
+        apply = function(value)
+            g_client.setAnimatedTextAlpha(value/100)
+            local effects = GameOptions:getLoadedWindow("effects")
+            effects:recursiveGetChildById('opacityAnimatedTextLabel'):setText(tr('Opacity Damage Text: %s%%', value))
+            return true
+        end,
+        tempApply = function(value)
+            local effects = GameOptions:getLoadedWindow("effects")
+            effects:recursiveGetChildById('opacityAnimatedTextLabel'):setText(tr('Opacity Damage Text: %s%%', value))
+            return true
+        end,
+	},
+
+  ignoreSpecialEffects = {
+    value = false,
+    apply = function(value)
+        g_client.setIgnoreSpecialEffects(value)
+        return true
+    end,
+  },
+
+  -- "Only Show Own Effects": hide magic/distance effects the local player did not
+  -- cause. Filtering happens in C++ (Map::isShowOwnEffectsOnly is read in
+  -- ProtocolGame::parseMagicEffect) using the server-sent SourceEffect_t byte, so
+  -- only effects with source == OWN are drawn.
+  showOwnEffects = {
+    value = false,
+    apply = function(value)
+        g_map.setShowOwnEffectsOnly(value)
+        return true
+    end,
+  },
+
+	showMessages = {
+		value = true,
+        apply = function(value)
+            g_map.setShowMessageEnabled(value)
+            local window = GameOptions:getLoadedWindow("gameWindow")
+            local widgets = {"showPrivateMessagesOnScreen", "potionSoundEffect", "showSpells", "spellsOthers", "emoteSpells", "showHotkeyMessagesInConsole", "showLootMessagesInConsole", "showBoostedMessagesInConsole", "trainingProgress", "storeNotification"}
+            for _, wid in pairs(widgets) do
+              local w = window:recursiveGetChildById(wid)
+              if w then
+                w:setEnabled(value)
+                w:setColor(value and '$var-text-cip-color' or '$var-cip-inactive-color')
+              end
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local window = GameOptions:getLoadedWindow("gameWindow")
+            local widgets = {"showPrivateMessagesOnScreen", "potionSoundEffect", "showSpells", "spellsOthers", "emoteSpells", "showHotkeyMessagesInConsole", "showLootMessagesInConsole", "showBoostedMessagesInConsole", "trainingProgress", "storeNotification"}
+            for _, wid in pairs(widgets) do
+              local w = window:recursiveGetChildById(wid)
+              if w then
+                w:setEnabled(value)
+                w:setColor(value and '$var-text-cip-color' or '$var-cip-inactive-color')
+              end
+            end
+            return true
+        end,
+	},
+
+	showOwnMana = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawOwnManaBar(value)
+            gameMapPanel:setDrawOwnManaShieldBar(value)
+            return true
+        end,
+	},
+
+  showHarmony = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawHarmonyBar(value)
+            return true
+        end,
+	},
+
+	markTargetVisually = {
+		value = 1,
+        apply = function(value)
+            g_game.setHighlightingTarget(value == 1 or value == 3)
+            g_game.setFramingTarget(value == 1 or value == 2)
+            -- if g_game.isOnline() then
+            --   modules.game_battle.updateSquare(value)
+            -- end
+
+            return true
+        end,
+	},
+
+	smartWalk = {
+		value = false,
+	},
+
+	walkCtrlTurnDelay = {
+		value = 150,
+	},
+
+	fullscreen = {
+		value = false,
+        apply = function(value)
+            g_window.setFullscreen(value)
+            return true
+        end,
+	},
+
+	stowContainer = {
+		value = true,
+	},
+
+	askBeforeSortingNestedContainers = {
+		value = true,
+	},
+
+	askBeforeMovingNestedContainers = {
+		value = true,
+	},
+
+	dash = {
+		value = false,
+        apply = function(value)
+            if value then
+                g_game.setMaxPreWalkingSteps(2)
+            else
+                g_game.setMaxPreWalkingSteps(1)
+            end
+            return true
+        end,
+	},
+
+	ownHUDCharacter = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawOwnHUD(value)
+            return true
+        end,
+        tempApply = function(value)
+            local huds = {"showOwnBars", "showOwnName", "showOwnHealth", "showOwnMana"}
+            for _, hud in pairs(huds) do
+              local showHud = selectedWindow:recursiveGetChildById(hud)
+              if showHud then
+                showHud:setEnabled(value)
+              end
+            end
+            return true
+        end,
+	},
+
+	combatFrames = {
+		value = true,
+	},
+
+	showMarks = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawMarks(value)
+            return true
+        end,
+	},
+
+	showLeftHorizontalPanel = {
+		value = false,
+        apply = function(value)
+            m_interface.showLeftHorizontalPanel(value)
+            return true
+        end,
+	},
+
+	distanceArc = {
+		value = 15,
+        apply = function(value)
+            g_map.setArcDistance(value / 100)
+            local wid = GameOptions:getLoadedWindow('hud'):recursiveGetChildById('distanceLabel')
+            if wid then
+              wid:setText(tr('Distance: %d%%', value))
+            end
+            return true
+        end,
+        tempApply = function(value)
+            g_map.setArcDistance(value / 100)
+            local wid = GameOptions:getLoadedWindow('hud'):recursiveGetChildById('distanceLabel')
+            if wid then
+              wid:setText(tr('Distance: %d%%', value))
+            end
+            return true
+        end,
+	},
+
+  harmonyArcSide = {
+    value = true,
+    apply = function(value)
+        local gameMapPanel = m_interface.getMapPanel()
+        g_map.setHarmonyLeftDraw(value)
+        return true
+    end,
+    tempApply = function(value)
+        local gameMapPanel = m_interface.getMapPanel()
+        g_map.setHarmonyLeftDraw(value)
+        return true
+    end,
+  },
+
+	showHotkeyMessagesInConsole = {
+		value = true,
+        tempApply = function(value)
+            local gameWindow = GameOptions:getLoadedWindow('gameWindow')
+            local wid = gameWindow:recursiveGetChildById('showHotkeyMessagesInConsole')
+            if wid then
+              local v = getOption('showMessages')
+              wid:setEnabled(v)
+              wid:setColor(v and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            return true
+        end,
+	},
+
+	maxEffects = {
+		value = false,
+        apply = function(value)
+            local effects = GameOptions:getLoadedWindow('effects')
+            local wid = effects:recursiveGetChildById('effectLimitLabel')
+            if wid and not value then
+              wid:setColor("$var-text-cip-color")
+              wid:setText(tr('Effects Limits: %d', getOption('limitEffects')))
+            elseif wid then
+              wid:setText(tr('Effects Limits: %d', getOption('limitEffects')))
+              wid:setColor("$var-cip-inactive-color")
+            end
+
+            g_map.setUnlimitEffects(value)
+            return true
+        end,
+        tempApply = function(value)
+            local effects = GameOptions:getLoadedWindow('effects')
+            local wid = effects:recursiveGetChildById('effectLimitLabel')
+            local limitEffects = effects:recursiveGetChildById('limitEffects')
+            if wid and not value then
+              wid:setColor("$var-text-cip-color")
+              limitEffects:enable()
+            elseif wid then
+              wid:setColor("$var-cip-inactive-color")
+              limitEffects:disable()
+            end
+            return true
+        end,
+	},
+
+	containerSortRecursiveShowWarningAgain = {
+		value = false,
+	},
+
+	limitEffects = {
+		value = 400,
+        apply = function(value)
+            local effects = GameOptions:getLoadedWindow('effects')
+            local value = math.max(10, math.min(value, 1000))
+            g_map.setLimitEffects(value)
+            local wid = effects:recursiveGetChildById('effectLimitLabel')
+            if wid then
+              wid:setText(tr('Effects Limits: %d', value))
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local effects = GameOptions:getLoadedWindow('effects')
+            local wid = effects:recursiveGetChildById('maxEffects')
+            if wid and wid:isChecked() then
+              return false
+            end
+
+            local wid = effects:recursiveGetChildById('effectLimitLabel')
+            if wid then
+              wid:setText(tr('Effects Limits: %d', value))
+            end
+            return true
+        end,
+	},
+
+	lootHighlight = {
+		value = true,
+	},
+
+	emoteSpells = {
+		value = false,
+	},
+
+	spellsOthers = {
+		value = false,
+        tempApply = function(value)
+            local gameWindow = GameOptions:getLoadedWindow('gameWindow')
+            local wid = gameWindow:recursiveGetChildById('spellsOthers')
+            if wid then
+              local v = GameOptions:getOption('showMessages')
+              wid:setEnabled(v)
+              wid:setColor(v and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            return true
+        end,
+	},
+
+	colouriseLootColor = {
+		value = 2,
+        apply = function(value)
+            g_game.setLootValueState(value - 1)
+            return true
+        end,
+	},
+
+	showOwnBars = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawOwnBars(value)
+            return true
+        end,
+	},
+
+	showEventMessagesInConsole = {
+		value = true,
+	},
+
+	allActionBar79 = {
+		value = false,
+        apply = function(value)
+            -- Hotkey path (setOption): toggle the whole group. In the Options
+            -- window the box is translated into its rows by setTempOption, so this
+            -- runs only for the "Show/hide Right Action Bars" hotkey.
+            return applyActionBarAll('allActionBar79', value)
+        end,
+        tempApply = function(value)
+            previewActionBarRows('allActionBar79', value)
+            return true
+        end,
+	},
+
+	noFrameCheckBox = {
+		value = false,
+        apply = function(value)
+            local graphics = GameOptions:getLoadedWindow('graphics')
+            local wid = graphics:recursiveGetChildById('frameRateLabel')
+            if wid and not value then
+              wid:setColor("$var-text-cip-color")
+            elseif wid then
+              wid:setColor("$var-cip-inactive-color")
+            end
+
+            if value then
+              g_app.setMaxFps(0)
+            else
+              local vsync = graphics:recursiveGetChildById("vsync")
+              if vsync and vsync:isChecked() then
+                  g_window.setVerticalSync(true)
+                  g_app.setMaxFps(300)
+              else
+                local currentFps = TempOptions:getOption('backgroundFrameRate') ~= nil and TempOptions:getOption('backgroundFrameRate') or nil
+                if not currentFps then
+                  currentFps = GameOptions:getOption('backgroundFrameRate') ~= nil and GameOptions:getOption('backgroundFrameRate') or nil
+                end
+                g_app.setMaxFps(currentFps and currentFps or 200)
+              end
+            end
+
+            local wid = graphics:recursiveGetChildById('backgroundFrameRate')
+            if wid and not value then
+              wid:setEnabled(true)
+            elseif wid then
+              wid:setEnabled(false)
+            end
+
+            return true
+        end,
+        tempApply = function(value)
+            local graphics = GameOptions:getLoadedWindow('graphics')
+            local wid = graphics:recursiveGetChildById('frameRateLabel')
+            if wid and not value then
+              wid:setColor("$var-text-cip-color")
+            elseif wid then
+              wid:setColor("$var-cip-inactive-color")
+            end
+
+            local wid = graphics:recursiveGetChildById('backgroundFrameRate')
+            if wid and not value then
+              wid:setEnabled(true)
+            elseif wid then
+              wid:setEnabled(false)
+            end
+            return true
+        end
+	},
+
+	actionTooltip = {
+		value = true,
+        apply = function(value)
+            modules.game_actionbar.updateVisibleOptions('tooltip', value)
+            return true
+        end,
+	},
+
+	autoInsertNewSpells = {
+		value = true,
+	},
+
+	showSpellParameters = {
+		value = true,
+        apply = function(value)
+            modules.game_actionbar.updateVisibleOptions('parameter', value)
+            return true
+        end,
+	},
+
+	showPrivateMessagesOnScreen = {
+		value = true,
+        tempApply = function(value)
+            local gameWindow = GameOptions:getLoadedWindow('gameWindow')
+            local wid = gameWindow:recursiveGetChildById('showPrivateMessagesOnScreen')
+            if wid then
+              local v = getOption('showMessages')
+              wid:setEnabled(v)
+              wid:setColor(v and '$var-text-cip-color' or '$var-cip-inactive-color')
+            end
+            return true
+        end,
+	},
+
+	showHKObjectsBars = {
+		value = true,
+        apply = function(value)
+            modules.game_actionbar.updateVisibleOptions('amount', value)
+            return true
+        end,
+	},
+
+	enableAudio = {
+		value = true,
+        apply = function(value)
+            if g_sounds ~= nil then
+                g_sounds.setAudioEnabled(value)
+            end
+            return true
+        end,
+	},
+
+	turnDelay = {
+		value = 30,
+	},
+
+	otherHUDCreatures = {
+		value = true,
+        apply = function(value)
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawOtherHUD(value)
+            return true
+        end,
+        tempApply = function(value)
+            local huds = {"displayNames", "displayHealth", "showOthersMarks", "showNPC"}
+            for _, hud in pairs(huds) do
+              local showHud = GameOptions:getLoadedWindow('hud'):recursiveGetChildById(hud)
+              if showHud then
+                showHud:setEnabled(value)
+              end
+            end
+            return true
+        end,
+	},
+
+	autoSwitchHotkey = {
+		value = false,
+        apply = function(value)
+            Options.array["hotkeyOptions"]["autoSwitchHotkeyPreset"] = value
+            return true
+        end,
+	},
+
+	pvpFrames = {
+		value = true,
+	},
+
+	prestigeEmblem = {
+		value = true,
+        apply = function(value)
+            g_game.enableShowPrestigeTexture(value)
+            return true
+        end,
+	},
+
+	walkStairsDelay = {
+		value = 50,
+        apply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            local label = controls and controls:recursiveGetChildById('walkStairsDelayLabel')
+            if label then
+              label:setText(tr('Walk delay after floor change: %d ms', value))
+            end
+            if modules.game_walking and modules.game_walking.setWalkDelayOption then
+              modules.game_walking.setWalkDelayOption('walkStairsDelay', value)
+            end
+            return true
+        end,
+        tempApply = function(value)
+            local controls = GameOptions:getLoadedWindow('controls')
+            local label = controls and controls:recursiveGetChildById('walkStairsDelayLabel')
+            if label then
+              label:setText(tr('Walk delay after floor change: %d ms', value))
+            end
+            return true
+        end,
+	},
+
+	walkFirstStepDelay = {
+		value = 200,
+	},
+
+	wsadWalking = {
+		value = false,
+	},
+
+	showAssignedHKButton = {
+		value = true,
+        apply = function(value)
+            modules.game_actionbar.updateVisibleOptions('hotkey', value)
+            return true
+        end,
+	},
+
+	showCooldown = {
+		value = true,
+        apply = function(value)
+            modules.game_cooldown.toggleVisible(value)
+            return true
+        end,
+	},
+
+	shiftCheckBox = {
+		value = false,
+        apply = function(value)
+            local chatEnabled = Options.isChatOnEnabled
+            KeyBinds:setupAndReset(Options.currentHotkeySetName, chatEnabled and "chatOn" or "chatOff")
+            modules.game_walking.configureRotateKeys('shiftCheckBox', value)
+            return true
+        end,
+	},
+
+	customisableBars = {
+		value = true,
+        apply = function(value)
+            modules.game_topbar.toggle(value)
+            return true
+        end,
+	},
+
+	statusBars = {
+		value = true,
+        apply = function(value)
+            if not g_game.isOnline() then return true end
+            if value then
+                modules.game_healthinfo.getHealthInfoWindow():show()
+              else
+                modules.game_healthinfo.getHealthInfoWindow():hide()
+              end
+            return true
+        end,
+	},
+
+	linkCopyWarning = {
+		value = true,
+	},
+
+	enableLights = {
+		value = false,
+        apply = function(value)
+            local effects = GameOptions:getLoadedWindow('effects')
+            local wid = effects:recursiveGetChildById('ambientLabel')
+            if wid and value then
+              wid:setColor("$var-text-cip-color")
+            elseif wid then
+              wid:setColor("$var-cip-inactive-color")
+            end
+
+            local gameMapPanel = m_interface.getMapPanel()
+            gameMapPanel:setDrawLights(value and GameOptions:getOption('ambientLight') < 100)
+            return true
+        end,
+        tempApply = function(value)
+            local effects = GameOptions:getLoadedWindow('effects')
+            local wid = effects:recursiveGetChildById('ambientLabel')
+            local ambientSlider = effects:recursiveGetChildById('ambientLight')
+            if wid and value then
+              wid:setColor("$var-text-cip-color")
+              ambientSlider:enable()
+            elseif wid then
+              wid:setColor("$var-cip-inactive-color")
+              ambientSlider:disable()
+            end
+            return true
+        end,
+	},
+
+  enableShaders = {
+    value = true,
+    apply = function(value)
+      modules.game_shaders.clearMapShader()
+      if value and g_game.isOnline() then
+        modules.game_shaders.onPositionChange(_, g_game.getLocalPlayer():getPosition(), _)
+      end
+      return true
+    end,
+  },
+
+  autoScreenshot = {
+    value = true,
+    apply = function(value)
+        local screenshotPanel = GameOptions:getLoadedWindow("screenshot")
+        if screenshotPanel then
+            local checkboxes = screenshotPanel:getChildById("autoScreenshot")
+            if checkboxes then
+                checkboxes:setEnabled(value)
+            end
+        end
+        return true
+    end,
+    tempApply = function(value)
+        local screenshotPanel = GameOptions:getLoadedWindow("screenshot")
+        if screenshotPanel then
+            local checkboxes = screenshotPanel:getChildById("autoScreenshot")
+            if checkboxes then
+                checkboxes:setEnabled(value)
+            end
+        end
+        return true
+    end,
+  },
+
+  gameWindowScreen = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotLevelUp = {
+      value = true,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotSkillUp = {
+      value = true,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotAchievement = {
+      value = true,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotBestiaryUnlocked = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotBestiaryComplete = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotTreasure = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotValuableLoot = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotBossDefeated = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotDeathPve = {
+      value = true,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotDeathPvp = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotPlayerKill = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotPlayerKillAssist = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotPlayerAttacking = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotHighestDamage = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotHighestHealing = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotLowHealth = {
+      value = false,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  screenshotGiftOfLife = {
+      value = true,
+      apply = function(value)
+          return true
+      end,
+  },
+
+  -- Sound. The checkboxes have no apply of their own: game_sounds reads them on
+  -- every effect, so ticking one takes effect from the next sound onwards.
+  masterVolumeScrollBar = volumeOption('sound', 'masterVolumeLabel', 'Master Volume: %d %%', true),
+  -- 50 is the official default; the other sliders start at 100.
+  musicVolumeScrollBar = volumeOption('sound', 'musicVolumeLabel', 'Music Volume: %d %%', false, 50),
+  ambienceVolumeScrollBar = volumeOption('sound', 'ambienceVolumeLabel', 'Ambience Volume: %d %%'),
+  itemVolumeScrollBar = volumeOption('sound', 'itemVolumeLabel', 'Item Volume: %d %%'),
+  eventVolumeScrollBar = volumeOption('sound', 'eventVolumeLabel', 'Event Volume: %d %%'),
+
+  soundDevice = {
+      value = '(auto-select)',
+      apply = function(value)
+        if g_sounds ~= nil then
+            g_sounds.setDevice(value == '(auto-select)' and '' or value)
+        end
+        return true
+      end,
+  },
+
+  anthemMusic = { value = true },
+  foodBeverages = { value = true },
+  moveItemMusic = { value = true },
+
+  -- Battle Sounds
+  ownBattleVolumeScrollBar = volumeOption('battleSounds', 'ownBattleVolumeLabel', 'Own Battle Sounds: %d %%'),
+  otherBattleVolumeScrollBar = volumeOption('battleSounds', 'otherBattleVolumeLabel', 'Other Players: %d %%'),
+  creatureBattleVolumeScrollBar = volumeOption('battleSounds', 'creatureBattleVolumeLabel', 'Creatures: %d %%'),
+
+  ownSpellSound = { value = true },
+  ownAttackSound = { value = true },
+  ownHealingSound = { value = true },
+  ownSupportSound = { value = true },
+  ownWeaponsSound = { value = true },
+
+  otherSpellSound = { value = true },
+  otherAttackSound = { value = true },
+  otherHealingSound = { value = true },
+  otherSupportSound = { value = true },
+  otherWeaponsSound = { value = true },
+
+  creatureNoiseSound = { value = true },
+  creatureDeathSound = { value = true },
+  creatureSpellSound = { value = true },
+
+  -- UI Sounds. game_sounds reads these on every interface sound, so no apply.
+  uiVolumeScrollBar = volumeOption('uiSounds', 'uiVolumeLabel', 'UI Volume: %d %%'),
+
+  uiSounds = { value = true },
+  partySounds = { value = true },
+  vipSounds = { value = true },
+
+  consoleMessageSounds = { value = true },
+  partyMessageSounds = { value = true },
+  guildMessageSounds = { value = true },
+  privateLocalMessageSounds = { value = true },
+  privateMessageSounds = { value = true },
+  npcMessageSounds = { value = true },
+  globalMessageSounds = { value = true },
+  finderMessageSounds = { value = true },
+  raidMessageSounds = { value = true },
+  systemMessageSounds = { value = true },
+
+  quickAllCorpses = {
+    value = false,
+  },
+
+  showInHudCheckBox = {
+    value = true,
+    apply = function(value)
+        local gameMapPanel = m_interface.getMapPanel()
+        g_map.setDrawHUDStatus(value)
+
+        ConditionsHUD:setShowInHudEnabled(value)
+        return true
+    end,
+    tempApply = function(value)
+        ConditionsHUD:setShowInHudEnabled(value)
+        return true
+    end,
+  },
+
+  showInBarCheckBox = {
+    value = true,
+    apply = function(value)
+        ConditionsHUD:setShowInBarEnabled(value)
+        return true
+    end,
+    tempApply = function(value)
+        ConditionsHUD:setShowInBarEnabled(value)
+        return true
+    end,
+  },
+
+  showSpellChat = {
+    value = true,
+    apply = function(value)
+        local console = modules.game_console
+        if value then
+          console.openSpellChannel()
+        else
+          console.closeSpellChannel()
+        end
+        return true
+    end,
+    tempApply = function(value)
+        return true
+    end,
+  },
+}

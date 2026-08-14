@@ -1,0 +1,8 @@
+Module
+  name: crash_reporter
+  description: Sends crash log to remote server
+  author: Mateuzkl / Equipe Skyyzyy
+  website: https://github.com/Mateuzkl/NyxosClient
+  reloadable: false
+  scripts: [ crash_reporter ]
+  @onLoad: init()

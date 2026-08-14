@@ -1,0 +1,48 @@
+MainWindow
+  size: 360 121
+  !text: tr('Add to VIP list')
+  font: $var-cip-font
+  @onEnter: modules.game_viplist.addVip()
+  @onEscape: modules.game_viplist.destroyAddWindow()
+
+  Label
+    !text: tr('Please enter a character name:')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    font: $var-cip-font
+    color: $var-text-cip-color
+    text-auto-resize: true
+    margin-top: -7
+    margin-left: -1
+
+  TextEdit
+    id: name
+    size: 328 16
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    padding-top: 0
+    max-length: 40
+
+  HorizontalSeparator
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: next.top
+    margin-bottom: 13
+
+  Button
+    !text: tr('Ok')
+    anchors.right: next.left
+    anchors.bottom: parent.bottom
+    margin-right: 11
+    margin-bottom: 6
+    @onClick: modules.game_viplist.addVip()
+
+  Button
+    !text: tr('Cancel')
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-bottom: 6
+    @onClick: modules.game_viplist.destroyAddWindow()

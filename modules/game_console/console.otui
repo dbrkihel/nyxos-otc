@@ -1,0 +1,167 @@
+InviteNameWindow < NewMainWindow
+  id: inviteCharacterName
+  !text: tr('Invite player to selected chat channel')
+  anchors.horizontalCenter: parent.horizontalCenter
+  size: 360 121
+
+  Panel
+    id: contentPanel
+    anchors.fill: parent
+    margin: 12 12 12 13
+    Label
+      id: nameLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr('Please Enter a character name:')
+      font: $var-cip-font
+      color: $var-text-cip-color
+
+    TextEdit
+      id: characterName
+      size: 328 16
+      focusable: true
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 7
+      @onTextChange:
+
+    HorizontalSeparator
+      id: separator
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 10
+
+    Button
+      id: cancel
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      !text: tr('Cancel')
+      size: 43 20
+      @onClick:
+
+    Button
+      id: ok
+      anchors.bottom: parent.bottom
+      anchors.right: prev.left
+      !text: tr('Ok')
+      size: 43 20
+      margin-right: 10
+      @onClick:
+
+ExcludeNameWindow < NewMainWindow
+  id: excludeCharacterName
+  !text: tr('Exclude player from selected chat channel')
+  anchors.horizontalCenter: parent.horizontalCenter
+  size: 360 121
+
+  Panel
+    id: contentPanel
+    anchors.fill: parent
+    margin: 12 12 12 13
+    Label
+      id: nameLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr('Please Enter a character name:')
+      font: $var-cip-font
+      color: $var-text-cip-color
+
+    TextEdit
+      id: characterName
+      size: 328 16
+      focusable: true
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 7
+      @onTextChange:
+
+    HorizontalSeparator
+      id: separator
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 10
+
+    Button
+      id: cancel
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      !text: tr('Cancel')
+      size: 43 20
+      @onClick:
+
+    Button
+      id: ok
+      anchors.bottom: parent.bottom
+      anchors.right: prev.left
+      !text: tr('Ok')
+      size: 43 20
+      margin-right: 10
+      @onClick:
+
+MOTDWindow < NewMainWindow
+  id: MOTDWindow
+  size: 313 445
+  focus-child: text
+
+  MultilineTextEdit
+    id: text
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: separator.top
+    margin-top: 12
+    margin-right: 12
+    margin-left: 12
+    margin-bottom: 10
+    padding-right: 5
+    padding-top: 5
+    vertical-scrollbar: textScroll
+    text-wrap: true
+
+  VerticalScrollBar
+    id: textScroll
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.right: prev.right
+    margin-right: 1
+    margin-top: 1
+    margin-bottom: 1
+    step: 16
+    pixels-scroll: true
+
+  HorizontalSeparator
+    id: separator
+    anchors.bottom: okButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 20
+    margin-left: 12
+    margin-right: 12
+    margin-bottom: 9
+
+  Button
+    id: okButton
+    size: 43 20
+    !text: tr('Ok')
+    anchors.bottom: parent.bottom
+    anchors.right: next.left
+    margin-right: 5
+    margin-bottom: 12
+
+  Button
+    id: cancelButton
+    size: 43 20
+    !text: tr('Cancel')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-right: 12
+    margin-bottom: 12
+
+ConsolePanel
+  id: consolePanel
+  phantom: false
+  margin-right: 1

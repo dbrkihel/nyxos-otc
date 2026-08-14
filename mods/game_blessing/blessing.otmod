@@ -1,0 +1,8 @@
+Module
+  name: game_blessing
+  description: Game Blessings
+  author: Mateuzkl / Equipe Skyyzyy
+  sandboxed: false
+  scripts: [ blessing ]
+  @onLoad: init()
+  @onUnload: terminate()

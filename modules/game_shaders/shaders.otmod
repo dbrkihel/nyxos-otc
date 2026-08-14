@@ -1,0 +1,9 @@
+Module
+  name: game_shaders
+  description: Load shaders
+  author: nyxos-client
+  website: https://github.com/Mateuzkl/NyxosClient
+  scripts: [ shaders ]
+  sandboxed: true
+  @onLoad: init()
+  @onUnload: terminate()

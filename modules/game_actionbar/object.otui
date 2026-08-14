@@ -1,0 +1,177 @@
+SmartMode < CheckBox
+  id: smartMode
+  text: Smart mode
+  margin-top: 6
+  margin-left: 32
+  font: $var-cip-font
+  color: $var-text-cip-color
+  text-offset: 13 -3
+
+RoundCheckBox < CheckBox
+  image-source: /images/ui/checkboxcircle
+  text-offset: 15 -3
+
+  $first:
+    margin-top: 2
+
+  $!first:
+    margin-top: 5
+
+NewMainWindow
+  id: assignItemWindow
+  size: 275 198
+  Panel
+    id: contentPanel
+    anchors.fill: parent
+    margin: 12 12 12 12
+
+    FlatPanel
+      id: itemListFlatPanel
+      size: 86 86
+      anchors.top: parent.top
+      anchors.left: parent.left
+      image-source: /images/ui/panel_flat
+    UIItem
+      id: item
+      size: 64 64
+      anchors.top: prev.top
+      anchors.horizontalCenter: prev.horizontalCenter
+      margin-top: 10
+      &selectable: true
+      &editable: false
+      priceable: false
+      virtual: true
+    UIWidget
+      id: tier
+      size: 18 16
+      anchors.top: prev.top
+      anchors.right: prev.right
+      image-source: /images/game/items/tiers-strip-big
+      image-clip: 0 0 18 16
+      visible: false
+
+    Panel
+      id: checks
+      size: 160 86
+      anchors.top: parent.top
+      anchors.left: itemListFlatPanel.right
+      margin-left: 6
+      layout:
+        type: verticalBox
+        fit-children: true
+      RoundCheckBox
+        id: UseOnYourself
+        text: Use on yourself
+        enabled: false
+        font: $var-cip-font
+        color: $var-text-cip-color
+        change-cursor-image: false
+        $hover !disabled:
+          color: $var-text-cip-color
+        $disabled:
+          color: #707070
+      RoundCheckBox
+        id: UseOnTarget
+        text: Use on target
+        font: $var-cip-font
+        color: $var-text-cip-color
+        enabled: false
+        change-cursor-image: false
+        $hover !disabled:
+          color: $var-text-cip-color
+        $disabled:
+          color: #707070
+      RoundCheckBox
+        id: SmartCast
+        text: Use on cursor location
+        font: $var-cip-font
+        color: $var-text-cip-color
+        text-auto-resize: true
+        enabled: false
+        change-cursor-image: false
+        $hover !disabled:
+          color: $var-text-cip-color
+        $disabled:
+          color: #707070
+      RoundCheckBox
+        id: SelectUseTarget
+        text: With crosshair
+        enabled: false
+        font: $var-cip-font
+        color: $var-text-cip-color
+        change-cursor-image: false
+        $hover !disabled:
+          color: $var-text-cip-color
+        $disabled:
+          color: #707070
+      RoundCheckBox
+        id: Equip
+        text: Equip/Unequip
+        enabled: false
+        font: $var-cip-font
+        color: $var-text-cip-color
+        change-cursor-image: false
+        $hover !disabled:
+          color: $var-text-cip-color
+        $disabled:
+          color: #707070
+      SmartMode
+        id: smart
+        visible: true
+        $hover !disabled:
+          color: $var-text-cip-color
+        $disabled:
+          color: #707070
+      RoundCheckBox
+        id: Use
+        text: Use
+        enabled: false
+        font: $var-cip-font
+        color: $var-text-cip-color
+        change-cursor-image: false
+        $hover !disabled:
+          color: $var-text-cip-color
+        $disabled:
+          color: #707070
+
+    Button
+      id: select
+      size: 86 20
+      anchors.top: itemListFlatPanel.bottom
+      anchors.left: parent.left
+      margin-top: 6
+      image-source: /images/game/actionbar/select-object
+      image-clip: 0 0 86 20
+      $hover !pressed:
+        image-clip: 0 0 86 20
+      $pressed:
+        image-clip: 0 20 86 20
+
+    HorizontalSeparator
+      anchors.bottom: next.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 11
+    Button
+      id: buttonClose
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      size: 43 20
+      font: cipsoftFont
+      text: Cancel
+    Button
+      id: buttonApply
+      anchors.right: prev.left
+      anchors.bottom: parent.bottom
+      margin-right: 6
+      size: 43 20
+      font: cipsoftFont
+      text: Apply
+    Button
+      id: buttonOk
+      anchors.right: prev.left
+      anchors.bottom: parent.bottom
+      margin-right: 6
+      size: 43 20
+      font: cipsoftFont
+      text: Ok

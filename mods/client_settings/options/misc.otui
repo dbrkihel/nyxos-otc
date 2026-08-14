@@ -1,0 +1,264 @@
+MiscWindow < Panel
+  id: misc
+  anchors.fill: parent
+  text-wrap: true
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 3
+  padding: 3
+  FlatPanel
+    size: 505 22
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: storeAskBeforeBuyingProducts
+      size: 12 12
+      !text: tr('Ask Before Buying Products')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('storeAskBeforeBuyingProducts')
+        self:setChecked(value)
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you have checked this box, a confirmation dialog will open up \nwhenever you try to buy something via the Store. If you uncheck \nthis box, a click on "Buy Now" will get you the selected product \nwithout any delay.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: stowContainer
+      size: 12 12
+      !text: tr('Ask Before Stowing Container Content')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('stowContainer')
+        self:setChecked(value)
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you have checked this box, a confirmation dialog will open up \nwhenever you try to stow container content.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: askBeforeSortingNestedContainers
+      size: 12 12
+      !text: tr('Ask Before Sorting Nested Containers')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('askBeforeSortingNestedContainers')
+        self:setChecked(value)
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you have checked this box, a confirmation dialog will open up \nwhenever you try to sort a container that holds other containers.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: askBeforeMovingNestedContainers
+      size: 12 12
+      !text: tr('Ask Before Moving Contents of Nested Containers')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('askBeforeMovingNestedContainers')
+        self:setChecked(value)
+
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you have checked this box, a confirmation dialog will open up \nwhenever you try to move the contents of a container that holds \nother containers.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: stayLoggedInforSession
+      size: 12 12
+      !text: tr('Stay Logged In for Session')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('stayLoggedInforSession')
+        self:setChecked(value)
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('Check this box to stay logged in until you log out or until server \nsave. Otherwise, you will be asked to enter your account data and, \nif available, your authenticator token whenever you log out of the \ngame, e.g., to change your character.')
+
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: optimiseConnectionStability
+      size: 12 12
+      !text: tr('Optimise Connection Stability')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('optimiseConnectionStability')
+        self:setChecked(value)
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If activated, the client keeps trying to optimise your connection. \nEven though this behaviour can lead to increased traffic, it is \nhighly recommended to keep the box for this option ticked as it will \nprovide you with the best gaming experience possible. Only \nplayers who suffer from very serious problems which clearly result \nfrom this function should disable it by removing the tick.')
+
+  FlatPanel
+    size: 505 22
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 4
+    margin-right: 4
+
+    SettingsCheckBox
+      id: quickLogin
+      size: 12 12
+      !text: tr('Quick Login')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      text-offset: 14 -2
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 5
+      margin-left: 4
+      image-source: /images/ui/checkbox
+      image-clip: 0 0 12 12
+      @onSetup: |
+        local value = modules.client_settings.getOption('quickLogin')
+        self:setChecked(value)
+    UIWidget
+      size: 12 12
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 5
+      margin-top: 5
+      image-source: /images/skin/show-gui-help-grey
+      !tooltip: tr('If you tick this box, you enable a quicker client start and login to \nthe game. This can lead to temporary invisible game graphics if \nyour hardware is rather slow. However, this effect should only last \na few seconds.')
+
+  Button
+    id: resetButton
+    size: 43 20
+    !text: tr('Reset')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 4
+    margin-right: 4

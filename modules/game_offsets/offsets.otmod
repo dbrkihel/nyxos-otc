@@ -1,0 +1,6 @@
+Module
+  name: game_offsets
+  description: Offsets manager
+  scripts: [offsets,variables,effects_offsets]
+  @onLoad: init()
+  @onUnload: terminate()

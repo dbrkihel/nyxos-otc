@@ -1,0 +1,596 @@
+GameSidePanel < UIMiniWindowContainer
+  image-source: /images/ui/2pixel-up-frame-borderimage
+  image-border: 2
+  margin-right: 1
+  border-width: 2
+  border-color: alpha
+  width: 178
+  focusable: true
+  on: true
+  layout:
+    type: verticalBox
+  $mobile:
+    padding: 0
+    width: 200
+
+GameMapPanel < UIGameMap
+  padding: 6
+  image-source: /images/ui/panel_map
+  image-border: 4
+
+  $on:
+    padding: 0
+
+GameAction < UIButton
+  size: 64 64
+  phantom: false
+
+  UIButton
+    id: image
+    size: 48 48
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.verticalCenter: parent.verticalCenter
+    phantom: true
+    $checked:
+      opacity: 1.0
+      background: #00FF0033
+    $!checked:
+      opacity: 0.6
+      background: alpha
+
+UIWidget
+  id: gameRootPanel
+  anchors.fill: parent
+  GameMapPanel
+    id: gameMapPanel
+    anchors.left: gameLeftPanels.right
+    anchors.right: gameRightPanels.left
+    anchors.top: parent.top
+    anchors.bottom: bottomSplitter.top
+    margin-bottom: 41
+    focusable: false
+    UIWidget
+      id: mapTemplate
+      phantom: true
+      focusable: false
+      UIWidget
+        id: prestigeGameInfoHUD
+        size: 115 33
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        image-source: /images/game/ranked-queue/game-hud
+        visible: false
+        Label
+          id: teamBlueScore
+          text: 0
+          anchors.top: parent.top
+          anchors.left: parent.left
+          margin-top: 10
+          margin-left: 15
+          font: $var-cip-font-rounded
+          color: $var-text-cip-store-timed
+        Label
+          id: timeLeftTimer
+          text: 10:00
+          anchors.top: parent.top
+          anchors.horizontalCenter: parent.horizontalCenter
+          margin-top: 10
+          margin-left: 2
+          font: $var-cip-font-rounded
+          color: $var-text-cip-color-orange
+        Label
+          id: teamRedScore
+          text: 0
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-top: 10
+          margin-right: 15
+          font: $var-cip-font-rounded
+          color: $var-text-cip-store-red
+
+
+      UIWidget
+        id: blinkWarningPanel
+        size: 40 40
+        margin: 5 5 0 0
+        anchors.top: parent.top
+        anchors.right: parent.right
+        visible: false
+        phantom: false
+        UIButton
+          id: blinkWarning
+          size: 40 40
+          anchors.top: parent.top
+          anchors.right: parent.right
+          image-source: /images/ui/notification/notification-up
+          $pressed:
+            image-source: /images/ui/notification/notification-down
+        UIWidget
+          id: blinkWarningCount
+          size: 9 8
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-right: 1
+          margin-top: 1
+          image-source: /images/game/items/tier-1
+
+      UIWidget
+        id: castInterfacePanel
+        anchors.fill: parent
+        visible: false
+        phantom: false
+        UIButton
+          id: exitCast
+          size: 64 64
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-top: 5
+          margin-right: 5
+          image-source: /images/game/ranked-queue/cast/icon-close
+          image-clip: 0 0 64 64
+          @onClick: g_game.safeLogout()
+        UIButton
+          id: prevCast
+          size: 64 64
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.left: parent.left
+          margin-left: 5
+          image-source: /images/game/ranked-queue/cast/arrow-left
+          image-clip: 0 0 64 64
+          @onClick: g_game.turn(Directions.West)
+        UIButton
+          id: nextCast
+          size: 64 64
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.right: parent.right
+          margin-right: 5
+          image-source: /images/game/ranked-queue/cast/arrow-right
+          image-clip: 0 0 64 64
+          @onClick: g_game.turn(Directions.East)
+      UIWidget
+        id: prestigeCountdownPanel
+        anchors.fill: parent
+        visible: false
+        phantom: true
+        UIWidget
+          id: prestigeCountdown
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.horizontalCenter: parent.horizontalCenter
+          margin-left: -25
+
+      UIWidget
+        id: searchingQueueMinWindow
+        size: 153 161
+        anchors.top: parent.top
+        anchors.right: parent.right
+        margin-right: 5
+        visible: false
+        UIWidget
+          id: bannerBg1
+          anchors.top: parent.top
+          anchors.horizontalCenter: parent.horizontalCenter
+          image-auto-resize: true
+          Panel
+            id: queueTimerPanel
+            size: 122 20
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            margin-top: 11
+            visible: true
+            UIWidget
+              id: queueTimerBg
+              size: 96 20
+              anchors.top: parent.top
+              anchors.left: parent.left
+              margin-left: 7
+              Label
+                id: availableSearchText
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: 00:00
+                font: $var-cip-font
+                color: $var-text-cip-color
+                text-auto-resize: true
+              UIWidget
+                id: searchHourglassIcon
+                size: 10 15
+                anchors.top: prev.top
+                anchors.left: prev.right
+                margin-left: 5
+                image-source: /images/game/battlepass/battlepass-hourglass
+          UIWidget
+            id: playerRank
+            anchors.top: prev.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            margin-top: 3
+            image-source: /images/game/ranked-queue/ranks/rank-1
+            image-auto-resize: true
+          Label
+            id: currentDivisionLabel
+            !text: tr('Newbie')
+            anchors.top: prev.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            margin-top: 2
+            font: $var-cip-font
+            color: $var-text-cip-color
+            text-auto-resize: true
+
+  Panel
+    id: gameLeftActions
+    focusable: false
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 64
+    $!mobile:
+      visible: false
+      width: 0
+    layout:
+      type: verticalBox
+      fit-children: true
+
+    GameAction
+      id: use
+      @onSetup: self.image:setImageSource("/images/game/mobile/use")
+    GameAction
+      id: attack
+      @onSetup: self.image:setImageSource("/images/game/mobile/attack")
+    GameAction
+      id: follow
+      @onSetup: self.image:setImageSource("/images/game/mobile/follow")
+    GameAction
+      id: look
+      @onSetup: self.image:setImageSource("/images/game/mobile/look")
+    GameAction
+      id: chat
+      @onSetup: self.image:setImageSource("/images/game/mobile/chat")
+
+  Panel
+    id: gameLeftPanels
+    focusable: false
+    anchors.top: horizontalLeftPanel.bottom
+    anchors.bottom: parent.bottom
+    $!mobile:
+      anchors.left: parent.left
+    $mobile:
+      anchors.left: gameLeftActions.right
+    layout:
+      type: horizontalBox
+      fit-children: true
+      spacing: -1
+
+  GameSidePanel
+    id: horizontalLeftPanel
+    height: 0
+    width: 0
+    anchors.top: parent.top
+    anchors.left: parent.left
+    focusable: false
+    margin-bottom: 5
+    @onGeometryChange: modules.game_interface.checkHorizontalPanel(self)
+
+  Panel
+    id: gameLeftTopBar
+    image-source: /images/ui/panel_bottom2
+    anchors.top: parent.top
+    anchors.left: gameLeftPanels.right
+    anchors.bottom: bottomSplitter.top
+
+    layout:
+      type: horizontalBox
+      fit-children: true
+
+  Panel
+    id: gameLeftActionPanel
+    phantom: true
+    focusable: false
+    anchors.top: gameTopBar.bottom
+    anchors.left: gameLeftTopBar.right
+    anchors.bottom: bottomSplitter.top
+    padding-top: 1
+    margin-left: 1
+    border-width-right: 1
+    border-color-right: #292929
+    width: 36
+    image-source: /images/ui/actionbar_background-light
+    image-border: 1
+    margin-bottom: 16
+    padding-right: 3 
+    $mobile:
+      visible: false
+    layout:
+      type: horizontalBox
+      fit-children: true
+      spacing: 2
+
+  UIWidget
+    id: lockLeftPanel
+    size: 38 16
+    anchors.top: gameLeftActionPanel.bottom
+    anchors.left: gameLeftTopBar.right
+    border-width-right: 1
+    border-width-left: 3
+    border-color-right: #292929
+    border-color-left: #474748
+    image-source: /images/ui/actionbar_background-light
+    margin-left: 1
+
+    Button
+      id: leftLock
+      size: 35 16
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-right: 3
+      @onClick: modules.game_actionbar.changeLockStatus(self, "Left")
+      $pressed:
+        icon-offset: 1 1
+
+  Panel
+    id: gameRightPanels
+    anchors.right: parent.right
+    anchors.top: horizontalRightPanel.bottom
+    anchors.bottom: parent.bottom
+    focusable: false
+    layout:
+      type: horizontalBox
+      fit-children: true
+      spacing: -1
+
+  GameSidePanel
+    id: horizontalRightPanel
+    height: 0
+    width: 0
+    focusable: false
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-bottom: 5
+    @onGeometryChange: modules.game_interface.checkHorizontalPanel(self)
+  
+  Panel
+    id: gameRightTopBar
+    image-source: /images/ui/panel_bottom2
+    anchors.top: parent.top
+    anchors.right: gameRightPanels.left
+    anchors.bottom: bottomSplitter.top
+    layout:
+      type: horizontalBox
+      fit-children: true
+  Panel
+    id: gameRightActionPanel
+    phantom: true
+    focusable: false
+    anchors.top: gameTopBar.bottom
+    anchors.right: gameRightTopBar.left
+    anchors.bottom: bottomSplitter.top
+    border-width-left: 1
+    margin-right: 2
+    border-color-left: #747474
+    width: 36
+    image-source: /images/ui/actionbar_background-light
+    image-border: 1
+    margin-bottom: 16
+    padding-left: 3
+    $mobile:
+      visible: false
+    layout:
+      type: horizontalBox
+      fit-children: true
+      spacing: 2
+
+  UIWidget
+    id: lockRightPanel
+    size: 34 16
+    anchors.top: gameRightActionPanel.bottom
+    anchors.right: gameRightActionPanel.right
+    border-width-left: 1
+    border-color-left: #747474
+    image-source: /images/ui/actionbar_background-light
+    Button
+      id: rightLock
+      size: 34 16
+      anchors.top: parent.top
+      anchors.right: parent.right
+      @onClick: modules.game_actionbar.changeLockStatus(self, "Right")
+      $pressed:
+        icon-offset: 1 1
+
+  Splitter
+    id: bottomSplitter
+    anchors.left: gameLeftPanels.right
+    anchors.right: gameRightPanels.left
+    anchors.bottom: parent.bottom
+    height: 6
+    image-source: /images/ui/splitterActBottom
+    size: 300 6
+    opacity: 100
+    margin-right: 1
+    relative-margin: bottom
+    margin-bottom: 200
+    @canUpdateMargin: |
+      function(self, newMargin)
+        local maxHeight = 118
+        if modules.client_settings.getOption('dontStretchShrink') then
+          maxHeight = 400
+        end
+        local actionBars = modules.game_actionbar.getActiveBottomBars()
+        maxHeight = maxHeight + (35 * actionBars)
+
+        if modules.game_topbar.isBottomBarActive() then
+          maxHeight = maxHeight + modules.game_topbar.getCurrentHeight()
+        end
+
+        local result = math.max(math.min(newMargin, self:getParent():getHeight() - 150), maxHeight)
+        if modules.client_settings.getOption('dontStretchShrink') then
+          if result > 650 then
+            result = 650
+          elseif result > 450 then
+            result = 450
+          else
+            result = 200
+          end
+        end
+        return result
+      end
+    @onGeometryChange: |
+      function(self)
+        local maxHeight = 118
+        local actionBars = modules.game_actionbar.getActiveBottomBars()
+        maxHeight = maxHeight + (35 * actionBars)
+        self:setMarginBottom(math.min(math.max(self:getParent():getHeight() - 150, maxHeight), self:getMarginBottom()))
+      end
+
+    $mobile:
+      visible: false
+
+  Panel
+    id: gameBottomActionPanel
+    phantom: true
+    focusable: false
+    anchors.left: parent.left
+    margin-right: 12
+    $!mobile:
+      anchors.left: bottomSplitter.left
+      anchors.right: bottomSplitter.right
+      anchors.top: bottomSplitter.top
+      margin-top: 6
+    $mobile:
+      anchors.left: gameLeftPanels.right
+      anchors.right: gameRightPanels.left
+      anchors.bottom: gameBottomPanel.top
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  UIWidget
+    id: lockPanel
+    width: 12
+    anchors.top: gameBottomActionPanel.top
+    anchors.bottom: gameBottomActionPanel.bottom
+    anchors.left: gameBottomActionPanel.right
+    margin-left: 1
+    border-width-top: 1
+    border-color-top: #292929
+    image-source: /images/ui/background-dark
+
+    Button
+      id: bottomLock
+      width: 12
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      margin-top: 1
+      margin-bottom: 1
+      icon-source: /images/game/actionbar/locked
+      icon-offset: 0 0
+      @onClick: modules.game_actionbar.changeLockStatus(self, "Bottom")
+
+      $pressed:
+        icon-offset: 1 1
+
+  Panel
+    id: gameBottomCooldownPanel
+    phantom: true
+    focusable: false
+
+    $!mobile:
+      anchors.left: bottomSplitter.left
+      anchors.right: bottomSplitter.right
+      anchors.top: gameBottomActionPanel.bottom
+      margin-bottom: 5
+
+    $mobile:
+      visible: false
+      anchors.left: gameLeftPanels.right
+      anchors.right: gameRightPanels.left
+      anchors.bottom: gameBottomPanel.top
+
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  Panel
+    id: gameBottomPanel
+    $!mobile:
+      anchors.left: gameBottomCooldownPanel.left
+      anchors.right: gameBottomCooldownPanel.right
+      anchors.top: gameBottomCooldownPanel.bottom
+      anchors.bottom: parent.bottom
+
+    $mobile:
+      anchors.left: gameLeftPanels.right
+      anchors.right: gameRightPanels.left
+      anchors.bottom: parent.bottom
+
+  UIWidget
+    id: mouseGrabber
+    focusable: false
+    visible: false
+
+  Panel
+    id: gameTopBar
+    image-source: /images/ui/panel_bottom2
+    anchors.top: parent.top
+    anchors.left: gameBottomActionPanel.left
+    anchors.right: gameBottomActionPanel.right
+    padding-right: -14
+    focusable: false
+
+    $mobile:
+      height: 0
+
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  Button
+    id: addRightPanelButton
+    size: 9 27
+    image-source: /images/ui/panel-arrow
+    image-clip: 0 0 9 27
+    anchors.top: gameTopBar.top
+    anchors.right: gameRightPanels.left
+    margin-right: -1
+    $hover:
+      image-source: /images/ui/panel-arrow
+      image-clip: 0 0 9 27
+    @onClick: modules.game_interface.addRightPanel()
+
+  Button
+    id: removeRightPanelButton
+    size: 9 27
+    image-source: /images/ui/panel-arrow
+    image-clip: 9 27 9 28
+    anchors.top: addRightPanelButton.bottom
+    anchors.right: gameRightPanels.left
+    margin-top: 2
+    margin-right: -1
+    $hover:
+      image-source: /images/ui/panel-arrow
+      image-clip: 9 27 9 28
+    @onClick: modules.game_interface.removeRightPanel()
+
+  Button
+    id: addLeftPanelButton
+    size: 9 27
+    image-source: /images/ui/panel-arrow
+    image-clip: 27 0 9 27
+    anchors.top: gameTopBar.top
+    anchors.left: gameLeftPanels.right
+    margin-left: 1
+    $hover:
+      image-source: /images/ui/panel-arrow
+      image-clip: 27 0 9 27
+    @onClick: modules.game_interface.addLeftPanel()
+
+  Button
+    id: removeLeftPanelButton
+    size: 9 27
+    image-source: /images/ui/panel-arrow
+    image-clip: 36 26 9 27
+    anchors.top: addLeftPanelButton.bottom
+    anchors.left: gameLeftPanels.right
+    margin-top: 1
+    margin-left: 1
+    $hover:
+      image-source: /images/ui/panel-arrow
+      image-clip: 36 26 9 27
+    @onClick: modules.game_interface.removeLeftPanel()

@@ -1,0 +1,125 @@
+BugReportWindow < NewMainWindow
+  !text: tr('Reporting')
+  size: 300 318
+  @onEscape: self:hide()
+
+  Panel
+    id: contentPanel
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 12 12 12 12
+
+    Label
+      id: bugLabel
+      !text: tr('Please use this dialog to only report\nbugs. Do not report rule violations here!')
+      font: $var-cip-font
+      text-auto-resize: true
+      color: $var-text-cip-color
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+
+    TextList
+      id: reportTypeCategory
+      size: 268 50
+      anchors.top: bugLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      vertical-scrollbar: reportTypeScroll
+      margin-top: 5
+      text-wrap: true
+      layout:
+        type: verticalBox
+
+      UIWidget
+        id: map
+        !text: tr('Map')
+        text-align: left
+        color: $var-text-cip-color-highlight
+        background-color: $var-textlist-odd
+        @onFocusChange: updateOnStates(self, "$var-textlist-odd", 0)
+        @onSetup: self:focus(); updateOnStates(self, "$var-textlist-odd", 0)
+      UIWidget
+        id: type
+        !text: tr('Type')
+        text-align: left
+        color: $var-text-cip-color-highlight
+        background-color: $var-textlist-even
+        @onFocusChange: updateOnStates(self, "$var-textlist-even", 1)
+        @onSetup: updateOnStates(self, "$var-textlist-even", 1)
+      UIWidget
+        id: technical
+        !text: tr('Technical')
+        text-align: left
+        color: $var-text-cip-color-highlight
+        background-color: $var-textlist-odd
+        @onFocusChange: updateOnStates(self, "$var-textlist-odd", 2)
+        @onSetup: updateOnStates(self, "$var-textlist-odd", 2)
+      UIWidget
+        id: other
+        !text: tr('Other')
+        text-align: left
+        color: $var-text-cip-color-highlight
+        background-color: $var-textlist-even
+        @onFocusChange: updateOnStates(self, "$var-textlist-even", 3)
+        @onSetup: updateOnStates(self, "$var-textlist-even", 3)
+
+    VerticalScrollBar
+      id: reportTypeScroll
+      anchors.top: prev.top
+      anchors.bottom: prev.bottom
+      anchors.right: prev.right
+      margin-right: 1
+      margin-top: 1
+      margin-bottom: 1
+      step: 16
+      pixels-scroll: true
+
+    MultilineTextEdit
+      id: bugTextEdit
+      size: 268 150
+      anchors.top: reportTypeCategory.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      vertical-scrollbar: bugScroll
+      margin-top: 1
+      text-wrap: true
+      @onTextChange: modules.game_bugreport.onTextChange(self:getText())
+
+    VerticalScrollBar
+      id: bugScroll
+      anchors.top: prev.top
+      anchors.bottom: prev.bottom
+      anchors.right: prev.right
+      margin-right: 1
+      margin-top: 1
+      margin-bottom: 1
+      step: 16
+      pixels-scroll: true
+
+    HorizontalSeparator
+      id: separator
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 28
+
+    Button
+      id: cancelButton
+      size: 43 20
+      !text: tr('Cancel')
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      @onClick: hide()
+
+    Button
+      id: sendButton
+      size: 43 20
+      !text: tr('Send')
+      anchors.bottom: parent.bottom
+      anchors.right: prev.left
+      margin-right: 5
+      enabled: false
+      &onClick: doReport

@@ -1,0 +1,90 @@
+TextWindow < NewMainWindow
+  id: textWindow
+  size: 313 445
+  focus-child: text
+  @onEscape: callbackCancel(self)
+
+  Item
+    id: textItem
+    virtual: true
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 14
+    margin-left: 18
+    image-source:
+
+  Label
+    id: description
+    anchors.top: parent.top
+    anchors.left: textItem.right
+    anchors.right: parent.right
+    margin-left: 8
+    margin-top: 22
+    text-auto-resize: true
+    text-align: left
+    text-wrap: true
+    font: $var-cip-font
+    color: $var-text-cip-color
+
+  MultilineTextEdit
+    id: text
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: separator.top
+    margin-top: 15
+    margin-right: 12
+    margin-left: 12
+    margin-bottom: 10
+    padding-right: 5
+    vertical-scrollbar: textScroll
+    text-wrap: true
+
+  VerticalScrollBar
+    id: textScroll
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.right: prev.right
+    margin-right: 1
+    margin-top: 1
+    margin-bottom: 1
+    step: 16
+    pixels-scroll: true
+
+  HorizontalSeparator
+    id: separator
+    anchors.bottom: okButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 20
+    margin-left: 12
+    margin-right: 12
+    margin-bottom: 9
+
+  Button
+    id: okButton
+    size: 43 20
+    !text: tr('Ok')
+    anchors.bottom: parent.bottom
+    anchors.right: next.left
+    margin-right: 5
+    margin-bottom: 12
+
+  Button
+    id: cancelButton
+    size: 43 20
+    !text: tr('Cancel')
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-right: 12
+    margin-bottom: 12
+
+  Button
+    id: reportButton
+    size: 64 20
+    !text: tr('Report Text')
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-left: 12
+    margin-bottom: 12
+    @onClick: print(toDo-ReportText)

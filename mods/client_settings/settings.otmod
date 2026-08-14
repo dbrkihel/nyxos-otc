@@ -1,0 +1,12 @@
+Module
+  name: client_settings
+  description: Initialize the client and setups its main window
+  author: Luksrt
+  website: https://github.com/Mateuzkl/NyxosClient
+  reloadable: false
+  sandboxed: true
+  call-name: settings
+  scripts: [ settings, classes/custom-hotkeys, classes/import-config, classes/actionbar-hotkeys, classes/TempOptions, classes/GameOptions, classes/ScreenShot, classes/conditions ]
+  @onLoad: init()
+  @onUnload: terminate()
+

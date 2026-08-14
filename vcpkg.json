@@ -1,0 +1,36 @@
+{
+    "name": "nyxos-client",
+    "version-string": "1.0.0",
+    "dependencies": [
+        "boost-iostreams",
+        "boost-asio",
+        "boost-beast",
+        "boost-system",
+        "boost-variant",
+        "boost-lockfree",
+        "boost-process",
+        "boost-program-options",
+        "boost-filesystem",
+        "boost-uuid",
+        "physfs",
+        "libogg",
+        "libvorbis",
+        "libpng",
+        "zlib",
+        "libzip",
+        "openssl",
+        "openal-soft",
+        "glew",
+        "luajit",
+        "bzip2",
+        "liblzma",
+        "protobuf",
+        "nlohmann-json",
+        "freetype",
+        {
+            "name": "opengl",
+            "platform": "windows | linux"
+        }
+    ],
+"builtin-baseline": "a97cd63dbb870f107c557fa13b2bc2ce7e4e2188"
+}

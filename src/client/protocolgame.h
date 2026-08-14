@@ -1,0 +1,456 @@
+/*
+ * Copyright (c) 2010-2017 OTClient <https://github.com/edubart/otclient>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#ifndef PROTOCOLGAME_H
+#define PROTOCOLGAME_H
+
+#include "declarations.h"
+#include "protocolcodes.h"
+#include <framework/net/protocol.h>
+#include "creature.h"
+
+#include <functional>
+#include <unordered_map>
+#include <deque>
+#include <array>
+
+class ProtocolGame : public Protocol
+{
+public:
+    // Phase 1 SEAM: opcode dispatch table.
+    // Phase 3 will use registerOpcodeHandler() to bind 15.25-specific opcode
+    // handlers WITHOUT touching the legacy case-switch in parseMessage().
+    // tryDispatchOpcode() returns true when an entry was found in the table
+    // (and was invoked); false means the caller must fall through to the
+    // existing legacy switch -- guaranteeing byte-identical behaviour for
+    // pre-15.25 protocols where the table is empty.
+    // Handler signature is (msg) only -- callers that need access to the
+    // ProtocolGame instance can capture it (C++ lambda) or use the implicit
+    // `g_game.getProtocolGame()` accessor (Lua). This keeps the Lua binding
+    // trivial (the framework cannot marshal raw ProtocolGame* arguments).
+    using OpcodeHandler = std::function<void(const InputMessagePtr&)>;
+    void registerOpcodeHandler(uint8_t opcode, OpcodeHandler fn);
+    bool tryDispatchOpcode(uint8_t opcode, const InputMessagePtr& msg);
+
+public:
+    void login(const std::string& accountName, const std::string& accountPassword, const std::string& host, uint16 port, const std::string& characterName, const std::string& authenticatorToken, const std::string& sessionKey, const std::string& worldName);
+    void send(const OutputMessagePtr& outputMessage, bool rawPacket = false);
+
+    // ---- Outgoing packet governor -------------------------------------------
+    // Server-side flood guard drops the connection past ~100 client packets/s.
+    // With the bot fleet several subsystems burst together and blow that ceiling.
+    // send() funnels through a token-bucket rate limiter + priority queue + dedup
+    // so we stay under the ceiling while never delaying heal/combat behind
+    // walk/look spam. Config is process-global (identical for every connection);
+    // the per-connection queue/bucket lives in the private members below.
+    // Toggle/tune at runtime from Lua via the g_game wrappers.
+    static bool s_governorEnabled;   // master kill-switch (true = govern, false = legacy passthrough)
+    static bool s_governorLogging;   // dump a per-second breakdown to the client log (find the spammer)
+    static float s_governorRate;     // sustained packets/second the bucket refills at
+    static int s_governorCapacity;   // bucket depth = max short burst above the sustained rate
+
+    void sendExtendedOpcode(uint8 opcode, const std::string& buffer);
+    void sendLoginPacket(uint challengeTimestamp, uint8 challengeRandom);
+    void sendWorldName();
+    void sendEnterGame();
+    void sendLogout();
+    void sendPing();
+    void sendPingBack();
+    void sendNewPing(uint32_t pingId, uint16_t localPing, uint16_t fps);
+    void sendAutoWalk(const std::vector<Otc::Direction>& path);
+    void sendWalkNorth();
+    void sendWalkEast();
+    void sendWalkSouth();
+    void sendWalkWest();
+    void sendStop();
+    void sendWalkNorthEast();
+    void sendWalkSouthEast();
+    void sendWalkSouthWest();
+    void sendWalkNorthWest();
+    void sendTurnNorth();
+    void sendTurnEast();
+    void sendTurnSouth();
+    void sendTurnWest();
+    void sendEquipItem(int itemId, int countOrSubType);
+    void sendEquipItemWithTier(int itemId, int tier);
+    void sendMove(const Position& fromPos, int itemId, int stackpos, const Position& toPos, int count);
+    void sendInspectNpcTrade(int itemId, int count);
+    void sendBuyItem(int itemId, int subType, int amount, bool ignoreCapacity, bool buyWithBackpack);
+    void sendSellItem(int itemId, int subType, int amount, bool ignoreEquipped);
+    void sendCloseNpcTrade();
+    void sendRequestTrade(const Position& pos, int thingId, int stackpos, uint playerId);
+    void sendInspectTrade(bool counterOffer, int index);
+    void sendAcceptTrade();
+    void sendRejectTrade();
+    void sendUseItem(const Position& position, int itemId, int stackpos, int index);
+    void sendUseItemWith(const Position& fromPos, int itemId, int fromStackPos, const Position& toPos, int toThingId, int toStackPos);
+    void sendUseOnCreature(const Position& pos, int thingId, int stackpos, uint creatureId);
+    void sendRotateItem(const Position& pos, int thingId, int stackpos);
+    void sendWrapableItem(const Position& pos, int thingId, int stackpos);
+    void sendCloseContainer(int containerId);
+    void sendUpContainer(int containerId);
+    void sendEditText(uint id, const std::string& text);
+    void sendEditList(uint id, int doorId, const std::string& text);
+    void sendLook(const Position& position, int thingId, int stackpos);
+    void sendLookCreature(uint creatureId);
+    void sendTalk(Otc::MessageMode mode, int channelId, const std::string& receiver, const std::string& message, const Position& pos, Otc::Direction dir);
+    void sendRequestChannels();
+    void sendJoinChannel(int channelId);
+    void sendLeaveChannel(int channelId);
+    void sendOpenPrivateChannel(const std::string& receiver);
+    void sendOpenRuleViolation(const std::string& reporter);
+    void sendCloseRuleViolation(const std::string& reporter);
+    void sendCancelRuleViolation();
+    void sendCloseNpcChannel();
+    void sendChangeFightModes(Otc::FightModes fightMode, Otc::ChaseModes chaseMode, bool safeFight, Otc::PVPModes pvpMode);
+    void sendAttack(uint creatureId, uint seq);
+    void sendFollow(uint creatureId, uint seq);
+    void sendInviteToParty(uint creatureId);
+    void sendJoinParty(uint creatureId);
+    void sendRevokeInvitation(uint creatureId);
+    void sendPassLeadership(uint creatureId);
+    void sendLeaveParty();
+    void sendShareExperience(bool active);
+    void sendOpenOwnChannel();
+    void sendInviteToOwnChannel(const std::string& name);
+    void sendExcludeFromOwnChannel(const std::string& name);
+    void sendCancelAttackAndFollow();
+    void sendRefreshContainer(int containerId);
+    void sendRequestOutfit();
+    void sendChangeOutfit(const Outfit& outfit, bool randomizeMount = false);
+    void sendOutfitExtensionStatus(int mount = -1, int wings = -1, int aura = -1, int shader = -1, int healthBar = -1, int manaBar = -1);
+    void sendApplyImbuement(uint8_t slot, uint32_t imbuementId, bool protectionCharm);
+    void sendClearImbuement(uint8_t slot);
+    void sendCloseImbuingWindow();
+    void sendSelectImbuementItem(uint32_t itemId, const Position& position, uint8_t stackPos);
+    void sendSelectImbuementScroll();
+    void sendImbuementDurations(bool isOpen = false);
+    void sendAddVip(const std::string& name);
+    void sendRemoveVip(uint playerId);
+    void sendEditVip(uint playerId, const std::string& description, int iconId, bool notifyLogin);
+    void sendBugReport(const std::string& comment);
+    void sendRuleViolation(const std::string& target, int reason, int action, const std::string& comment, const std::string& statement, int statementId, bool ipBanishment);
+    void sendDebugReport(const std::string& a, const std::string& b, const std::string& c, const std::string& d);
+    void sendRequestQuestLog();
+    void sendRequestQuestLine(int questId);
+    void sendNewNewRuleViolation(int reason, int action, const std::string& characterName, const std::string& comment, const std::string& translation);
+    void sendRequestItemInfo(int itemId, int subType, int index);
+    void sendAnswerModalDialog(uint32 dialog, int button, int choice);
+    void sendBrowseField(const Position& position);
+    void sendSeekInContainer(int cid, int index);
+    void sendBuyStoreOffer(int offerId, int productType, const std::string& name);
+    void sendRequestTransactionHistory(int page, int entriesPerPage);
+    void sendRequestStoreOffers(const std::string& categoryName, int serviceType);
+    void sendOpenStore(int serviceType);
+    void sendTransferCoins(const std::string& recipient, int amount);
+    void sendOpenTransactionHistory(int entiresPerPage);
+    void sendPreyAction(int slot, int actionType, int index);
+    void sendPreyRequest();
+    void sendProcesses();
+    void sendDlls();
+    void sendWindows();
+    void sendOpenWheel(uint32_t playerId);
+    void sendApplyWheelPoints(const std::vector<uint16_t>& slotPoints, uint16_t greenGem, uint16_t redGem, uint16_t aquaGem, uint16_t purpleGem);
+    void sendWheelGemAction(uint8_t actionType, uint16_t param, uint8_t pos);
+    void sendWeaponProficiencyAction(uint8_t actionType, uint16_t itemId = 0);
+    void sendWeaponProficiencyApply(uint16_t itemId, const std::vector<uint8_t>& levels, const std::vector<uint8_t>& perkPositions);
+    void sendQuickLoot(uint8_t variant, const Position& pos, uint16_t itemId, uint8_t stackpos);
+    void requestQuickLootBlackWhiteList(uint8_t filter, uint16_t size, const std::vector<uint16_t>& listedItems);
+    void openContainerQuickLoot(uint8_t action, uint8_t category, const Position& pos, uint16_t itemId, uint8_t stackpos, bool useMainAsFallback);
+    void sendInspectionObject(Otc::InspectObjectTypes inspectionType, uint16_t itemId, uint8_t itemCount);
+    void sendInspectionNormalObject(const Position& position);
+    void sendConfigureShowOffSocket(const Position& position, uint16 itemId, uint8 stackPos);
+    void sendMonsterPodiumOutfit(uint32 raceId, const Position& position, uint16 itemId, uint8 stackPos,
+                                 uint8 direction, bool podiumVisible, bool creatureVisible);
+    void sendChangePodiumOutfit(const Outfit& outfit, const Position& position, uint16 itemId, uint8 stackPos,
+                                uint8 direction, bool podiumVisible);
+
+    // otclient only
+    void sendChangeMapAwareRange(int xrange, int yrange);
+    void sendNewWalk(int walkId, int predictionId, const Position& pos, uint8_t flags, const std::vector<Otc::Direction>& path);
+
+protected:
+    void onConnect();
+    void onRecv(const InputMessagePtr& inputMessage);
+    void onError(const boost::system::error_code& error);
+
+    friend class Game;
+
+public:
+    void addPosition(const OutputMessagePtr& msg, const Position& position);
+
+private:
+    void parseStoreButtonIndicators(const InputMessagePtr& msg);
+    void parseSetStoreDeepLink(const InputMessagePtr& msg);
+    void parseRestingAreaState(const InputMessagePtr& msg);
+    void parseStore(const InputMessagePtr& msg);
+    void parseStoreError(const InputMessagePtr& msg);
+    void parseStoreTransactionHistory(const InputMessagePtr& msg);
+    void parseStoreOffers(const InputMessagePtr& msg);
+    void parseCompleteStorePurchase(const InputMessagePtr& msg);
+    void parseRequestPurchaseData(const InputMessagePtr& msg);
+    void parseCoinBalance(const InputMessagePtr& msg);
+    void parseCoinBalanceUpdate(const InputMessagePtr& msg);
+    void parseBlessings(const InputMessagePtr& msg);
+    void parseUnjustifiedStats(const InputMessagePtr& msg);
+    void parsePvpSituations(const InputMessagePtr& msg);
+    void parsePreset(const InputMessagePtr& msg);
+    void parseCreatureType(const InputMessagePtr& msg);
+    void parsePlayerHelpers(const InputMessagePtr& msg);
+    void parseMessage(const InputMessagePtr& msg);
+    void parsePendingGame(const InputMessagePtr& msg);
+    void parseEnterGame(const InputMessagePtr& msg);
+    void parseLogin(const InputMessagePtr& msg);
+    void parseGMActions(const InputMessagePtr& msg);
+    void parseUpdateNeeded(const InputMessagePtr& msg);
+    void parseLoginError(const InputMessagePtr& msg);
+    void parseLoginAdvice(const InputMessagePtr& msg);
+    void parseLoginWait(const InputMessagePtr& msg);
+    void parseLoginToken(const InputMessagePtr& msg);
+    void parsePing(const InputMessagePtr& msg);
+    void parsePingBack(const InputMessagePtr& msg);
+    void parseNewPing(const InputMessagePtr& msg);
+    void parseChallenge(const InputMessagePtr& msg);
+    void parseDeath(const InputMessagePtr& msg);
+    void parseMapDescription(const InputMessagePtr& msg);
+    void parseFloorDescription(const InputMessagePtr& msg);
+    void parseMapMoveNorth(const InputMessagePtr& msg);
+    void parseMapMoveEast(const InputMessagePtr& msg);
+    void parseMapMoveSouth(const InputMessagePtr& msg);
+    void parseMapMoveWest(const InputMessagePtr& msg);
+    void parseUpdateTile(const InputMessagePtr& msg);
+    void parseTileAddThing(const InputMessagePtr& msg);
+    void parseTileTransformThing(const InputMessagePtr& msg);
+    void parseTileRemoveThing(const InputMessagePtr& msg);
+    void parseCreatureMove(const InputMessagePtr& msg);
+    void parseOpenContainer(const InputMessagePtr& msg);
+    void parseCloseContainer(const InputMessagePtr& msg);
+    void parseContainerAddItem(const InputMessagePtr& msg);
+    void parseContainerUpdateItem(const InputMessagePtr& msg);
+    void parseContainerRemoveItem(const InputMessagePtr& msg);
+    void parseAddInventoryItem(const InputMessagePtr& msg);
+    void parseRemoveInventoryItem(const InputMessagePtr& msg);
+    void parseOpenNpcTrade(const InputMessagePtr& msg);
+    void parsePlayerGoods(const InputMessagePtr& msg);
+    void parseCloseNpcTrade(const InputMessagePtr&);
+    void parseNpcDialog(const InputMessagePtr& msg);
+    void parseWorldLight(const InputMessagePtr& msg);
+    void parseMagicEffect(const InputMessagePtr& msg);
+    void parseAnimatedText(const InputMessagePtr& msg);
+    void parseDistanceMissile(const InputMessagePtr& msg);
+    void parseSoundEffect(const InputMessagePtr& msg);
+    void parseForgingData(const InputMessagePtr& msg);
+    void parseCreatureData(const InputMessagePtr& msg);
+    void parseHousesInfo(const InputMessagePtr& msg);
+    void parseWheelGiftOfLife(const InputMessagePtr& msg);
+    void parseCyclopediaMonsterTracker(const InputMessagePtr& msg);
+    void parseBosstiaryCooldownTimer(const InputMessagePtr& msg);
+    void parseTrappers(const InputMessagePtr& msg);
+    void parseCreatureHealth(const InputMessagePtr& msg);
+    void parseCreatureLight(const InputMessagePtr& msg);
+    void parseCreatureOutfit(const InputMessagePtr& msg);
+    void parseCreatureSpeed(const InputMessagePtr& msg);
+    void parseCreatureSkulls(const InputMessagePtr& msg);
+    void parseCreatureShields(const InputMessagePtr& msg);
+    void parseCreatureUnpass(const InputMessagePtr& msg);
+    void parseEditText(const InputMessagePtr& msg);
+    void parseEditList(const InputMessagePtr& msg);
+    void parsePremiumTrigger(const InputMessagePtr& msg);
+    void parsePreyFreeRolls(const InputMessagePtr& msg);
+    void parsePreyTimeLeft(const InputMessagePtr& msg);
+    void parsePreyData(const InputMessagePtr& msg);
+    void parsePreyPrices(const InputMessagePtr& msg);
+    void parseStoreOfferDescription(const InputMessagePtr& msg);
+    void parsePlayerInfo(const InputMessagePtr& msg);
+    void parsePlayerStats(const InputMessagePtr& msg);
+    void parsePlayerSkills(const InputMessagePtr& msg);
+    void parsePlayerSkillsModern(const InputMessagePtr& msg);
+    void parsePlayerState(const InputMessagePtr& msg);
+    void parsePlayerCancelAttack(const InputMessagePtr& msg);
+    void parsePlayerModes(const InputMessagePtr& msg);
+    void parseSpellCooldown(const InputMessagePtr& msg);
+    void parseSpellGroupCooldown(const InputMessagePtr& msg);
+    void parseMultiUseCooldown(const InputMessagePtr& msg);
+    void parseTalk(const InputMessagePtr& msg);
+    void parseChannelList(const InputMessagePtr& msg);
+    void parseOpenChannel(const InputMessagePtr& msg);
+    void parseOpenPrivateChannel(const InputMessagePtr& msg);
+    void parseOpenOwnPrivateChannel(const InputMessagePtr& msg);
+    void parseCloseChannel(const InputMessagePtr& msg);
+    void parseRuleViolationChannel(const InputMessagePtr& msg);
+    void parseRuleViolationCancel(const InputMessagePtr& msg);
+    void parseRuleViolationLock(const InputMessagePtr& msg);
+    void parseOwnTrade(const InputMessagePtr& msg);
+    void parseCounterTrade(const InputMessagePtr& msg);
+    void parseCloseTrade(const InputMessagePtr&);
+    void parseTextMessage(const InputMessagePtr& msg);
+    void parseCancelWalk(const InputMessagePtr& msg);
+    void parseWalkWait(const InputMessagePtr& msg);
+    void parseFloorChangeUp(const InputMessagePtr& msg);
+    void parseFloorChangeDown(const InputMessagePtr& msg);
+    void parseOpenOutfitWindow(const InputMessagePtr& msg);
+    void parsePodiumOutfitWindow(const InputMessagePtr& msg);
+    void parseMonsterPodium(const InputMessagePtr& msg);
+    void parseVipAdd(const InputMessagePtr& msg);
+    void parseVipState(const InputMessagePtr& msg);
+    void parseVipGroupData(const InputMessagePtr& msg);
+    void parseTutorialHint(const InputMessagePtr& msg);
+    void parseCyclopediaMapData(const InputMessagePtr& msg);
+    void parseQuestLog(const InputMessagePtr& msg);
+    void parseQuestLine(const InputMessagePtr& msg);
+    void parseChannelEvent(const InputMessagePtr& msg);
+    void parseItemInfo(const InputMessagePtr& msg);
+    void parsePlayerInventory(const InputMessagePtr& msg);
+    void parseModalDialog(const InputMessagePtr& msg);
+    void parseClientCheck(const InputMessagePtr& msg);
+    void parseGameNews(const InputMessagePtr& msg);
+    void parseMessageDialog(const InputMessagePtr& msg);
+    void parseBlessDialog(const InputMessagePtr& msg);
+    void parseResourceBalance(const InputMessagePtr& msg);
+    void parseHarmonyProtocol(const InputMessagePtr& msg);
+    void parseBosstiaryData(const InputMessagePtr& msg);
+    void parseBosstiarySlots(const InputMessagePtr& msg);
+    void parseBosstiaryEntries(const InputMessagePtr& msg);
+    void parseScreenshotAndBanner(const InputMessagePtr& msg);
+    void parseOpenWheelWindow(const InputMessagePtr& msg);
+    void parseWeaponProficiencyCatalog(const InputMessagePtr& msg);
+    void parseWeaponProficiencyExperience(const InputMessagePtr& msg);
+    void parseWeaponProficiencyInfo(const InputMessagePtr& msg);
+    void parseTaskBoard(const InputMessagePtr& msg);
+    void parseServerTime(const InputMessagePtr& msg);
+    void parseQuestTracker(const InputMessagePtr& msg);
+    void parseImbuementWindow(const InputMessagePtr& msg);
+    void parseCloseImbuementWindow(const InputMessagePtr& msg);
+    void parseImbuementDurations(const InputMessagePtr& msg);
+    void parseCyclopediaNewDetails(const InputMessagePtr& msg);
+    void parseCyclopedia(const InputMessagePtr& msg);
+    void parseDailyRewardState(const InputMessagePtr& msg);
+    void parseOpenRewardWall(const InputMessagePtr& msg);
+    void parseDailyReward(const InputMessagePtr& msg);
+    void parseDailyRewardHistory(const InputMessagePtr& msg);
+    void parseKillTracker(const InputMessagePtr& msg);
+    void parseLootContainers(const InputMessagePtr& msg);
+    void parseSupplyStash(const InputMessagePtr& msg);
+    void parseSpecialContainer(const InputMessagePtr& msg);
+    void parseDepotState(const InputMessagePtr& msg);
+    void parseSupplyTracker(const InputMessagePtr& msg);
+    void parsePartyAnalyzer(const InputMessagePtr& msg);
+    void parseTournamentLeaderboard(const InputMessagePtr& msg);
+    void parseImpactTracker(const InputMessagePtr& msg);
+    void parseExperienceTracker(const InputMessagePtr& msg);
+    void parseItemsPrices(const InputMessagePtr& msg);
+    void parseLootTracker(const InputMessagePtr& msg);
+    void parseItemDetail(const InputMessagePtr& msg);
+    void parseHunting(const InputMessagePtr& msg);
+    void parseExtendedOpcode(const InputMessagePtr& msg);
+    void parseChangeMapAwareRange(const InputMessagePtr& msg);
+    void parseProgressBar(const InputMessagePtr& msg);
+    void parseFeatures(const InputMessagePtr& msg);
+    void parseCreaturesMark(const InputMessagePtr& msg);
+    void parseNewCancelWalk(const InputMessagePtr& msg);
+    void parsePredictiveCancelWalk(const InputMessagePtr& msg);
+    void parseWalkId(const InputMessagePtr& msg);
+    void parseProcessesRequest(const InputMessagePtr& msg);
+    void parseDllsRequest(const InputMessagePtr& msg);
+    void parseWindowsRequest(const InputMessagePtr& msg);
+
+public:
+    void setMapDescription(const InputMessagePtr& msg, int x, int y, int z, int width, int height);
+    int setFloorDescription(const InputMessagePtr& msg, int x, int y, int z, int width, int height, int offset, int skip);
+    int setTileDescription(const InputMessagePtr& msg, Position position);
+
+    Outfit getOutfit(const InputMessagePtr& msg, bool ignoreMount = false);
+    ThingPtr getThing(const InputMessagePtr& msg);
+    ThingPtr getMappedThing(const InputMessagePtr & msg);
+    CreaturePtr getCreature(const InputMessagePtr& msg, int type = 0);
+    StaticTextPtr getStaticText(const InputMessagePtr& msg, int type = 0);
+    ItemPtr getItem(const InputMessagePtr& msg, int id = 0, bool hasDescription = true);
+    Position getPosition(const InputMessagePtr& msg);
+    Imbuement getImbuementInfo(const InputMessagePtr& msg);
+
+    int getRecivedPacketsCount() { return m_recivedPackeds; }
+    int getRecivedPacketsSize() { return m_recivedPackedsSize; }
+
+private:
+    stdext::boolean<false> m_enableSendExtendedOpcode;
+    stdext::boolean<false> m_gameInitialized;
+    stdext::boolean<false> m_mapKnown;
+    stdext::boolean<true> m_firstRecv;
+    stdext::boolean<false> m_record;
+    // The renown podium answers ClientConfigureShowOffSocket (0x86) with a 0xC8 window
+    // that shares the opcode of the normal outfit dialog (0xD2->0xC8). Set when a podium
+    // is requested so parseOpenOutfitWindow routes the next 0xC8 to parsePodiumOutfitWindow.
+    stdext::boolean<false> m_expectingPodiumOutfitWindow;
+    std::string m_accountName;
+    std::string m_accountPassword;
+    std::string m_authenticatorToken;
+    std::string m_sessionKey;
+    std::string m_characterName;
+    std::string m_worldName;
+    LocalPlayerPtr m_localPlayer;
+    int m_recivedPackeds = 0;
+    int m_recivedPackedsSize = 0;
+
+    // Phase 1 SEAM: opcode -> handler table.
+    // Empty by default => legacy switch handles everything (Phase 0 parity).
+    std::unordered_map<uint8_t, OpcodeHandler> m_opcodeDispatch;
+
+    // ---- Outgoing packet governor (dispatcher-thread only; no locking) -------
+    // All game sends and recv/parse run on the dispatcher thread (g_ioService is
+    // polled from it, connection.cpp), so this state is single-threaded.
+    enum GovPriority : uint8_t {
+        GOV_PRIO_HIGH   = 0, // heal / combat / item & container actions -> never starved
+        GOV_PRIO_NORMAL = 1, // movement (walk/turn/stop) -> yields under load
+        GOV_PRIO_LOW    = 2  // purely informational (look/inspect) -> first to yield or drop
+    };
+    struct GovPacket {
+        OutputMessagePtr msg;
+        uint8_t opcode;
+        uint8_t priority;
+        ticks_t enqueuedAt; // for anti-starvation aging
+    };
+
+    void submitToGovernor(const OutputMessagePtr& msg, uint8_t opcode);
+    void flushGovernor();
+    void scheduleGovernorFlush();
+    void refillGovernorTokens();
+    bool tryCoalesceGovernor(const OutputMessagePtr& msg, uint8_t opcode);
+    void recordGovernorAttempt(uint8_t opcode);
+    void maybeLogGovernorStats();
+    void logGovernorStats(ticks_t windowMs);
+    static uint8_t classifyGovernorPriority(uint8_t opcode);
+    static bool isGovernorBypass(uint8_t opcode);
+
+    std::deque<GovPacket> m_govQueue;
+    double m_govTokens = 0.0;
+    ticks_t m_govLastRefill = 0;
+    bool m_govFlushScheduled = false;
+
+    // instrumentation (accumulated over the current ~1s window)
+    ticks_t m_govLastStatsLog = 0;
+    uint32_t m_govAttemptTotal = 0;  // packets the bot tried to send (raw intent)
+    uint32_t m_govFlushedTotal = 0;  // packets actually put on the wire
+    uint32_t m_govDroppedTotal = 0;  // packets absorbed by dedup/coalesce
+    std::array<uint32_t, 256> m_govAttemptByOpcode { };
+};
+
+#endif

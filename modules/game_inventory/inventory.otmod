@@ -1,0 +1,9 @@
+Module
+  name: game_inventory
+  description: View local player equipments window
+  author: baxnie, edubart, BeniS, nyxos-client
+  website: https://github.com/Mateuzkl/NyxosClient
+  sandboxed: true
+  scripts: [ inventory ]
+  @onLoad: init()
+  @onUnload: terminate()

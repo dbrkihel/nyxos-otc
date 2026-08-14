@@ -1,0 +1,261 @@
+BattleIcon < UICheckBox
+  size: 20 20
+  image-color: white
+  image-rect: 0 0 20 20
+  tooltip-delayed: true
+
+  $hover !disabled:
+    color: #cccccc
+
+  $!checked:
+    image-clip: 0 0 20 20
+
+  $hover !checked:
+    image-clip: 0 40 20 20
+
+  $checked:
+    image-clip: 0 20 20 20
+
+  $hover checked:
+    image-clip: 0 60 20 20
+
+  $disabled:
+    image-color: #ffffff88
+
+BattlePlayers < BattleIcon
+  image-source: /images/game/battle/battlelist_players
+
+BattleDruids < BattleIcon
+  image-source: /images/game/battle/battlelist_druid
+
+BattleKnights < BattleIcon
+  image-source: /images/game/battle/battlelist_knight
+
+BattleSorcerers < BattleIcon
+  image-source: /images/game/battle/battlelist_sorcerer
+
+BattlePaladins < BattleIcon
+  image-source: /images/game/battle/battlelist_paladin
+
+BattleMonks < BattleIcon
+  image-source: /images/game/battle/battlelist_monk
+
+BattleSummons < BattleIcon
+  image-source: /images/game/battle/battlelist_summon
+
+BattleOwnGuilds < BattleIcon
+  image-source: /images/game/battle/battlelist_own_guild
+
+BattleNPCs < BattleIcon
+  image-source: /images/game/battle/battlelist_npcs
+
+BattleMonsters < BattleIcon
+  image-source: /images/game/battle/battlelist_monsters
+
+BattleSkulls < BattleIcon
+  image-source: /images/game/battle/battlelist_skull
+
+BattleParty < BattleIcon
+  image-source: /images/game/battle/battlelist_party
+
+BattleWindow < MiniWindow
+  id: battleWindow
+  !text: tr('Battle List')
+  &type: 'battleList'
+  height: 166
+  icon: /images/icons/icon-battlelist
+  @onClose: modules.game_battle.onMiniWindowClose(self)
+  &save: true
+  &autoOpen: false
+  &multiOpen: true
+  @onFilter: modules.game_battle.toggleFilterPanel(self)
+  @onBattleExtra: modules.game_battle.filterPopUp(self)
+  @onBattleRedirect: modules.game_battle:addBattleWindow()
+
+  Panel
+    id: filterPanel
+    margin-top: 20
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: miniwindowScrollBar.left
+    // Acompanha a altura real do grid de filtros (2 linhas de 20px + 2 de
+    // espaco). O sortPanel abaixo nasce invisivel e nao entra na conta.
+    &originalHeight: 42
+    height: 42
+
+    // Os 12 filtros ocupam 7 na primeira linha e 5 na segunda, como no cliente
+    // oficial (battlelist.qml). A largura tem que fechar a conta do grid:
+    // 7 celulas de 20px + 6 espacos de 2px = 152.
+    Panel
+      id: buttons
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      height: 42
+      width: 152
+      layout:
+        type: grid
+        // Sem cell-size o grid usa o default 16x16 e reduz cada BattleIcon a
+        // essa medida (o layout chama setRect com o tamanho da celula). Como o
+        // image-clip recorta regioes de 20x20, o icone saia reescalado e borrado.
+        cell-size: 20 20
+        // marginNarrow do TibiaStyle.qml oficial.
+        cell-spacing: 2
+        // Com flow ligado o num-columns abaixo e ignorado: o grid recalcula as
+        // colunas pela largura disponivel e caiamos em 6+6 no lugar de 7+5.
+        flow: false
+        num-columns: 7
+
+      BattlePlayers
+        id: showPlayers
+        !tooltip: tr('Hide Players')
+        checked: true
+        @onSetup: if g_app.isMobile() then self:setChecked(true) end
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleKnights
+        id: showKnights
+        checked: true
+        !tooltip: tr('Hide Knights')
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattlePaladins
+        id: showPaladins
+        !tooltip: tr('Hide Paladins')
+        checked: true
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleDruids
+        id: showDruids
+        !tooltip: tr('Hide Druids')
+        checked: true
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleSorcerers
+        id: showSorcerers
+        !tooltip: tr('Hide Sorcerers')
+        checked: true
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleMonks
+        id: showMonks
+        !tooltip: tr('Hide Monks')
+        checked: true
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleSummons
+        id: showSummons
+        !tooltip: tr('Hide Summons')
+        checked: true
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleNPCs
+        id: showNPCs
+        checked: true
+        !tooltip: tr('Hide NPCs')
+        @onSetup: if g_app.isMobile() then self:setChecked(true) end
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleMonsters
+        id: showMonsters
+        !tooltip: tr('Hide Monsters')
+        checked: true
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleSkulls
+        id: showNonSkulled
+        !tooltip: tr('Hide Non-Skulled Players')
+        checked: true
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleParty
+        id: showParty
+        !tooltip: tr('Hide Party Members')
+        checked: true
+        @onSetup: if g_app.isMobile() then self:setChecked(true) end
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+      BattleOwnGuilds
+        id: showOwnGuilds
+        checked: true
+        !tooltip: tr('Hide Members of Own Guild')
+        @onSetup: if g_app.isMobile() then self:setChecked(true) end
+        @onCheckChange: modules.game_battle.updateBattleIconCreatures(self, self:isChecked());
+
+    Panel
+      id: sortPanel
+      visible: false
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 20
+      margin-top: 6
+
+      ComboBox
+        id: sortTypeBox
+        width: 75
+        anchors.top: parent.top
+        anchors.left: prev.right
+        anchors.horizontalCenter: parent.horizontalCenter
+        margin-left: -31
+
+      ComboBox
+        id: sortOrderBox
+        width: 60
+        anchors.top: parent.top
+        anchors.left: prev.right
+        margin-left: 4
+
+  Panel
+    height: 18
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: miniwindowScrollBar.left
+    margin-top: 4
+
+    UIWidget
+      id: toggleFilterButton
+      anchors.top: prev.top
+      width: 21
+      anchors.horizontalCenter: parent.horizontalCenter
+
+  HorizontalSeparator
+    id: separator
+    anchors.top: prev.top
+    anchors.left: parent.left
+    anchors.right: miniwindowScrollBar.left
+    margin-right: 1
+    margin-left: 4
+    margin-top: -4
+
+  MiniWindowContents
+    anchors.top: prev.bottom
+    margin-top: -1
+
+    Panel
+      id: battlePanel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-top: 5
+      padding-right: 5
+      layout:
+        type: verticalBox
+        fit-children: true
+
+  UIWidget
+    id: miniborder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    image-source: /images/ui/miniborder
+    size: 14 14
+    margin-left: 2
+    margin-bottom: 2
+  ResizeBorder
+    id: bottomResizeBorder
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 3
+    minimum: 104
+    margin-left: 3
+    margin-right: 3

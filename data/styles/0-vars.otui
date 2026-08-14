@@ -1,0 +1,100 @@
+// Labels-Default
+$var-font: verdana-11px-antialised
+
+// Nyxos-Label
+$var-cip-font: Verdana Bold-11px
+$var-cip-font-lowspace: Verdana Bold-11px-low-space
+$var-cip-font-off: Verdana-Strikethrough-11px
+$var-cip-font-wheel: Verdana Bold-11px-wheel
+$var-cip-font-rounded: verdana-11px-rounded-lowspace
+
+// Colors
+//
+// Os valores seguem a paleta do cliente 15.25. NAO use comentario no fim da
+// linha aqui: o OTML le o resto da linha como parte do valor e a cor deixa de
+// converter, derrubando o cliente na carga do modulo.
+//
+// Mapeamento com os nomes oficiais, para que uma divergencia futura seja
+// verificavel em vez de virar deriva silenciosa. Onde o oficial define a cor
+// duas vezes -- na paleta base e no mapa semantico de papeis de texto -- o
+// papel e o que determina onde ela pode ser usada.
+//
+//   text-color                -> white1
+//   text-cip-color            -> white5   (papel TextFieldText)
+//   cip-inactive-color        -> grey3    (papel Disabled)
+//   text-cip-color-green      -> green1   (papel Positive)
+//   text-cip-color-white      -> white2   (papel ContextMenu)
+//   text-cip-color-highlight  -> white3   (papel Default)
+//   text-cip-color-grey       -> papel Caption
+//   text-cip-color-orange     -> orange1  (papel MessageWarning)
+//   text-cip-color-yellow     -> yellow1  (papel PartyLeader)
+//   text-cip-color-blue       -> blue1
+//   text-cip-color-light-red  -> red1     (papel WarningText)
+//   text-cip-store-red        -> red2     (papel StoreColorNegativeBalance)
+//   text-cip-store-sale       -> gold1    (papel StoreColorSale)
+//   text-cip-store-timed      -> blue2    (papel StoreColorTimed)
+//   textlist-selected         -> tableViewSelectionColor
+//   textlist-even             -> tableViewAlternateBackgroundColor
+//   textlist-odd              -> tableViewItemBackgroundColor
+
+$var-text-color: #dfdfdf
+$var-text-color-disabled: #dfdfdf88
+$var-text-cip-color: #c0c0c0
+$var-cip-inactive-color: #707070
+$var-text-cip-color-green: #44ad25
+$var-text-cip-color-green-disabled: #2c4f23
+$var-text-cip-color-white: #f7f7f7
+$var-text-cip-color-highlight: #f4f4f4
+$var-text-cip-color-grey: #909090
+$var-text-cip-color-orange: #ff9854
+$var-text-cip-color-yellow: #f8db38
+$var-text-cip-color-blue: #0e84da
+$var-text-cip-color-light-red: #f75f5f
+$var-text-cip-store-disabled: #565656
+$var-text-cip-store-red: #D33C3C
+$var-text-cip-store-red-disabled: #562626
+$var-text-cip-store-sale: #f7af48
+$var-text-cip-store-sale-disabled: #664f2e
+$var-text-cip-store-timed: #1872c3
+$var-text-cip-store-timed-disabled: #1d3b55
+$var-textlist-selected: #585858
+$var-textlist-even: #414141
+$var-textlist-odd: #484848
+
+// Cores da paleta oficial ainda sem uso aqui. Declaradas para que o proximo
+// widget que precisar de uma delas pegue o valor certo em vez de amostrar um
+// print e errar por um digito.
+//
+//   cip-white-pure       -> white4
+//   cip-grey-light       -> grey1    (papel InventoryOverlay)
+//   cip-grey-mid         -> grey2
+//   cip-grey-dark        -> grey4
+//   cip-black-deep       -> black1
+//   cip-black-soft       -> black3   (papel Dark)
+//   cip-red-dark         -> red3
+//   cip-orange-dark      -> orange2  (papel ContainerManualSortMode)
+//   cip-purple           -> purple1
+//   cip-purple-bright    -> purple2
+//   cip-purple-soft      -> purple3
+//   cip-teal             -> teal1
+//   cip-tab-caption-idle -> papel TabCaptionIdle
+//   cip-vip-online       -> papel VipOnline
+//   cip-vip-offline      -> papel VipOffline
+//   cip-error            -> papel Error
+
+$var-cip-white-pure: #ffffff
+$var-cip-grey-light: #bfbfbf
+$var-cip-grey-mid: #727272
+$var-cip-grey-dark: #393939
+$var-cip-black-deep: #242424
+$var-cip-black-soft: #3f3f3f
+$var-cip-red-dark: #a40f0f
+$var-cip-orange-dark: #c28400
+$var-cip-purple: #9800c1
+$var-cip-purple-bright: #d437ff
+$var-cip-purple-soft: #9966cc
+$var-cip-teal: #00746f
+$var-cip-tab-caption-idle: #7f7f7f
+$var-cip-vip-online: #60f860
+$var-cip-vip-offline: #f86060
+$var-cip-error: #c04040
