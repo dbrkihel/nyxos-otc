@@ -7,10 +7,6 @@ NEXT_STEPS.md
 # Keeps player data out of the repo.
 characterdata/
 
-# Local per-user config, with your own hosts and credentials.
-# Copy config.example.lua -> config.lua and edit that copy.
-config.lua
-
 # Explored minimap, written by game_minimap on logout. Player data.
 minimap.otmm
 
